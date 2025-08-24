@@ -140,6 +140,7 @@ const Content = () => {
       fetchRecommendations();
       fetchStats();
       fetchBookDocuments();
+      createDefaultJournal();
     }
   }, [token]);
 
@@ -200,6 +201,26 @@ const Content = () => {
     } catch (error) {
       console.error('Error fetching book documents:', error);
       toast.error('Failed to load book documents');
+    }
+  };
+
+  const createDefaultJournal = async () => {
+    try {
+      const response = await fetch('/api/book-documents/journal/default', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Check if the journal was just created and add it to the list
+        if (!bookDocuments.find(book => book._id === data._id)) {
+          setBookDocuments(prev => [...prev, data]);
+        }
+      }
+    } catch (error) {
+      console.error('Error creating default journal:', error);
     }
   };
 
@@ -925,6 +946,351 @@ const Content = () => {
           )}
         </AnimatePresence>
 
+        {/* New Book Form */}
+        <AnimatePresence>
+          {showNewBookForm && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-white rounded-lg shadow-lg p-6 mb-8"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Book Document</h3>
+              
+              <form onSubmit={handleCreateBook} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Title *
+                    </label>
+                    <input
+                      type="text"
+                      value={newBook.title}
+                      onChange={(e) => setNewBook({ ...newBook, title: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="Enter book title"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Author *
+                    </label>
+                    <input
+                      type="text"
+                      value={newBook.author}
+                      onChange={(e) => setNewBook({ ...newBook, author: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="Enter author name"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Category
+                    </label>
+                    <select
+                      value={newBook.category}
+                      onChange={(e) => setNewBook({ ...newBook, category: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      {bookCategories.map(category => (
+                        <option key={category} value={category}>{category.replace('_', ' ')}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Total Pages
+                    </label>
+                    <input
+                      type="number"
+                      value={newBook.totalPages}
+                      onChange={(e) => setNewBook({ ...newBook, totalPages: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="e.g., 300"
+                      min="1"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Difficulty
+                    </label>
+                    <select
+                      value={newBook.difficulty}
+                      onChange={(e) => setNewBook({ ...newBook, difficulty: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      {difficulties.map(difficulty => (
+                        <option key={difficulty} value={difficulty}>{difficulty}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ISBN
+                    </label>
+                    <input
+                      type="text"
+                      value={newBook.isbn}
+                      onChange={(e) => setNewBook({ ...newBook, isbn: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="Enter ISBN"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Publication Year
+                    </label>
+                    <input
+                      type="number"
+                      value={newBook.publicationYear}
+                      onChange={(e) => setNewBook({ ...newBook, publicationYear: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="e.g., 2024"
+                      min="1900"
+                      max="2030"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={newBook.description}
+                    onChange={(e) => setNewBook({ ...newBook, description: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Describe the book..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tags
+                  </label>
+                  <div className="flex">
+                    <input
+                      type="text"
+                      value={bookTagInput}
+                      onChange={(e) => setBookTagInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addBookTag())}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="Add a tag"
+                    />
+                    <button
+                      type="button"
+                      onClick={addBookTag}
+                      className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg hover:bg-gray-200"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {newBook.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {newBook.tags.map(tag => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center px-2 py-1 bg-primary-100 text-primary-800 text-xs rounded-full"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => removeBookTag(tag)}
+                            className="ml-1 text-primary-600 hover:text-primary-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewBookForm(false)}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors duration-200"
+                  >
+                    Create Book
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* New Note Form */}
+        <AnimatePresence>
+          {showNoteForm && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-white rounded-lg shadow-lg p-6 mb-8"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                {selectedBook ? `Add Note to "${selectedBook.title}"` : 'Add Note'}
+              </h3>
+              
+              <form onSubmit={handleAddNote} className="space-y-4">
+                {!selectedBook && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Book *
+                    </label>
+                    <select
+                      value={selectedBook?._id || ''}
+                      onChange={(e) => {
+                        const book = bookDocuments.find(b => b._id === e.target.value);
+                        setSelectedBook(book);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      required
+                    >
+                      <option value="">Select a book</option>
+                      {bookDocuments.map(book => (
+                        <option key={book._id} value={book._id}>{book.title} by {book.author}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Note Content *
+                  </label>
+                  <textarea
+                    value={newNote.content}
+                    onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Write your note here..."
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Location (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={newNote.location}
+                      onChange={(e) => setNewNote({ ...newNote, location: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="e.g., Page 45, Chapter 3"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tags
+                    </label>
+                    <div className="flex">
+                      <input
+                        type="text"
+                        value={noteTagInput}
+                        onChange={(e) => setNoteTagInput(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addNoteTag())}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="Add a tag"
+                      />
+                      <button
+                        type="button"
+                        onClick={addNoteTag}
+                        className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg hover:bg-gray-200"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    {newNote.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {newNote.tags.map(tag => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center px-2 py-1 bg-primary-100 text-primary-800 text-xs rounded-full"
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => removeNoteTag(tag)}
+                              className="ml-1 text-primary-600 hover:text-primary-800"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-6">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={newNote.isImportant}
+                      onChange={(e) => setNewNote({ ...newNote, isImportant: e.target.checked })}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">Mark as important</span>
+                  </label>
+                  
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={newNote.isQuote}
+                      onChange={(e) => setNewNote({ ...newNote, isQuote: e.target.checked })}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">Include in dashboard quotes</span>
+                  </label>
+                </div>
+
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNoteForm(false);
+                      setSelectedBook(null);
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors duration-200"
+                  >
+                    Add Note
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* New Item Form */}
         <AnimatePresence>
           {showNewItemForm && (
@@ -1329,6 +1695,193 @@ const Content = () => {
             ))
           )}
         </div>
+        )}
+
+        {/* Book Documents Tab */}
+        {activeTab === 'books' && (
+          <div className="space-y-8">
+            {bookDocuments.length === 0 ? (
+              <div className="text-center py-12">
+                <Book className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No book documents yet</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Get started by creating your first book document
+                </p>
+              </div>
+            ) : (
+              bookDocuments.map((book, index) => (
+                <motion.div
+                  key={book._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white rounded-lg shadow-lg overflow-hidden"
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <Book className="h-6 w-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-semibold text-gray-900">{book.title}</h3>
+                            <p className="text-gray-600">by {book.author}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                          <span className="capitalize">{book.category.replace('_', ' ')}</span>
+                          <span>•</span>
+                          <span className={`flex items-center ${getBookStatusColor(book.status)}`}>
+                            {React.createElement(getBookStatusIcon(book.status), { className: "h-4 w-4 mr-1" })}
+                            {book.status.replace('_', ' ')}
+                          </span>
+                          {book.totalPages && (
+                            <>
+                              <span>•</span>
+                              <span>{book.totalPages} pages</span>
+                            </>
+                          )}
+                          {book.isDefault && (
+                            <>
+                              <span>•</span>
+                              <span className="text-amber-600 font-medium">Personal Journal</span>
+                            </>
+                          )}
+                        </div>
+
+                        {book.description && (
+                          <p className="text-gray-700 mb-3">{book.description}</p>
+                        )}
+
+                        {book.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {book.tags.map(tag => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                              >
+                                <Tag className="h-3 w-3 mr-1" />
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => {
+                            setSelectedBook(book);
+                            setShowNoteForm(true);
+                          }}
+                          className="p-2 text-gray-400 hover:text-blue-500 transition-colors duration-200"
+                          title="Add note"
+                        >
+                          <PenTool className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBook(book._id)}
+                          className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200"
+                          title="Delete book"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Notes Section */}
+                    <div className="border-t border-gray-200 pt-4">
+                      <h4 className="text-lg font-medium text-gray-900 mb-3">Notes ({book.notes.length})</h4>
+                      
+                      {book.notes.length === 0 ? (
+                        <p className="text-gray-500 text-sm">No notes yet. Add your first note to start tracking your reading journey.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {book.notes.map((note, noteIndex) => (
+                            <div
+                              key={note._id}
+                              className={`p-3 rounded-lg border ${
+                                note.isImportant ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-gray-50'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                  {note.isQuote && (
+                                    <Quote className="h-4 w-4 text-blue-500" title="Quote note" />
+                                  )}
+                                  {note.isImportant && (
+                                    <Star className="h-4 w-4 text-amber-500" title="Important note" />
+                                  )}
+                                  {note.location && (
+                                    <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
+                                      {note.location}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <button
+                                    onClick={() => handleUpdateNote(book._id, note._id, { isQuote: !note.isQuote })}
+                                    className={`p-1 rounded ${
+                                      note.isQuote 
+                                        ? 'text-blue-600 bg-blue-100' 
+                                        : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                                    }`}
+                                    title={note.isQuote ? 'Remove from quotes' : 'Add to quotes'}
+                                  >
+                                    <Quote className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleUpdateNote(book._id, note._id, { isImportant: !note.isImportant })}
+                                    className={`p-1 rounded ${
+                                      note.isImportant 
+                                        ? 'text-amber-600 bg-amber-100' 
+                                        : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50'
+                                    }`}
+                                    title={note.isImportant ? 'Remove from important' : 'Mark as important'}
+                                  >
+                                    <Star className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteNote(book._id, note._id)}
+                                    className="p-1 text-gray-400 hover:text-red-500 transition-colors duration-200"
+                                    title="Delete note"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              <p className="text-gray-800 text-sm mb-2">{note.content}</p>
+                              
+                              {note.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {note.tags.map(tag => (
+                                    <span
+                                      key={tag}
+                                      className="inline-flex items-center px-1.5 py-0.5 bg-white text-gray-600 text-xs rounded border"
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              <div className="text-xs text-gray-500 mt-2">
+                                {new Date(note.timestamp).toLocaleDateString()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Recommendations */}
         {recommendations.length > 0 && (
