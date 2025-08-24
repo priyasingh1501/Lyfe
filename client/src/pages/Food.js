@@ -10,7 +10,8 @@ import {
   Heart,
   Shield,
   Dumbbell,
-  XCircle
+  XCircle,
+  TrendingUp
 } from 'lucide-react';
 import axios from 'axios';
 
