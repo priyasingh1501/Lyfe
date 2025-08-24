@@ -188,6 +188,21 @@ const Content = () => {
     }
   };
 
+  const fetchBookDocuments = async () => {
+    try {
+      const response = await fetch('/api/book-documents', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      setBookDocuments(data);
+    } catch (error) {
+      console.error('Error fetching book documents:', error);
+      toast.error('Failed to load book documents');
+    }
+  };
+
   const handleCreateCollection = async (e) => {
     e.preventDefault();
     
@@ -355,6 +370,40 @@ const Content = () => {
     });
   };
 
+  const addBookTag = () => {
+    if (bookTagInput.trim() && !newBook.tags.includes(bookTagInput.trim())) {
+      setNewBook({
+        ...newBook,
+        tags: [...newBook.tags, bookTagInput.trim()]
+      });
+      setBookTagInput('');
+    }
+  };
+
+  const removeBookTag = (tagToRemove) => {
+    setNewBook({
+      ...newBook,
+      tags: newBook.tags.filter(tag => tag !== tagToRemove)
+    });
+  };
+
+  const addNoteTag = () => {
+    if (noteTagInput.trim() && !newNote.tags.includes(noteTagInput.trim())) {
+      setNewNote({
+        ...newNote,
+        tags: [...newNote.tags, noteTagInput.trim()]
+      });
+      setNoteTagInput('');
+    }
+  };
+
+  const removeNoteTag = (tagToRemove) => {
+    setNewNote({
+      ...newNote,
+      tags: newNote.tags.filter(tag => tag !== tagToRemove)
+    });
+  };
+
   const getTypeIcon = (type) => {
     const typeConfig = contentTypes.find(t => t.value === type);
     return typeConfig ? typeConfig.icon : BookOpen;
@@ -375,6 +424,26 @@ const Content = () => {
     }
   };
 
+  const getBookStatusIcon = (status) => {
+    switch (status) {
+      case 'completed': return CheckCircle;
+      case 'currently_reading': return PlayCircle;
+      case 'not_started': return Bookmark;
+      case 'paused': return Eye;
+      default: return Bookmark;
+    }
+  };
+
+  const getBookStatusColor = (status) => {
+    switch (status) {
+      case 'completed': return 'text-green-600';
+      case 'currently_reading': return 'text-blue-600';
+      case 'not_started': return 'text-yellow-600';
+      case 'paused': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed': return 'text-green-600';
@@ -382,6 +451,187 @@ const Content = () => {
       case 'want_to_consume': return 'text-yellow-600';
       case 'abandoned': return 'text-red-600';
       default: return 'text-gray-600';
+    }
+  };
+
+  const handleCreateBook = async (e) => {
+    e.preventDefault();
+    
+    if (!newBook.title.trim() || !newBook.author.trim()) {
+      toast.error('Please enter both title and author');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/book-documents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newBook)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBookDocuments([...bookDocuments, data.bookDocument]);
+        setShowNewBookForm(false);
+        setNewBook({
+          title: '',
+          author: '',
+          isbn: '',
+          description: '',
+          category: 'other',
+          tags: [],
+          totalPages: '',
+          difficulty: 'intermediate',
+          language: 'English',
+          publicationYear: '',
+          publisher: ''
+        });
+        toast.success('Book document created successfully!');
+      } else {
+        toast.error('Failed to create book document');
+      }
+    } catch (error) {
+      console.error('Error creating book document:', error);
+      toast.error('Failed to create book document');
+    }
+  };
+
+  const handleAddNote = async (e) => {
+    e.preventDefault();
+    
+    if (!newNote.content.trim()) {
+      toast.error('Please enter note content');
+      return;
+    }
+
+    if (!selectedBook) {
+      toast.error('Please select a book');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/book-documents/${selectedBook._id}/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newNote)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update the book with the new note
+        setBookDocuments(bookDocuments.map(book => 
+          book._id === selectedBook._id 
+            ? { ...book, notes: [...book.notes, data.note] }
+            : book
+        ));
+        
+        setShowNoteForm(false);
+        setNewNote({
+          content: '',
+          location: '',
+          tags: [],
+          isImportant: false,
+          isQuote: false
+        });
+        toast.success('Note added successfully!');
+      } else {
+        toast.error('Failed to add note');
+      }
+    } catch (error) {
+      console.error('Error adding note:', error);
+      toast.error('Failed to add note');
+    }
+  };
+
+  const handleDeleteBook = async (bookId) => {
+    if (!window.confirm('Are you sure you want to delete this book? All notes will be lost.')) return;
+
+    try {
+      const response = await fetch(`/api/book-documents/${bookId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setBookDocuments(bookDocuments.filter(book => book._id !== bookId));
+        toast.success('Book deleted successfully');
+      } else {
+        toast.error('Failed to delete book');
+      }
+    } catch (error) {
+      console.error('Error deleting book:', error);
+      toast.error('Failed to delete book');
+    }
+  };
+
+  const handleDeleteNote = async (bookId, noteId) => {
+    if (!window.confirm('Are you sure you want to delete this note?')) return;
+
+    try {
+      const response = await fetch(`/api/book-documents/${bookId}/notes/${noteId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setBookDocuments(bookDocuments.map(book => 
+          book._id === bookId 
+            ? { ...book, notes: book.notes.filter(note => note._id !== noteId) }
+            : book
+        ));
+        toast.success('Note deleted successfully');
+      } else {
+        toast.error('Failed to delete note');
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      toast.error('Failed to delete note');
+    }
+  };
+
+  const handleUpdateNote = async (bookId, noteId, updates) => {
+    try {
+      const response = await fetch(`/api/book-documents/${bookId}/notes/${noteId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updates)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        setBookDocuments(bookDocuments.map(book => 
+          book._id === bookId 
+            ? { 
+                ...book, 
+                notes: book.notes.map(note => 
+                  note._id === noteId ? data.note : note
+                )
+              }
+            : book
+        ));
+        
+        toast.success('Note updated successfully!');
+      } else {
+        toast.error('Failed to update note');
+      }
+    } catch (error) {
+      console.error('Error updating note:', error);
+      toast.error('Failed to update note');
     }
   };
 
@@ -484,25 +734,69 @@ const Content = () => {
           </div>
         )}
 
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg mb-6">
+          <button
+            onClick={() => setActiveTab('collections')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+              activeTab === 'collections'
+                ? 'bg-amber-500 text-white shadow-lg'
+                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+            }`}
+          >
+            Collections
+          </button>
+          <button
+            onClick={() => setActiveTab('books')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+              activeTab === 'books'
+                ? 'bg-amber-500 text-white shadow-lg'
+                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+            }`}
+          >
+            Book Documents
+          </button>
+        </div>
+
         {/* Action Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <div className="flex space-x-3">
-            <button
-              onClick={() => setShowNewCollectionForm(true)}
-              className="inline-flex items-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-400 transition-colors duration-200 border border-amber-400 hover:shadow-lg hover:shadow-amber-500/20 font-oswald tracking-wide"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              New Collection
-            </button>
-            
-            <button
-              onClick={() => setShowNewItemForm(true)}
-              className="inline-flex items-center px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors duration-200"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Add Content
-            </button>
-          </div>
+          {activeTab === 'collections' ? (
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowNewCollectionForm(true)}
+                className="inline-flex items-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-400 transition-colors duration-200 border border-amber-400 hover:shadow-lg hover:shadow-amber-500/20 font-oswald tracking-wide"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                New Collection
+              </button>
+              
+              <button
+                onClick={() => setShowNewItemForm(true)}
+                className="inline-flex items-center px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors duration-200"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Add Content
+              </button>
+            </div>
+          ) : (
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowNewBookForm(true)}
+                className="inline-flex items-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-400 transition-colors duration-200 border border-amber-400 hover:shadow-lg hover:shadow-amber-500/20 font-oswald tracking-wide"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                New Book
+              </button>
+              
+              <button
+                onClick={() => setShowNoteForm(true)}
+                className="inline-flex items-center px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors duration-200"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Add Note
+              </button>
+            </div>
+          )}
 
           {/* Filters */}
           <div className="flex flex-wrap gap-2">
@@ -882,17 +1176,18 @@ const Content = () => {
         </AnimatePresence>
 
         {/* Content Collections */}
-        <div className="space-y-8">
-          {collections.length === 0 ? (
-            <div className="text-center py-12">
-              <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No collections yet</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Get started by creating your first content collection
-              </p>
-            </div>
-          ) : (
-            collections.map((collection, index) => (
+        {activeTab === 'collections' && (
+          <div className="space-y-8">
+            {collections.length === 0 ? (
+              <div className="text-center py-12">
+                <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No collections yet</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Get started by creating your first content collection
+                </p>
+              </div>
+            ) : (
+              collections.map((collection, index) => (
               <motion.div
                 key={collection._id}
                 initial={{ opacity: 0, y: 20 }}
