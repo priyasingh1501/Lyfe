@@ -22,7 +22,12 @@ import {
   PlayCircle,
   Bookmark,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  Quote,
+  Book,
+  PenTool,
+  Calendar,
+  MapPin
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -36,6 +41,14 @@ const Content = () => {
   const [showNewCollectionForm, setShowNewCollectionForm] = useState(false);
   const [showNewItemForm, setShowNewItemForm] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState(null);
+  
+  // Book Documents state
+  const [bookDocuments, setBookDocuments] = useState([]);
+  const [showNewBookForm, setShowNewBookForm] = useState(false);
+  const [showNoteForm, setShowNoteForm] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [activeTab, setActiveTab] = useState('collections');
+  
   const [filters, setFilters] = useState({
     type: '',
     category: '',
@@ -68,7 +81,31 @@ const Content = () => {
     timeInvestment: 'moderate'
   });
 
+  const [newBook, setNewBook] = useState({
+    title: '',
+    author: '',
+    isbn: '',
+    description: '',
+    category: 'other',
+    tags: [],
+    totalPages: '',
+    difficulty: 'intermediate',
+    language: 'English',
+    publicationYear: '',
+    publisher: ''
+  });
+
+  const [newNote, setNewNote] = useState({
+    content: '',
+    location: '',
+    tags: [],
+    isImportant: false,
+    isQuote: false
+  });
+
   const [tagInput, setTagInput] = useState('');
+  const [bookTagInput, setBookTagInput] = useState('');
+  const [noteTagInput, setNoteTagInput] = useState('');
 
   const contentTypes = [
     { value: 'book', label: 'Book', icon: BookOpen, color: 'bg-blue-500' },
@@ -87,6 +124,12 @@ const Content = () => {
     'education', 'entertainment'
   ];
 
+  const bookCategories = [
+    'fiction', 'non_fiction', 'self_help', 'business', 'health', 'technology', 
+    'science', 'history', 'philosophy', 'art', 'travel', 'cooking', 'fitness', 
+    'education', 'biography', 'memoir', 'poetry', 'other'
+  ];
+
   const difficulties = ['beginner', 'intermediate', 'advanced'];
   const timeInvestments = ['quick', 'moderate', 'extensive'];
   const statuses = ['want_to_consume', 'currently_consuming', 'completed', 'abandoned'];
@@ -96,6 +139,7 @@ const Content = () => {
       fetchCollections();
       fetchRecommendations();
       fetchStats();
+      fetchBookDocuments();
     }
   }, [token]);
 

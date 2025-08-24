@@ -21,6 +21,10 @@ const noteSchema = new mongoose.Schema({
   isImportant: {
     type: Boolean,
     default: false
+  },
+  isQuote: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
@@ -186,6 +190,11 @@ bookDocumentSchema.methods.getNotesByTag = function(tag) {
 // Method to get important notes
 bookDocumentSchema.methods.getImportantNotes = function() {
   return this.notes.filter(note => note.isImportant);
+};
+
+// Method to get quote notes
+bookDocumentSchema.methods.getQuoteNotes = function() {
+  return this.notes.filter(note => note.isQuote);
 };
 
 module.exports = mongoose.model('BookDocument', bookDocumentSchema);

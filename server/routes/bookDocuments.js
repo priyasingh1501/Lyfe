@@ -173,7 +173,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 // Add a note to a book document
 router.post('/:id/notes', authenticateToken, async (req, res) => {
   try {
-    const { content, location, tags, isImportant } = req.body;
+    const { content, location, tags, isImportant, isQuote } = req.body;
     
     if (!content || !content.trim()) {
       return res.status(400).json({ message: 'Note content is required' });
@@ -192,7 +192,8 @@ router.post('/:id/notes', authenticateToken, async (req, res) => {
       content: content.trim(),
       location: location || '',
       tags: tags || [],
-      isImportant: isImportant || false
+      isImportant: isImportant || false,
+      isQuote: isQuote || false
     };
     
     bookDocument.notes.push(note);
@@ -213,7 +214,7 @@ router.post('/:id/notes', authenticateToken, async (req, res) => {
 // Update a note
 router.put('/:id/notes/:noteId', authenticateToken, async (req, res) => {
   try {
-    const { content, location, tags, isImportant } = req.body;
+    const { content, location, tags, isImportant, isQuote } = req.body;
     
     const bookDocument = await BookDocument.findOne({
       _id: req.params.id,
@@ -237,6 +238,7 @@ router.put('/:id/notes/:noteId', authenticateToken, async (req, res) => {
     if (location !== undefined) bookDocument.notes[noteIndex].location = location;
     if (tags !== undefined) bookDocument.notes[noteIndex].tags = tags;
     if (isImportant !== undefined) bookDocument.notes[noteIndex].isImportant = isImportant;
+    if (isQuote !== undefined) bookDocument.notes[noteIndex].isQuote = isQuote;
     
     await bookDocument.save();
     
@@ -332,6 +334,38 @@ router.get('/journal/default', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching default journal:', error);
     res.status(500).json({ message: 'Error fetching default journal' });
+  }
+});
+
+// Get all quote notes for dashboard
+router.get('/quotes/all', authenticateToken, async (req, res) => {
+  try {
+    const bookDocuments = await BookDocument.find({ userId: req.user._id });
+    
+    const allQuotes = [];
+    bookDocuments.forEach(book => {
+      const quoteNotes = book.notes.filter(note => note.isQuote);
+      quoteNotes.forEach(note => {
+        allQuotes.push({
+          id: note._id,
+          content: note.content,
+          bookTitle: book.title,
+          bookAuthor: book.author,
+          location: note.location,
+          timestamp: note.timestamp,
+          tags: note.tags,
+          isImportant: note.isImportant
+        });
+      });
+    });
+    
+    // Sort by timestamp (newest first)
+    allQuotes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    res.json(allQuotes);
+  } catch (error) {
+    console.error('Error fetching quote notes:', error);
+    res.status(500).json({ message: 'Error fetching quote notes' });
   }
 });
 
