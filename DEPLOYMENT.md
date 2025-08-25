@@ -12,6 +12,7 @@
    - `OPENAI_API_KEY` (your OpenAI API key)
    - `NODE_ENV=production`
 5. **Deploy** - Render will automatically build and deploy both services
+6. **Note**: Render now uses a starter plan ($7/month) instead of free tier
 
 ### Option 2: Railway
 1. **Sign up** at [railway.app](https://railway.app)
@@ -95,7 +96,7 @@ OPENAI_API_KEY=sk-your_openai_api_key_here
 
 ## Cost Estimation
 
-- **Render**: Free tier available, $7/month for paid plans
+- **Render**: $7/month starter plan (no more free tier)
 - **Railway**: $5/month minimum
 - **Heroku**: $7/month minimum
 - **Vercel**: Free tier available
