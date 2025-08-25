@@ -15,6 +15,7 @@ import {
   Repeat
 } from 'lucide-react';
 import axios from 'axios';
+import { buildApiUrl } from '../config';
 
 const GoalAlignedDay = () => {
   const { user } = useAuth();
@@ -26,13 +27,17 @@ const GoalAlignedDay = () => {
   const [loading, setLoading] = useState(true);
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showHabitForm, setShowHabitForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('day');
   
   // Filter states for different tabs
   const [taskFilter, setTaskFilter] = useState('daily');
   const [goalFilter, setGoalFilter] = useState('daily');
   const [habitFilter, setHabitFilter] = useState('daily');
+  
+  // State to track which hours are marked as mindful
+  const [mindfulHours, setMindfulHours] = useState(new Set());
 
   const [goalFormData, setGoalFormData] = useState({
     name: '',
@@ -47,13 +52,14 @@ const GoalAlignedDay = () => {
 
   const [taskFormData, setTaskFormData] = useState({
     title: '',
-    start: '',
-    end: '',
-    estimatedDuration: '',
-    goalIds: [],
-    mindfulRating: 3,
-    isHabit: false,
-    habitCadence: 'daily'
+    duration: '',
+    goalIds: []
+  });
+
+  const [habitFormData, setHabitFormData] = useState({
+    title: '',
+    time: '',
+    repeatFrequency: 'daily'
   });
 
   useEffect(() => {
@@ -66,31 +72,33 @@ const GoalAlignedDay = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
+      console.log('Fetching data with token:', token ? 'Token exists' : 'No token'); // Debug log
       
       const [goalsRes, metricsRes, streakRes, weeklyRes, tasksRes] = await Promise.all([
-        axios.get('/api/goals', {
+        axios.get(buildApiUrl('/api/goals'), {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get('/api/goals/today', {
+        axios.get(buildApiUrl('/api/goals/today'), {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get('/api/goals/streak', {
+        axios.get(buildApiUrl('/api/goals/streak'), {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get('/api/goals/weekly', {
+        axios.get(buildApiUrl('/api/goals/weekly'), {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get('/api/tasks', {
+        axios.get(buildApiUrl('/api/tasks'), {
           headers: { Authorization: `Bearer ${token}` },
           params: { 
-            date: new Date().toISOString().split('T')[0],
-            status: 'completed'
+            date: new Date().toISOString().split('T')[0]
           }
         })
       ]);
 
 
 
+      console.log('Goals fetched:', goalsRes.data); // Debug log
+      console.log('Metrics fetched:', metricsRes.data); // Debug log
       setGoals(goalsRes.data);
       setTodayMetrics(metricsRes.data);
       setStreakInfo(streakRes.data);
@@ -114,15 +122,20 @@ const GoalAlignedDay = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
+      console.log('Submitting goal:', goalFormData); // Debug log
       
       if (editingGoal) {
-        const response = await axios.put(`/api/goals/${editingGoal._id}`, goalFormData, {
+        console.log('Updating existing goal:', editingGoal._id); // Debug log
+        const response = await axios.put(buildApiUrl(`/api/goals/${editingGoal._id}`), goalFormData, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log('Update response:', response.data); // Debug log
       } else {
-        const response = await axios.post('/api/goals', goalFormData, {
+        console.log('Creating new goal'); // Debug log
+        const response = await axios.post(buildApiUrl('/api/goals'), goalFormData, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log('Create response:', response.data); // Debug log
       }
       
       setShowGoalForm(false);
@@ -139,6 +152,7 @@ const GoalAlignedDay = () => {
       await fetchData();
     } catch (error) {
       console.error('Error saving goal:', error);
+      console.error('Error details:', error.response?.data); // Debug log
       alert(`Error saving goal: ${error.response?.data?.message || error.message}`);
     }
   };
@@ -148,50 +162,29 @@ const GoalAlignedDay = () => {
   const handleTaskSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate habit requirements
-    if (taskFormData.isHabit && (!taskFormData.goalIds || taskFormData.goalIds.length === 0)) {
-      alert('Habits must be associated with at least one goal. Please select a goal before creating this habit.');
-      return;
-    }
-    
     try {
       const token = localStorage.getItem('token');
       
-      // Calculate duration if start/end time provided
-      let duration = taskFormData.estimatedDuration;
-      if (taskFormData.start && taskFormData.end) {
-        const start = new Date(taskFormData.start);
-        const end = new Date(taskFormData.end);
-        duration = Math.round((end - start) / (1000 * 60)); // Convert to minutes
-      }
+      // Convert hours to minutes for storage
+      const durationInMinutes = Math.round(parseFloat(taskFormData.duration) * 60);
       
       const taskData = {
         title: taskFormData.title,
-        start: taskFormData.start || undefined,
-        end: taskFormData.end || undefined,
-        estimatedDuration: duration,
+        estimatedDuration: durationInMinutes,
         goalIds: taskFormData.goalIds,
-        mindfulRating: taskFormData.mindfulRating,
-        isHabit: taskFormData.isHabit,
-        habitCadence: taskFormData.isHabit ? taskFormData.habitCadence : undefined,
         status: 'completed',
         completedAt: new Date()
       };
       
-      await axios.post('/api/tasks', taskData, {
+      await axios.post(buildApiUrl('/api/tasks'), taskData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       setShowTaskForm(false);
       setTaskFormData({
         title: '',
-        start: '',
-        end: '',
-        estimatedDuration: '',
-        goalIds: [],
-        mindfulRating: 3,
-        isHabit: false,
-        habitCadence: 'daily'
+        duration: '',
+        goalIds: []
       });
       
       // Refresh data to recalculate metrics
@@ -199,6 +192,43 @@ const GoalAlignedDay = () => {
     } catch (error) {
       console.error('Error creating task:', error);
       alert(`Error creating task: ${error.response?.data?.message || error.message}`);
+    }
+  };
+
+  const handleHabitSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Convert time to minutes (assuming time is in HH:MM format)
+      const [hours, minutes] = habitFormData.time.split(':').map(Number);
+      const durationInMinutes = hours * 60 + minutes;
+
+      const habitData = {
+        title: habitFormData.title,
+        estimatedDuration: durationInMinutes,
+        isHabit: true,
+        habitCadence: habitFormData.repeatFrequency,
+        status: 'pending'
+      };
+
+      await axios.post(buildApiUrl('/api/tasks'), habitData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setShowHabitForm(false);
+      setHabitFormData({
+        title: '',
+        time: '',
+        repeatFrequency: 'daily'
+      });
+      
+      // Refresh data to recalculate metrics
+      await fetchData();
+    } catch (error) {
+      console.error('Error creating habit:', error);
+      alert(`Error creating habit: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -245,7 +275,7 @@ const GoalAlignedDay = () => {
     if (window.confirm('Are you sure you want to delete this goal?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`/api/goals/${goalId}`, {
+        await axios.delete(buildApiUrl(`/api/goals/${goalId}`), {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchData();
@@ -263,6 +293,18 @@ const GoalAlignedDay = () => {
 
   const formatPercentage = (percentage) => {
     return `${percentage}%`;
+  };
+
+  const toggleHourMindfulness = (hour) => {
+    setMindfulHours(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(hour)) {
+        newSet.delete(hour);
+      } else {
+        newSet.add(hour);
+      }
+      return newSet;
+    });
   };
 
   const calculateMindfulnessScore = () => {
@@ -291,10 +333,10 @@ const GoalAlignedDay = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="relative w-full max-w-full overflow-x-auto"
+      className="relative w-full max-w-full overflow-x-auto space-y-6"
     >
-      {/* Header - Mission Card */}
-      <div className="bg-gray-900 border-2 border-gray-600 rounded-lg p-6 relative overflow-hidden mb-6" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+      {/* 1. MISSION CONTROL HEADER */}
+      <div className="bg-gray-900 border-2 border-gray-600 rounded-lg p-6 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
         {/* Film grain overlay */}
         <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
         
@@ -309,7 +351,7 @@ const GoalAlignedDay = () => {
             
             {/* Tabs */}
             <div className="flex space-x-0.5 bg-[#0A0C0F] p-0.5 rounded-md w-fit border border-[#2A313A]">
-              {['overview', 'tasks', 'habits', 'goals'].map((tab) => (
+              {['day', 'month', 'year'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -323,340 +365,559 @@ const GoalAlignedDay = () => {
                 </button>
               ))}
             </div>
-            
-            {/* Streak Display */}
-            <div className="flex items-center gap-2 bg-[#0A0C0F] border-2 border-[#FFD200] rounded-lg px-3 py-1.5">
-              <Flame className="text-[#FFD200]" size={16} />
-              <div className="text-center">
-                <div className="text-xs text-[#C9D1D9] font-oswald tracking-wide">STREAK</div>
-                <div className="text-sm font-bold text-[#FFD200] font-mono">
-                  {streakInfo.currentStreak || 0} days
-                </div>
-              </div>
-            </div>
           </div>
           
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowTaskForm(true)}
-              className="bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-400 flex items-center gap-1 font-oswald tracking-wide transition-colors text-sm border border-amber-400 hover:shadow-lg hover:shadow-amber-500/20"
-            >
-              <Plus size={16} />
-              ADD TASK
-            </button>
-            <button
-              onClick={() => setShowGoalForm(true)}
-              className="bg-gray-700 text-white px-3 py-1.5 rounded hover:bg-gray-600 flex items-center gap-1 font-oswald tracking-wide transition-colors text-sm border border-gray-600 hover:border-gray-500"
-            >
-              <Plus size={16} />
-              ADD GOAL
-            </button>
+          {/* Streak Display - Moved to the right */}
+          <div className="flex items-center gap-2 bg-[#0A0C0F] border-2 border-[#FFD200] rounded-lg px-3 py-1.5">
+            <Flame className="text-[#FFD200]" size={16} />
+            <div className="text-center">
+              <div className="text-xs text-[#C9D1D9] font-oswald tracking-wide">STREAK</div>
+              <div className="text-sm font-bold text-[#FFD200] font-mono">
+                {streakInfo.currentStreak || 0} days
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* 2. MISSION TIMELINE */}
+      <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+        {/* Film grain overlay */}
+        <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+        
+        {/* Reason Strip */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] via-[#3EA6FF] to-[#FFD200]"></div>
+        
+        <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">MISSION TIMELINE</h3>
+        <p className="text-sm text-[#C9D1D9] mb-4 text-center font-inter">
+          Each hour shows one status: Mindful, Not Mindful, or No activity
+        </p>
+        
+        {/* Day Summary Stats */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#FFD200] rounded-lg">
+            <p className="text-lg font-bold text-[#FFD200] font-mono">
+              {mindfulHours.size}
+            </p>
+            <p className="text-xs text-[#FFD200]/80 font-oswald tracking-wide">MINDFUL HOURS</p>
+          </div>
+          <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3EA6FF] rounded-lg">
+            <p className="text-lg font-bold text-[#3EA6FF] font-mono">
+              {24 - mindfulHours.size}
+            </p>
+            <p className="text-xs text-[#3EA6FF]/80 font-oswald tracking-wide">NOT MINDFUL HOURS</p>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          {/* Instructions */}
+          <div className="text-center mb-4">
+            <p className="text-sm text-[#C9D1D9] font-inter">
+              💡 Click on any hour rectangle to toggle between mindful (yellow) and not mindful (blue)
+            </p>
+          </div>
+          
+          {/* 24-Hour Strip */}
+          <div className="flex flex-wrap justify-center gap-1 max-w-4xl mx-auto">
+            {Array.from({ length: 24 }, (_, hour) => {
+              const hourStart = new Date();
+              hourStart.setHours(hour, 0, 0, 0);
+              const hourEnd = new Date(hourStart);
+              hourEnd.setHours(hour + 1, 0, 0, 0);
+              
+              // Check if this hour has any activity
+              const hasActivity = todayTasks.some(task => {
+                if (!task.completedAt) return false;
+                const taskTime = new Date(task.completedAt);
+                return taskTime >= hourStart && taskTime < hourEnd;
+              });
+              
+              // Check if this hour is marked as mindful
+              const isMindful = mindfulHours.has(hour);
+              
+              let color = 'bg-[#3EA6FF]'; // Default: Not mindful (blue)
+              let status = 'Not Mindful';
+              
+              if (isMindful) {
+                color = 'bg-[#FFD200]'; // Mindful (yellow)
+                status = 'Mindful';
+              }
+              
+              // Format hour for display
+              const displayHour = hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
+              
+              // Get tasks for this hour
+              const hourTasks = todayTasks.filter(task => {
+                if (!task.completedAt) return false;
+                const taskTime = new Date(task.completedAt);
+                return taskTime >= hourStart && taskTime < hourEnd;
+              });
+              
+              // Build detailed tooltip content
+              let tooltipContent = `${displayHour}\n${status}`;
+              if (hourTasks.length > 0) {
+                tooltipContent += `\n\nTasks:`;
+                hourTasks.forEach((task, index) => {
+                  const taskTime = new Date(task.completedAt);
+                  const timeStr = taskTime.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                  });
+                  const goalNames = task.goalIds && task.goalIds.length > 0 
+                    ? task.goalIds.map(goalId => {
+                        const goal = goals.find(g => g._id === goalId);
+                        return goal ? goal.name : 'Unknown Goal';
+                      }).join(', ')
+                    : 'No Goal';
+                  const mindfulText = task.mindfulRating >= 3 ? '✓ Mindful' : '✗ Not Mindful';
+                  
+                  tooltipContent += `\n${index + 1}. ${task.title}`;
+                  tooltipContent += `\n   Time: ${timeStr}`;
+                  tooltipContent += `\n   Goal: ${goalNames}`;
+                  tooltipContent += `\n   ${mindfulText}`;
+                  if (task.isHabit) {
+                    tooltipContent += `\n   Habit: ${task.habitCadence}`;
+                  }
+                  tooltipContent += `\n`;
+                });
+              }
+              
+              return (
+                <div key={hour} className="flex flex-col items-center group relative">
+                  <div 
+                    onClick={() => toggleHourMindfulness(hour)}
+                    className={`w-5 h-6 sm:w-6 sm:h-8 rounded-sm ${color} transition-all duration-300 hover:scale-125 cursor-pointer shadow-sm`}
+                  />
+                  <span className="text-xs text-[#C9D1D9] mt-1 group-hover:text-[#FFD200] transition-colors font-mono">
+                    {hour === 0 ? '12' : hour > 12 ? hour - 12 : hour}
+                  </span>
+                  
+                  {/* Custom Tooltip */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-[#0A0C0F] border-2 border-[#2A313A] rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 max-w-xs whitespace-pre-line text-left">
+                    <div className="text-[#E8EEF2] text-xs font-inter">
+                      <div className="font-oswald tracking-wide text-[#FFD200] mb-1">{displayHour}</div>
+                      <div className="text-[#C9D1D9] mb-2">{status}</div>
+                      
+                      {hourTasks.length > 0 && (
+                        <div>
+                          <div className="text-[#3CCB7F] font-oswald tracking-wide mb-1">TASKS:</div>
+                          {hourTasks.map((task, index) => (
+                            <div key={index} className="mb-2 p-2 bg-[#11151A] rounded border border-[#2A313A]">
+                              <div className="font-medium text-[#E8EEF2] mb-1">{task.title}</div>
+                              <div className="text-[#C9D1D9] text-xs space-y-1">
+                                <div>Time: {new Date(task.completedAt).toLocaleTimeString('en-US', { 
+                                  hour: 'numeric', 
+                                  minute: '2-digit',
+                                  hour12: true 
+                                })}</div>
+                                <div>Goal: {task.goalIds && task.goalIds.length > 0 
+                                  ? task.goalIds.map(goalId => {
+                                      const goal = goals.find(g => g._id === goalId);
+                                      return goal ? goal.name : 'Unknown Goal';
+                                    }).join(', ')
+                                  : 'No Goal'
+                                }</div>
+                                <div className={task.mindfulRating >= 3 ? 'text-[#3CCB7F]' : 'text-[#D64545]'}>
+                                  {task.mindfulRating >= 3 ? '✓ Mindful' : '✗ Not Mindful'}
+                                </div>
+                                {task.isHabit && (
+                                  <div className="text-[#FFD200]">Habit: {task.habitCadence}</div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Tooltip Arrow */}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#0A0C0F]"></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Legend */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm max-w-4xl mx-auto">
+            <div className="flex items-center space-x-2 justify-center">
+              <div className="w-3 h-3 rounded-sm bg-[#FFD200]"></div>
+              <span className="text-[#C9D1D9] text-xs sm:text-sm font-inter">Mindful</span>
+            </div>
+            <div className="flex items-center space-x-2 justify-center">
+              <div className="w-3 h-3 rounded-sm bg-[#3EA6FF]"></div>
+              <span className="text-[#C9D1D9] text-xs sm:text-sm font-inter">Not Mindful</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. DAY GOAL CARD */}
+      <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+            {/* Film grain overlay */}
+            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+            
+            {/* Reason Strip */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] via-[#3EA6FF] to-[#3CCB7F]"></div>
+            
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-[#E8EEF2] font-oswald tracking-wide">DAY GOAL</h2>
+              <button 
+                onClick={() => setShowGoalForm(true)}
+                className="text-xs bg-[#3CCB7F] text-[#0A0C0F] px-3 py-1.5 rounded hover:bg-[#2FB86B] transition-colors font-oswald tracking-wide"
+              >
+                SET GOAL
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              {goals.slice(0, 3).map((goal) => {
+                const goalHours = goal.targetHours || 0;
+                const completedHours = todayTasks
+                  .filter(task => 
+                    task.goalIds && 
+                    task.goalIds.includes(goal._id) && 
+                    task.completedAt
+                  )
+                  .reduce((total, task) => {
+                    const duration = task.estimatedDuration ? 
+                      parseFloat(task.estimatedDuration) / 60 : 0; // Convert minutes to hours
+                    return total + duration;
+                  }, 0);
+                
+                const percentage = goalHours > 0 ? Math.min((completedHours / goalHours) * 100, 100) : 0;
+                
+                return (
+                  <div key={goal._id} className="p-4 bg-gradient-to-br from-[#0A0C0F] to-[#11151A] border-2 border-[#2A313A] rounded-xl group relative overflow-hidden shadow-lg hover:shadow-xl hover:border-[#3EA6FF]/30 transition-all duration-300">
+                    {/* Subtle background pattern */}
+                    <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+                    
+                    {/* Header with goal name and indicator */}
+                    <div className="flex items-center justify-between mb-4 relative z-10">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-4 h-4 rounded-full shadow-lg" style={{ backgroundColor: goal.color }}></div>
+                        <span className="text-base font-semibold text-[#E8EEF2] font-oswald tracking-wide">{goal.name}</span>
+                      </div>
+                      
+                      {/* Action buttons - visible on hover */}
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-2">
+                        <button
+                          onClick={() => {
+                            setTaskFormData({
+                              ...taskFormData,
+                              goalIds: [goal._id]
+                            });
+                            setShowTaskForm(true);
+                          }}
+                          className="p-2 bg-[#3CCB7F]/20 backdrop-blur-sm text-[#3CCB7F] rounded-lg hover:bg-[#3CCB7F] hover:text-[#0A0C0F] transition-all duration-200 shadow-lg"
+                          title="Add task for this goal"
+                        >
+                          <Plus size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleEditGoal(goal)}
+                          className="p-2 bg-[#2A313A]/80 backdrop-blur-sm text-[#C9D1D9] rounded-lg hover:bg-[#3A414A] hover:text-[#E8EEF2] transition-all duration-200 shadow-lg"
+                          title="Edit goal"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Hours display with better typography */}
+                    <div className="text-center mb-4 relative z-10">
+                      <div className="mb-2">
+                        <p className="text-2xl font-bold text-[#FFD200] font-mono mb-1">
+                          {completedHours.toFixed(1)}h
+                        </p>
+                        <p className="text-sm text-[#C9D1D9] font-inter">
+                          of {goalHours}h target
+                        </p>
+                        <p className="text-xs text-[#C9D1D9] font-mono mt-1">
+                          {percentage.toFixed(0)}% complete
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Enhanced Circular Progress Indicator */}
+                    <div className="flex justify-center mb-4 relative z-10">
+                      <div className="relative w-20 h-20">
+                        <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+                          {/* Background circle with subtle glow */}
+                          <defs>
+                            <filter id={`glow-${goal._id}`}>
+                              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                              <feMerge> 
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                              </feMerge>
+                            </filter>
+                          </defs>
+                          
+                          {/* Background circle */}
+                          <path
+                            d="M18 2.0845
+                              a 15.9155 15.9155 0 0 1 0 31.831
+                              a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="#2A313A"
+                            strokeWidth="2.5"
+                          />
+                          {/* Progress circle with glow effect */}
+                          <path
+                            d="M18 2.0845
+                              a 15.9155 15.9155 0 0 1 0 31.831
+                              a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke={goal.color}
+                            strokeWidth="2.5"
+                            strokeDasharray={`${percentage * 1.01}, 100`}
+                            strokeLinecap="round"
+                            className="transition-all duration-500 ease-out"
+                            filter={`url(#glow-${goal._id})`}
+                          />
+                        </svg>
+                        {/* Percentage text in center */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-sm font-bold text-[#E8EEF2] font-mono">
+                            {percentage.toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Enhanced Status and Remaining Amount */}
+                    <div className="space-y-3 relative z-10">
+                      {/* Status Badge */}
+                      <div className="text-center">
+                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold font-oswald tracking-wide shadow-lg ${
+                          percentage >= 100 
+                            ? 'bg-gradient-to-r from-[#3CCB7F] to-[#2FB86B] text-white' 
+                            : 'bg-gradient-to-r from-[#2A313A] to-[#3A414A] text-[#C9D1D9]'
+                        }`}>
+                          {percentage >= 100 
+                            ? '🎯 GOAL ACHIEVED' 
+                            : '⏳ IN PROGRESS'
+                          }
+                        </span>
+                      </div>
+                      
+                      {/* Remaining Hours */}
+                      {percentage < 100 && (
+                        <div className="text-center">
+                          <div className="bg-[#2A313A]/50 backdrop-blur-sm rounded-lg p-2 border border-[#3EA6FF]/20">
+                            <p className="text-xs text-[#C9D1D9] font-inter mb-1">Remaining</p>
+                            <p className="text-sm font-semibold text-[#3CCB7F] font-mono">
+                              {(goalHours - completedHours).toFixed(1)}h
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Add Task Button */}
+                      <div className="text-center mt-3">
+                        <button
+                          onClick={() => {
+                            setTaskFormData({
+                              ...taskFormData,
+                              goalIds: [goal._id]
+                            });
+                            setShowTaskForm(true);
+                          }}
+                          className="w-full py-2 px-3 bg-[#3CCB7F] text-[#0A0C0F] rounded-lg hover:bg-[#2FB86B] transition-colors duration-200 font-oswald tracking-wide text-sm shadow-lg"
+                        >
+                          + Add Task
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {goals.length === 0 && (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-[#2A313A] rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <Target className="text-[#C9D1D9]" size={24} />
+                </div>
+                <h4 className="text-md font-semibold text-[#E8EEF2] mb-2 font-oswald tracking-wide">NO GOALS SET YET</h4>
+                <p className="text-[#C9D1D9] font-inter text-sm">Set your first goal to start tracking your daily progress</p>
+              </div>
+            )}
+            
+            {/* Goal Progress Summary */}
+            {goals.length > 0 && (
+              <div className="mt-6 p-4 bg-[#0A0C0F] border border-[#2A313A] rounded-lg">
+                <h4 className="text-sm font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide text-center">DAILY PROGRESS SUMMARY</h4>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <p className="text-lg font-bold text-[#3CCB7F] font-mono">
+                      {goals.reduce((total, goal) => {
+                        const goalHours = goal.targetHours || 0;
+                        const completedHours = todayTasks
+                          .filter(task => 
+                            task.goalIds && 
+                            task.goalIds.includes(goal._id) && 
+                            task.completedAt
+                          )
+                          .reduce((total, task) => {
+                            const duration = task.estimatedDuration ? 
+                              parseFloat(task.estimatedDuration) / 60 : 0;
+                            return total + duration;
+                          }, 0);
+                        return total + completedHours;
+                      }, 0).toFixed(1)}h
+                    </p>
+                    <p className="text-xs text-[#C9D1D9] font-inter">Total Hours Completed</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-[#FFD200] font-mono">
+                      {goals.reduce((total, goal) => total + (goal.targetHours || 0), 0).toFixed(1)}h
+                    </p>
+                    <p className="text-xs text-[#C9D1D9] font-inter">Total Target Hours</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+
+
       {/* Tab Content */}
-      {activeTab === 'overview' && (
+      {activeTab === 'day' && (
         <>
 
           
 
 
-          {/* 24-Hour Visual Strip - Progress Rings */}
-          {todayMetrics && (
-            <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden mb-8" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-              {/* Film grain overlay */}
-              <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-              
-              {/* Reason Strip */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] via-[#3EA6FF] to-[#FFD200]"></div>
-              
-              <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">MISSION TIMELINE</h3>
-              <p className="text-sm text-[#C9D1D9] mb-4 text-center font-inter">
-                Each hour shows one status: Goal-aligned + Mindful, Goal-aligned only, Mindful only, Not Mindful/Not Goal-Oriented, or No activity
-              </p>
-              
-              {/* Day Summary Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3CCB7F] rounded-lg">
-                  <p className="text-lg font-bold text-[#3CCB7F] font-mono">
-                    {todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      const hour = taskTime.getHours();
-                      return hour >= 0 && hour < 24;
-                    }).filter(task => task.goalIds && task.goalIds.length > 0 && task.mindfulRating >= 4).length}
-                  </p>
-                  <p className="text-xs text-[#3CCB7F]/80 font-oswald tracking-wide">PERFECT HOURS</p>
+
+
+
+
+          {/* Daily Habits Overview */}
+          <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden mb-8" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+            {/* Film grain overlay */}
+            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+            
+            {/* Reason Strip */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] to-[#3CCB7F]"></div>
+            
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-[#E8EEF2] font-oswald tracking-wide">DAILY HABITS</h3>
+              <div className="flex items-center space-x-4">
+                <div className="text-xs text-[#C9D1D9] font-inter">
+                  {todayTasks.filter(task => task.isHabit).length} habits today
                 </div>
-                <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3EA6FF] rounded-lg">
-                  <p className="text-lg font-bold text-[#3EA6FF] font-mono">
-                    {todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      const hour = taskTime.getHours();
-                      return hour >= 0 && hour < 24;
-                    }).filter(task => task.goalIds && task.goalIds.length > 0 && task.mindfulRating < 4).length}
-                  </p>
-                  <p className="text-xs text-[#3EA6FF]/80 font-oswald tracking-wide">GOAL-ALIGNED</p>
-                </div>
-                <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#FFD200] rounded-lg">
-                  <p className="text-lg font-bold text-[#FFD200] font-mono">
-                    {todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      const hour = taskTime.getHours();
-                      return hour >= 0 && hour < 24;
-                    }).filter(task => (!task.goalIds || task.goalIds.length === 0) && task.mindfulRating >= 4).length}
-                  </p>
-                  <p className="text-xs text-[#FFD200]/80 font-oswald tracking-wide">MINDFUL</p>
-                </div>
-                <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#D64545] rounded-lg">
-                  <p className="text-lg font-bold text-[#D64545] font-mono">
-                    {todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      const hour = taskTime.getHours();
-                      return hour >= 0 && hour < 24;
-                    }).filter(task => (!task.goalIds || task.goalIds.length === 0) && task.mindfulRating < 4).length}
-                  </p>
-                  <p className="text-xs text-[#D64545]/80 font-oswald tracking-wide">NOT MINDFUL, NOT GOAL-ORIENTED</p>
-                </div>
+                <button
+                  onClick={() => setShowHabitForm(true)}
+                  className="bg-[#3CCB7F] text-[#0A0C0F] px-3 py-2 rounded-lg hover:bg-[#2FB86B] transition-colors text-sm font-medium font-oswald tracking-wide"
+                >
+                  ADD HABIT
+                </button>
               </div>
-              
-              <div className="space-y-4">
-                {/* 24-Hour Strip */}
-                <div className="flex flex-wrap justify-center gap-1 max-w-4xl mx-auto">
-                  {Array.from({ length: 24 }, (_, hour) => {
-                    const hourStart = new Date();
-                    hourStart.setHours(hour, 0, 0, 0);
-                    const hourEnd = new Date(hourStart);
-                    hourEnd.setHours(hour + 1, 0, 0, 0);
+            </div>
+            
+            {todayTasks.filter(task => task.isHabit).length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {todayTasks.filter(task => task.isHabit).map((habit) => (
+                  <div key={habit._id} className="bg-[#0A0C0F] border-2 border-[#2A313A] rounded-lg p-4 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+                    <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
                     
-                    // Check if this hour has any activity
-                    const hasActivity = todayTasks.some(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      return taskTime >= hourStart && taskTime < hourEnd;
-                    });
-                    
-                    // Check if this hour has goal-aligned activity
-                    const hasGoalAligned = todayTasks.some(task => {
-                      if (!task.completedAt || !task.goalIds || task.goalIds.length === 0) return false;
-                      const taskTime = new Date(task.completedAt);
-                      return taskTime >= hourStart && taskTime < hourEnd;
-                    });
-                    
-                    // Check if this hour has mindful activity
-                    const hasMindful = todayTasks.some(task => {
-                      if (!task.completedAt || !task.mindfulRating || task.mindfulRating < 4) return false;
-                      const taskTime = new Date(task.completedAt);
-                      return taskTime >= hourStart && taskTime < hourEnd;
-                    });
-                    
-                    let color = 'bg-[#2A313A]'; // No activity
-                    let status = 'No activity';
-                    
-                    if (hasActivity) {
-                      if (hasGoalAligned && hasMindful) {
-                        color = 'bg-[#3CCB7F]'; // Goal-aligned + Mindful
-                        status = 'Goal-aligned + Mindful';
-                      } else if (hasGoalAligned) {
-                        color = 'bg-[#3EA6FF]'; // Only Goal-aligned
-                        status = 'Goal-aligned';
-                      } else if (hasMindful) {
-                        color = 'bg-[#FFD200]'; // Only Mindful
-                        status = 'Mindful';
-                      } else {
-                        color = 'bg-[#D64545]'; // Not mindful, not goal-oriented
-                        status = 'Not Mindful, Not Goal-Oriented';
-                      }
-                    }
-                    
-                    // Format hour for display
-                    const displayHour = hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
-                    
-                    // Get tasks for this hour
-                    const hourTasks = todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      return taskTime >= hourStart && taskTime < hourEnd;
-                    });
-                    
-                    // Build detailed tooltip content
-                    let tooltipContent = `${displayHour}\n${status}`;
-                    if (hourTasks.length > 0) {
-                      tooltipContent += `\n\nTasks:`;
-                      hourTasks.forEach((task, index) => {
-                        const taskTime = new Date(task.completedAt);
-                        const timeStr = taskTime.toLocaleTimeString('en-US', { 
-                          hour: 'numeric', 
-                          minute: '2-digit',
-                          hour12: true 
-                        });
-                        const goalNames = task.goalIds && task.goalIds.length > 0 
-                          ? task.goalIds.map(goalId => {
-                              const goal = goals.find(g => g._id === goalId);
-                              return goal ? goal.name : 'Unknown Goal';
-                            }).join(', ')
-                          : 'No Goal';
-                        const mindfulText = task.mindfulRating >= 4 ? '✓ Mindful' : '✗ Not Mindful';
-                        
-                        tooltipContent += `\n${index + 1}. ${task.title}`;
-                        tooltipContent += `\n   Time: ${timeStr}`;
-                        tooltipContent += `\n   Goal: ${goalNames}`;
-                        tooltipContent += `\n   ${mindfulText}`;
-                        if (task.isHabit) {
-                          tooltipContent += `\n   Habit: ${task.habitCadence}`;
-                        }
-                        tooltipContent += `\n`;
-                      });
-                    }
-                    
-                    return (
-                      <div key={hour} className="flex flex-col items-center group relative">
-                        <div 
-                          className={`w-5 h-6 sm:w-6 sm:h-8 rounded-sm ${color} transition-all duration-300 hover:scale-125 cursor-pointer shadow-sm`}
-                        />
-                        <span className="text-xs text-[#C9D1D9] mt-1 group-hover:text-[#FFD200] transition-colors font-mono">
-                          {hour === 0 ? '12' : hour > 12 ? hour - 12 : hour}
-                        </span>
-                        
-                        {/* Custom Tooltip */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-[#0A0C0F] border-2 border-[#2A313A] rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 max-w-xs whitespace-pre-line text-left">
-                          <div className="text-[#E8EEF2] text-xs font-inter">
-                            <div className="font-oswald tracking-wide text-[#FFD200] mb-1">{displayHour}</div>
-                            <div className="text-[#C9D1D9] mb-2">{status}</div>
-                            
-                            {hourTasks.length > 0 && (
-                              <div>
-                                <div className="text-[#3CCB7F] font-oswald tracking-wide mb-1">TASKS:</div>
-                                {hourTasks.map((task, index) => (
-                                  <div key={index} className="mb-2 p-2 bg-[#11151A] rounded border border-[#2A313A]">
-                                    <div className="font-medium text-[#E8EEF2] mb-1">{task.title}</div>
-                                    <div className="text-[#C9D1D9] text-xs space-y-1">
-                                      <div>Time: {new Date(task.completedAt).toLocaleTimeString('en-US', { 
-                                        hour: 'numeric', 
-                                        minute: '2-digit',
-                                        hour12: true 
-                                      })}</div>
-                                      <div>Goal: {task.goalIds && task.goalIds.length > 0 
-                                        ? task.goalIds.map(goalId => {
-                                            const goal = goals.find(g => g._id === goalId);
-                                            return goal ? goal.name : 'Unknown Goal';
-                                          }).join(', ')
-                                        : 'No Goal'
-                                      }</div>
-                                      <div className={task.mindfulRating >= 4 ? 'text-[#3CCB7F]' : 'text-[#D64545]'}>
-                                        {task.mindfulRating >= 4 ? '✓ Mindful' : '✗ Not Mindful'}
-                                      </div>
-                                      {task.isHabit && (
-                                        <div className="text-[#FFD200]">Habit: {task.habitCadence}</div>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Tooltip Arrow */}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#0A0C0F]"></div>
-                        </div>
+                    {/* Habit Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <Repeat className="text-[#FFD200]" size={16} />
+                        <h5 className="font-semibold text-[#E8EEF2] font-oswald tracking-wide">{habit.title}</h5>
                       </div>
-                    );
-                  })}
-                </div>
-                
-                {/* Legend */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 text-sm max-w-4xl mx-auto">
-                  <div className="flex items-center space-x-2 justify-center">
-                    <div className="w-3 h-3 rounded-sm bg-[#3CCB7F]"></div>
-                    <span className="text-[#C9D1D9] text-xs sm:text-sm font-inter">Goal + Mindful</span>
-                  </div>
-                  <div className="flex items-center space-x-2 justify-center">
-                    <div className="w-3 h-3 rounded-sm bg-[#3EA6FF]"></div>
-                    <span className="text-[#C9D1D9] text-xs sm:text-sm font-inter">Goal-aligned</span>
-                  </div>
-                  <div className="flex items-center space-x-2 justify-center">
-                    <div className="w-3 h-3 rounded-sm bg-[#FFD200]"></div>
-                    <span className="text-[#C9D1D9] text-xs sm:text-sm font-inter">Mindful</span>
-                  </div>
-                  <div className="flex items-center space-x-2 justify-center">
-                    <div className="w-3 h-3 rounded-sm bg-[#D64545]"></div>
-                    <span className="text-[#C9D1D9] text-xs sm:text-sm font-inter">Not Mindful, Not Goal-Oriented</span>
-                  </div>
-                  <div className="flex items-center space-x-2 justify-center">
-                    <div className="w-3 h-3 rounded-sm bg-[#2A313A]"></div>
-                    <span className="text-[#C9D1D9] text-xs sm:text-sm font-inter">No activity</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Weekly Progress */}
-          {weeklyData && weeklyData.length > 0 && (
-            <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden mb-8" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-              {/* Film grain overlay */}
-              <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-              
-              {/* Reason Strip */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] via-[#FFD200] to-[#3EA6FF]"></div>
-              
-              <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">WEEKLY PROGRESS</h3>
-              <div className="grid grid-cols-7 gap-2">
-                {weeklyData.map((day, index) => (
-                  <div key={index} className="text-center">
-                    <p className="text-xs text-[#C9D1D9] mb-1 font-inter">
-                      {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
-                    </p>
-                    <div 
-                      className={`w-8 h-8 rounded-full mx-auto flex items-center justify-center text-xs font-medium font-mono ${
-                        day.score24 >= 8 
-                          ? 'bg-[#3CCB7F] text-[#0A0C0F]' 
-                          : day.score24 >= 4 
-                          ? 'bg-[#FFD200] text-[#0A0C0F]'
-                          : 'bg-[#2A313A] text-[#C9D1D9]'
-                      }`}
-                    >
-                      {day.score24.toFixed(1)}
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-[#C9D1D9] font-inter">{habit.habitCadence || 'daily'}</span>
+                        <div className={`w-3 h-3 rounded-full ${habit.completedAt ? 'bg-[#3CCB7F]' : 'bg-[#2A313A] border border-[#3CCB7F]'}`}></div>
+                      </div>
                     </div>
+                    
+                    {/* Weekly Progress */}
+                    <div className="mb-4">
+                      <p className="text-xs text-[#3CCB7F] mb-2 font-oswald tracking-wide">THIS WEEK:</p>
+                      <div className="flex space-x-1">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
+                          const isToday = index === new Date().getDay();
+                          const isCompleted = habit.completedAt && 
+                            new Date(habit.completedAt).toDateString() === new Date().toDateString();
+                          
+                          return (
+                            <div
+                              key={day}
+                              className={`w-6 h-6 rounded-full text-xs font-medium flex items-center justify-center font-mono ${
+                                isToday && isCompleted
+                                  ? 'bg-[#3CCB7F] text-[#0A0C0F]'
+                                  : isToday
+                                  ? 'bg-[#2A313A] text-[#3CCB7F] border-2 border-[#3CCB7F]'
+                                  : isCompleted
+                                  ? 'bg-[#2A313A] text-[#3CCB7F]'
+                                  : 'bg-[#2A313A] text-[#C9D1D9]'
+                              }`}
+                              title={`${day}: ${isCompleted ? 'Completed' : 'Not completed'}`}
+                            >
+                              {day.charAt(0)}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Habit Stats */}
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[#C9D1D9] font-inter">Duration:</span>
+                        <span className="text-[#FFD200] font-mono">{formatTime(habit.estimatedDuration || 25)}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[#C9D1D9] font-inter">Status:</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-oswald tracking-wide ${
+                          habit.completedAt 
+                            ? 'bg-[#3CCB7F] text-[#0A0C0F]' 
+                            : 'bg-[#2A313A] text-[#C9D1D9] border border-[#3CCB7F]'
+                        }`}>
+                          {habit.completedAt ? 'Completed' : 'Pending'}
+                        </span>
+                      </div>
+                      
+                      {habit.goalIds && habit.goalIds.length > 0 && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[#C9D1D9] font-inter">Goal:</span>
+                          <span className="text-[#3CCB7F] font-inter">
+                            {goals.find(g => g._id === habit.goalIds[0])?.name || 'Unknown Goal'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Quick Complete Button */}
+                    {!habit.completedAt && (
+                      <div className="pt-3 border-t border-[#2A313A]">
+                        <button
+                          onClick={() => handleQuickCompleteHabit(habit)}
+                          className="w-full bg-[#3CCB7F] text-[#0A0C0F] px-3 py-2 rounded-lg hover:bg-[#2FB86B] transition-colors text-sm font-medium font-oswald tracking-wide"
+                        >
+                          MARK AS COMPLETE
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Goal Breakdown */}
-          {todayMetrics && todayMetrics.goalBreakdown && todayMetrics.goalBreakdown.length > 0 && (
-            <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden mb-8" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-              {/* Film grain overlay */}
-              <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-              
-              {/* Reason Strip */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3EA6FF] to-[#3CCB7F]"></div>
-              
-              <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">GOAL BREAKDOWN</h3>
-              <div className="space-y-3">
-                {todayMetrics.goalBreakdown.map((goal, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-[#0A0C0F] border border-[#2A313A] rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div 
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: goal.goalColor }}
-                      ></div>
-                      <span className="font-medium text-[#E8EEF2] font-oswald tracking-wide">{goal.goalName}</span>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-[#FFD200] font-mono">{formatTime(goal.minutes)}</p>
-                      <p className="text-xs text-[#C9D1D9] font-inter">{formatPercentage(goal.percentage)}</p>
-                    </div>
-                  </div>
-                ))}
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-[#2A313A] rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <Repeat className="text-[#C9D1D9]" size={24} />
+                </div>
+                <h5 className="text-md font-semibold text-[#E8EEF2] mb-2 font-oswald tracking-wide">NO HABITS SET</h5>
+                <p className="text-[#C9D1D9] font-inter text-sm">Create habits to build consistent daily routines</p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
 
 
@@ -713,8 +974,8 @@ const GoalAlignedDay = () => {
         </>
       )}
 
-      {/* Tasks Tab */}
-      {activeTab === 'tasks' && (
+      {/* Month Tab */}
+      {activeTab === 'month' && (
         <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
           {/* Film grain overlay */}
           <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
@@ -846,363 +1107,133 @@ const GoalAlignedDay = () => {
         </div>
       )}
 
-      {/* Habits Tab */}
-      {activeTab === 'habits' && (
+      {/* Year Tab */}
+      {activeTab === 'year' && (
         <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
           {/* Film grain overlay */}
           <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
           
           {/* Reason Strip */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] to-[#3EA6FF]"></div>
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] to-[#3CCB7F]"></div>
           
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-[#E8EEF2] font-oswald tracking-wide">HABIT TRACKING</h3>
-            <button
-              onClick={() => setShowTaskForm(true)}
-              className="bg-[#FFD200] text-[#0A0C0F] px-4 py-2 rounded-lg hover:bg-[#FFD200]/90 transition-colors font-medium font-oswald tracking-wide"
-            >
-              ADD HABIT
-            </button>
-          </div>
-          
-          {/* Time Filter */}
-          <div className="bg-[#0A0C0F] border-2 border-[#2A313A] rounded-lg p-4 mb-6 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] to-[#3EA6FF]"></div>
-            
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-sm font-semibold text-[#E8EEF2] font-oswald tracking-wide">TIME PERIOD</h4>
-              <div className="text-xs text-[#C9D1D9] font-inter">
-                {habitFilter === 'daily' ? 'Today' : habitFilter === 'weekly' ? 'This Week' : 'This Month'}
-              </div>
-            </div>
-            
-            <div className="flex space-x-2">
-              {['daily', 'weekly', 'monthly'].map((period) => (
-                <button
-                  key={period}
-                  onClick={() => setHabitFilter(period)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium font-oswald tracking-wide transition-all ${
-                    habitFilter === period
-                      ? 'bg-[#FFD200] text-[#0A0C0F] shadow-lg'
-                      : 'bg-[#2A313A] text-[#C9D1D9] border border-[#2A313A] hover:border-[#FFD200]/50'
-                  }`}
-                >
-                  {period.charAt(0).toUpperCase() + period.slice(1)}
-                </button>
-              ))}
+            <h3 className="text-lg font-semibold text-[#E8EEF2] font-oswald tracking-wide">YEARLY OVERVIEW</h3>
+            <div className="text-xs text-[#C9D1D9] font-inter">
+              {new Date().getFullYear()} Progress
             </div>
           </div>
           
-          {goals && goals.length > 0 ? (
-            <div className="space-y-6">
-              {goals.map((goal) => {
-                const goalHabits = todayTasks.filter(task => 
-                  task.isHabit && 
-                  task.goalIds && 
-                  task.goalIds.includes(goal._id)
-                );
-                
-                if (goalHabits.length === 0) return null;
-                
-                return (
-                  <div key={goal._id} className="bg-[#0A0C0F] border-2 border-[#2A313A] rounded-lg p-4 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-                    <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-                    
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div 
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: goal.color }}
-                      ></div>
-                      <h4 className="font-semibold text-[#E8EEF2] font-oswald tracking-wide">{goal.name}</h4>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {goalHabits.map((habit) => (
-                        <div key={habit._id} className="bg-[#11151A] border-2 border-[#3CCB7F] rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-3">
-                              <span className="font-medium text-[#E8EEF2] font-oswald tracking-wide">{habit.title}</span>
-                              <span className="text-xs text-[#3CCB7F] bg-[#2A313A] px-2 py-1 rounded-full font-oswald tracking-wide">
-                                {habit.habitCadence} HABIT
-                              </span>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                              <span className="text-sm text-[#FFD200] font-mono">
-                                {formatTime(habit.estimatedDuration || 25)}
-                              </span>
-                              <div className="flex items-center space-x-1">
-                                <Flame className="text-[#FFD200]" size={14} />
-                                <span className="text-xs text-[#C9D1D9] font-inter">
-                                  {habit.completedAt ? 'Today' : 'Not done'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Weekly Habit Tracker */}
-                          <div className="mb-3">
-                            <p className="text-sm text-[#3CCB7F] mb-2 font-oswald tracking-wide">THIS WEEK:</p>
-                            <div className="flex space-x-1">
-                              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
-                                const isToday = index === new Date().getDay();
-                                const isCompleted = habit.completedAt && 
-                                  new Date(habit.completedAt).toDateString() === new Date().toDateString();
-                                
-                                return (
-                                  <button
-                                    key={day}
-                                    className={`w-8 h-8 rounded-full text-xs font-medium transition-colors font-mono ${
-                                      isToday && isCompleted
-                                        ? 'bg-[#3CCB7F] text-[#0A0C0F]'
-                                        : isToday
-                                        ? 'bg-[#2A313A] text-[#3CCB7F] border-2 border-[#3CCB7F]'
-                                        : isCompleted
-                                        ? 'bg-[#2A313A] text-[#3CCB7F]'
-                                        : 'bg-[#2A313A] text-[#C9D1D9] hover:border-[#3CCB7F]/50'
-                                    }`}
-                                    title={`${day}: ${isCompleted ? 'Completed' : 'Not completed'}`}
-                                  >
-                                    {day.charAt(0)}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-[#C9D1D9] font-inter">MINDFUL:</span>
-                              {[1, 2, 3, 4, 5].map((rating) => (
-                                <Star
-                                  key={rating}
-                                  size={12}
-                                  className={`${
-                                    rating <= (habit.mindfulRating || 3)
-                                      ? 'text-[#FFD200] fill-current'
-                                      : 'text-[#2A313A]'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            
-                            <span className="text-[#C9D1D9] font-inter">
-                              {habit.completedAt ? (
-                                `Completed at ${new Date(habit.completedAt).toLocaleTimeString()}`
-                              ) : (
-                                'Not completed today'
-                              )}
-                            </span>
-                          </div>
-                          
-                          {/* Quick Complete Button */}
-                          {!habit.completedAt && (
-                            <div className="mt-3 pt-3 border-t border-[#2A313A]">
-                              <button
-                                onClick={() => handleQuickCompleteHabit(habit)}
-                                className="w-full bg-[#3CCB7F] text-[#0A0C0F] px-3 py-2 rounded-lg hover:bg-[#3CCB7F]/90 transition-colors text-sm font-medium font-oswald tracking-wide"
-                              >
-                                MARK AS COMPLETE
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-[#2A313A] rounded-full mx-auto mb-4 flex items-center justify-center">
+              <Calendar className="text-[#C9D1D9]" size={24} />
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-[#C9D1D9] font-inter">No habits found</p>
-              <p className="text-sm text-[#C9D1D9]/80 font-inter">Create a goal first, then add habits to track your progress!</p>
-            </div>
-          )}
+            <h4 className="text-md font-semibold text-[#E8EEF2] mb-2 font-oswald tracking-wide">YEARLY FEATURES COMING SOON</h4>
+            <p className="text-[#C9D1D9] font-inter text-sm">Annual progress tracking and insights will be available here</p>
+          </div>
         </div>
       )}
 
+
+
       {/* Goals Tab */}
-      {activeTab === 'goals' && (
-        <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-          {/* Film grain overlay */}
-          <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-          
-          {/* Reason Strip */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] to-[#3EA6FF]"></div>
-          
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-[#E8EEF2] font-oswald tracking-wide">GOAL MANAGEMENT</h3>
-            <button
-              onClick={() => setShowGoalForm(true)}
-              className="bg-[#FFD200] text-[#0A0C0F] px-4 py-2 rounded-lg hover:bg-[#FFD200]/90 transition-colors font-medium font-oswald tracking-wide"
-            >
-              ADD GOAL
-            </button>
-          </div>
-          
-          {/* Time Filter */}
-          <div className="bg-[#0A0C0F] border-2 border-[#2A313A] rounded-lg p-4 mb-6 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] to-[#3EA6FF]"></div>
-            
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-sm font-semibold text-[#E8EEF2] font-oswald tracking-wide">TIME PERIOD</h4>
-              <div className="text-xs text-[#C9D1D9] font-inter">
-                {goalFilter === 'daily' ? 'Today' : goalFilter === 'weekly' ? 'This Week' : 'This Month'}
-              </div>
-            </div>
-            
-            <div className="flex space-x-2">
-              {['daily', 'weekly', 'monthly'].map((period) => (
-                <button
-                  key={period}
-                  onClick={() => setGoalFilter(period)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium font-oswald tracking-wide transition-all ${
-                    goalFilter === period
-                      ? 'bg-[#FFD200] text-[#0A0C0F] shadow-lg'
-                      : 'bg-[#2A313A] text-[#C9D1D9] border border-[#2A313A] hover:border-[#FFD200]/50'
-                  }`}
-                >
-                  {period.charAt(0).toUpperCase() + period.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {goals.map((goal) => (
-              <div key={goal._id} className="bg-[#0A0C0F] border-2 border-[#2A313A] rounded-lg p-4 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-                <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-                
-                <div className="flex items-center justify-between mb-3">
-                  <div 
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: goal.color }}
-                  ></div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEditGoal(goal)}
-                      className="p-1 text-[#C9D1D9] hover:text-[#FFD200] transition-colors"
-                    >
-                      <Edit3 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteGoal(goal._id)}
-                      className="p-1 text-[#C9D1D9] hover:text-[#D64545] transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-                <h4 className="font-semibold text-[#E8EEF2] mb-2 font-oswald tracking-wide">{goal.name}</h4>
-                <p className="text-sm text-[#C9D1D9] mb-2 font-inter">{goal.description}</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#C9D1D9] font-inter">Target: {goal.targetHours}h</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-oswald tracking-wide ${
-                    goal.priority === 'high' ? 'bg-[#D64545] text-[#E8EEF2]' :
-                    goal.priority === 'medium' ? 'bg-[#FFD200] text-[#0A0C0F]' :
-                    'bg-[#3CCB7F] text-[#0A0C0F]'
-                  }`}>
-                    {goal.priority}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* Goal Form Modal */}
       {showGoalForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 font-sohne">
+          <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+            {/* Film grain overlay */}
+            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+            
+            {/* Reason Strip */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] to-[#FFD200]"></div>
+            
+            <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
               {editingGoal ? 'Edit Goal' : 'Add New Goal'}
             </h3>
             <form onSubmit={handleGoalSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Name</label>
                 <input
                   type="text"
                   value={goalFormData.name}
                   onChange={(e) => setGoalFormData({...goalFormData, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Color</label>
                 <input
                   type="color"
                   value={goalFormData.color}
                   onChange={(e) => setGoalFormData({...goalFormData, color: e.target.value})}
-                  className="w-full h-10 border border-gray-300 rounded-md"
+                  className="w-full h-10 border border-[#2A313A] rounded-lg bg-[#0A0C0F]"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Description</label>
                 <textarea
                   value={goalFormData.description}
                   onChange={(e) => setGoalFormData({...goalFormData, description: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                   rows="3"
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Category</label>
                   <select
                     value={goalFormData.category}
                     onChange={(e) => setGoalFormData({...goalFormData, category: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                   >
-                    <option value="sleep">Sleep</option>
-                    <option value="partner">Partner</option>
-                    <option value="reading">Reading</option>
-                    <option value="deep-work">Deep Work</option>
-                    <option value="health">Health</option>
-                    <option value="mindfulness">Mindfulness</option>
-                    <option value="fitness">Fitness</option>
-                    <option value="learning">Learning</option>
-                    <option value="social">Social</option>
-                    <option value="other">Other</option>
+                    <option value="sleep" className="bg-[#0A0C0F] text-[#E8EEF2]">Sleep</option>
+                    <option value="partner" className="bg-[#0A0C0F] text-[#E8EEF2]">Partner</option>
+                    <option value="reading" className="bg-[#0A0C0F] text-[#E8EEF2]">Reading</option>
+                    <option value="deep-work" className="bg-[#0A0C0F] text-[#E8EEF2]">Deep Work</option>
+                    <option value="health" className="bg-[#0A0C0F] text-[#E8EEF2]">Health</option>
+                    <option value="mindfulness" className="bg-[#0A0C0F] text-[#E8EEF2]">Mindfulness</option>
+                    <option value="fitness" className="bg-[#0A0C0F] text-[#E8EEF2]">Fitness</option>
+                    <option value="learning" className="bg-[#0A0C0F] text-[#E8EEF2]">Learning</option>
+                    <option value="social" className="bg-[#0A0C0F] text-[#E8EEF2]">Social</option>
+                    <option value="other" className="bg-[#0A0C0F] text-[#E8EEF2]">Other</option>
                   </select>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Target Hours</label>
+                  <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Target Hours</label>
                   <input
                     type="number"
                     step="0.5"
                     min="0"
                     value={goalFormData.targetHours}
                     onChange={(e) => setGoalFormData({...goalFormData, targetHours: parseFloat(e.target.value)})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Priority</label>
                 <select
                   value={goalFormData.priority}
                   onChange={(e) => setGoalFormData({...goalFormData, priority: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
+                  <option value="low" className="bg-[#0A0C0F] text-[#E8EEF2]">Low</option>
+                  <option value="medium" className="bg-[#0A0C0F] text-[#E8EEF2]">Medium</option>
+                  <option value="high" className="bg-[#0A0C0F] text-[#E8EEF2]">High</option>
                 </select>
               </div>
               
               <div className="flex space-x-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-md hover:bg-emerald-700 transition-colors font-sohne"
+                  className="flex-1 bg-[#3CCB7F] text-[#0A0C0F] py-2 px-4 rounded-lg hover:bg-[#2FB86B] transition-colors font-oswald tracking-wide"
                 >
                   {editingGoal ? 'Update Goal' : 'Add Goal'}
                 </button>
@@ -1220,7 +1251,7 @@ const GoalAlignedDay = () => {
                       priority: 'medium'
                     });
                   }}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors font-sohne"
+                  className="flex-1 bg-[#2A313A] text-[#E8EEF2] py-2 px-4 rounded-lg hover:bg-[#3A414A] transition-colors font-oswald tracking-wide"
                 >
                   Cancel
                 </button>
@@ -1235,140 +1266,62 @@ const GoalAlignedDay = () => {
       {/* Task Form Modal */}
       {showTaskForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 font-sohne">
-              {taskFormData.isHabit ? 'Add New Habit' : 'Add New Task'}
+          <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+            {/* Film grain overlay */}
+            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+            
+            {/* Reason Strip */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] to-[#3CCB7F]"></div>
+            
+            <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
+              Add New Task
             </h3>
+            
+            {/* Goal Info Display */}
+            {taskFormData.goalIds.length > 0 && (
+              <div className="mb-4 p-3 bg-[#0A0C0F] border border-[#3CCB7F] rounded-lg">
+                <p className="text-sm text-[#C9D1D9] font-inter mb-1">Task will be added to:</p>
+                <p className="text-[#3CCB7F] font-semibold font-oswald tracking-wide">
+                  {goals.find(g => g._id === taskFormData.goalIds[0])?.name || 'Selected Goal'}
+                </p>
+              </div>
+            )}
+            
             <form onSubmit={handleTaskSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Task Title *</label>
+                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Task Title *</label>
                 <input
                   type="text"
                   value={taskFormData.title}
                   onChange={(e) => setTaskFormData({...taskFormData, title: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                  placeholder="Enter task description"
                   required
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                  <input
-                    type="datetime-local"
-                    value={taskFormData.start}
-                    onChange={(e) => setTaskFormData({...taskFormData, start: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                  <input
-                    type="datetime-local"
-                    value={taskFormData.end}
-                    onChange={(e) => setTaskFormData({...taskFormData, end: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-              </div>
-              
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes) - if no start/end time</label>
+                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Duration (hours) *</label>
                 <input
                   type="number"
-                  min="0"
-                  value={taskFormData.estimatedDuration}
-                  onChange={(e) => setTaskFormData({...taskFormData, estimatedDuration: parseInt(e.target.value) || ''})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  step="0.25"
+                  min="0.25"
+                  max="24"
+                  value={taskFormData.duration}
+                  onChange={(e) => setTaskFormData({...taskFormData, duration: e.target.value})}
+                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                  placeholder="0.5"
+                  required
                 />
+                <p className="text-xs text-[#C9D1D9] mt-1 font-inter">Enter duration in hours (e.g., 0.5 for 30 minutes)</p>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Goals {taskFormData.isHabit && <span className="text-red-500">*</span>}
-                </label>
-                <select
-                  multiple
-                  value={taskFormData.goalIds}
-                  onChange={(e) => {
-                    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                    setTaskFormData({...taskFormData, goalIds: selectedOptions});
-                  }}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                    taskFormData.isHabit && (!taskFormData.goalIds || taskFormData.goalIds.length === 0)
-                      ? 'border-red-300 bg-red-50'
-                      : 'border-gray-300'
-                  }`}
-                  size="3"
-                  required={taskFormData.isHabit}
-                >
-                  {goals.map((goal) => (
-                    <option key={goal._id} value={goal._id}>{goal.name}</option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  {taskFormData.isHabit 
-                    ? 'Habits must be associated with at least one goal' 
-                    : 'Hold Ctrl/Cmd to select multiple goals'
-                  }
-                </p>
-                {taskFormData.isHabit && (!taskFormData.goalIds || taskFormData.goalIds.length === 0) && (
-                  <p className="text-xs text-red-500 mt-1">Please select at least one goal for this habit</p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mindful Rating (1-5)</label>
-                <div className="flex items-center space-x-2">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => setTaskFormData({...taskFormData, mindfulRating: rating})}
-                      className={`p-2 rounded-full transition-colors ${
-                        taskFormData.mindfulRating === rating
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                      }`}
-                    >
-                      <Star size={16} fill={taskFormData.mindfulRating >= rating ? 'currentColor' : 'none'} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="isHabit"
-                  checked={taskFormData.isHabit}
-                  onChange={(e) => setTaskFormData({...taskFormData, isHabit: e.target.checked})}
-                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <label htmlFor="isHabit" className="text-sm font-medium text-gray-700">This is a habit</label>
-              </div>
-              
-              {taskFormData.isHabit && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Habit Cadence</label>
-                  <select
-                    value={taskFormData.habitCadence}
-                    onChange={(e) => setTaskFormData({...taskFormData, habitCadence: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                  </select>
-                </div>
-              )}
               
               <div className="flex space-x-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-md hover:bg-emerald-700 transition-colors font-sohne"
+                  className="flex-1 bg-[#3CCB7F] text-[#0A0C0F] py-2 px-4 rounded-lg hover:bg-[#2FB86B] transition-colors font-oswald tracking-wide"
                 >
-                  {taskFormData.isHabit ? 'Add Habit' : 'Add Task'}
+                  Add Task
                 </button>
                 <button
                   type="button"
@@ -1376,16 +1329,92 @@ const GoalAlignedDay = () => {
                     setShowTaskForm(false);
                     setTaskFormData({
                       title: '',
-                      startTime: '',
-                      endTime: '',
                       duration: '',
-                      goalIds: [],
-                      mindfulRating: 3,
-                      isHabit: false,
-                      habitCadence: 'daily'
+                      goalIds: []
                     });
                   }}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors font-sohne"
+                  className="flex-1 bg-[#2A313A] text-[#E8EEF2] py-2 px-4 rounded-lg hover:bg-[#3A414A] transition-colors font-oswald tracking-wide"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Habit Form Modal */}
+      {showHabitForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+            {/* Film grain overlay */}
+            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+            
+            {/* Reason Strip */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] to-[#FFD200]"></div>
+            
+            <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
+              Add New Habit
+            </h3>
+            
+            <form onSubmit={handleHabitSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Habit Title *</label>
+                <input
+                  type="text"
+                  value={habitFormData.title}
+                  onChange={(e) => setHabitFormData({...habitFormData, title: e.target.value})}
+                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                  placeholder="Enter habit description"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Time Everyday *</label>
+                <input
+                  type="time"
+                  value={habitFormData.time}
+                  onChange={(e) => setHabitFormData({...habitFormData, time: e.target.value})}
+                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                  required
+                />
+                <p className="text-xs text-[#C9D1D9] mt-1 font-inter">Set the time you want to do this habit daily</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Repeat Frequency *</label>
+                <select
+                  value={habitFormData.repeatFrequency}
+                  onChange={(e) => setHabitFormData({...habitFormData, repeatFrequency: e.target.value})}
+                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                  required
+                >
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+                <p className="text-xs text-[#C9D1D9] mt-1 font-inter">How often should this habit be repeated</p>
+              </div>
+              
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#3CCB7F] text-[#0A0C0F] py-2 px-4 rounded-lg hover:bg-[#2FB86B] transition-colors font-oswald tracking-wide"
+                >
+                  Add Habit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHabitForm(false);
+                    setHabitFormData({
+                      title: '',
+                      time: '',
+                      repeatFrequency: 'daily'
+                    });
+                  }}
+                  className="flex-1 bg-[#2A313A] text-[#E8EEF2] py-2 px-4 rounded-lg hover:bg-[#3A414A] transition-colors font-oswald tracking-wide"
                 >
                   Cancel
                 </button>
@@ -1398,8 +1427,15 @@ const GoalAlignedDay = () => {
       {/* Mobile Floating Action Button */}
       <div className="md:hidden fixed bottom-6 right-6 z-40">
         <button
-          onClick={() => setShowTaskForm(true)}
-          className="bg-emerald-600 text-white p-4 rounded-full shadow-lg hover:bg-emerald-700 transition-colors"
+          onClick={() => {
+            setTaskFormData({
+              title: '',
+              duration: '',
+              goalIds: []
+            });
+            setShowTaskForm(true);
+          }}
+          className="bg-[#3CCB7F] text-[#0A0C0F] p-4 rounded-full shadow-lg hover:bg-[#2FB86B] transition-colors"
         >
           <Plus size={24} />
         </button>

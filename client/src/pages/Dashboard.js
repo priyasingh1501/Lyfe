@@ -2,17 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { 
   Clock, 
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  Upload
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import { buildApiUrl } from '../config';
+import toast from 'react-hot-toast';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [todayTasks, setTodayTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quoteIndex, setQuoteIndex] = useState(0);
+  const [welcomeImage, setWelcomeImage] = useState('/welcome.png');
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('Dashboard showImageUpload changed to:', showImageUpload);
+  }, [showImageUpload]);
 
 
 
@@ -25,7 +35,7 @@ const Dashboard = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await axios.get('/api/tasks', {
+      const response = await axios.get(buildApiUrl('/api/tasks'), {
         headers: { Authorization: `Bearer ${token}` },
         params: { 
           date: new Date().toISOString().split('T')[0],
@@ -120,6 +130,29 @@ const Dashboard = () => {
     return ((dailyIndex + quoteIndex) % quotes.length) + 1;
   };
 
+  const handleImageUpload = (e) => {
+    console.log('Dashboard image upload triggered:', e.target.files);
+    const file = e.target.files[0];
+    if (file) {
+      console.log('Dashboard file selected:', file.name, file.type, file.size);
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          console.log('Dashboard file read successfully, updating image');
+          setWelcomeImage(event.target.result);
+          setShowImageUpload(false);
+          toast.success('Welcome image updated successfully!');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        console.log('Dashboard invalid file type:', file.type);
+        toast.error('Please select a valid image file');
+      }
+    } else {
+      console.log('Dashboard no file selected');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Welcome Header - Alfred Bar */}
@@ -136,16 +169,106 @@ const Dashboard = () => {
         {/* Scan line effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#FFD200]/10 to-transparent animate-pulse"></div>
         
-        <h1 className="text-2xl font-bold mb-2 text-[#E8EEF2] font-oswald tracking-wide">
-          Welcome back, {user?.firstName || 'User'}! 👋
-        </h1>
-        <p className="text-[#C9D1D9] font-inter">
-          Here's your day at a glance
-        </p>
+        <div className="flex items-center">
+          {/* Left side image */}
+          <div className="flex-shrink-0 mr-6 relative group">
+            <img 
+              src={welcomeImage} 
+              alt="Welcome illustration" 
+              className="w-24 h-24 object-cover rounded-lg border-2 border-[#2A313A] shadow-lg cursor-pointer transition-all duration-200 group-hover:border-[#FFD200] group-hover:shadow-[#FFD200]/20"
+              onClick={() => {
+                console.log('Dashboard image clicked, setting showImageUpload to true');
+                setShowImageUpload(true);
+              }}
+              title="Click to change image"
+            />
+            
+            {/* Upload overlay with button text */}
+            <div className="absolute inset-0 bg-black/60 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center">
+              <Upload className="h-5 w-5 text-white mb-2" />
+              <span className="text-white text-xs font-medium font-oswald tracking-wide">Change Image</span>
+            </div>
+            
+            {/* Upload button overlay - always visible on hover */}
+            <div className="absolute -bottom-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="bg-[#FFD200] text-[#0A0C0F] p-2 rounded-full shadow-lg border-2 border-[#0A0C0F]">
+                <Upload className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
+          
+          {/* Heading content */}
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold mb-2 text-[#E8EEF2] font-oswald tracking-wide">
+              Welcome back, {user?.firstName || 'User'}! 👋
+            </h1>
+            <p className="text-[#C9D1D9] font-inter">
+              Here's your day at a glance
+            </p>
+          </div>
+        </div>
         
         {/* Corner accent */}
         <div className="absolute top-0 right-0 w-6 h-6 bg-[#FFD200]"></div>
       </motion.div>
+
+      {/* Image Upload Modal */}
+      {console.log('Dashboard showImageUpload state:', showImageUpload)}
+      <AnimatePresence>
+        {showImageUpload && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowImageUpload(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
+                Update Welcome Image
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="text-center">
+                  <label 
+                    htmlFor="welcome-image-upload-dashboard"
+                    className="inline-flex items-center px-4 py-2 bg-[#FFD200] text-[#0A0C0F] rounded-lg hover:bg-[#FFB800] transition-colors duration-200 border border-[#FFD200] cursor-pointer font-oswald tracking-wide"
+                  >
+                    <Upload className="h-5 w-5 mr-2" />
+                    Choose Image
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="welcome-image-upload-dashboard"
+                  />
+                </div>
+                
+                <p className="text-sm text-[#C9D1D9] text-center">
+                  Click the button above to select a new image. The image will be displayed in the welcome banner.
+                </p>
+              </div>
+              
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setShowImageUpload(false)}
+                  className="px-4 py-2 text-[#C9D1D9] bg-[#2A313A] rounded-lg hover:bg-[#3A414A] transition-colors duration-200 border border-[#2A313A]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Quote of the Day - Mission Card */}
       <motion.div

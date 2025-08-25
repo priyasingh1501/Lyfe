@@ -173,4 +173,44 @@ router.patch('/bulk-update', auth, async (req, res) => {
   }
 });
 
+// Bulk add multiple items from expense receipt
+router.post('/add-multiple', auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { items } = req.body; // Array of item objects
+    
+    console.log('🔍 Adding multiple pantry items:', items);
+    
+    const results = [];
+    
+    for (const item of items) {
+      const inventoryData = {
+        ...item,
+        userId,
+        itemName: item.name,
+        quantity: item.quantity || 1,
+        unit: item.unit || 'piece',
+        category: item.category || 'food',
+        subcategory: 'groceries',
+        purchaseDate: item.purchaseDate || new Date(),
+        vendor: item.vendor || 'Unknown',
+        expiryDate: item.expiryDate,
+        notes: item.notes || 'Added from expense receipt',
+        isLow: false
+      };
+      
+      const inventoryItem = new PantryInventory(inventoryData);
+      inventoryItem.checkLowStock();
+      await inventoryItem.save();
+      results.push(inventoryItem);
+    }
+    
+    console.log('✅ Added', results.length, 'items to pantry');
+    res.status(201).json(results);
+  } catch (error) {
+    console.error('Error bulk adding inventory items:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

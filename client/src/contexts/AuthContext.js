@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-
-// Configure axios base URL to point to our server
-// Note: Using proxy in development, so no need to set baseURL
-// axios.defaults.baseURL = 'http://localhost:5001';
+import { buildApiUrl } from '../config';
 
 const AuthContext = createContext();
 
@@ -33,7 +30,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await axios.get('/api/auth/profile');
+      const response = await axios.get(buildApiUrl('/api/auth/profile'));
       setUser(response.data.user);
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -46,7 +43,12 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('/api/auth/login', { email, password });
+      console.log('Attempting login to:', buildApiUrl('/api/auth/login')); // Debug log
+      console.log('Login credentials:', { email, password: '***' }); // Debug log
+      
+      const response = await axios.post(buildApiUrl('/api/auth/login'), { email, password });
+      console.log('Login response:', response.data); // Debug log
+      
       const { token: newToken, user: userData } = response.data;
       
       setToken(newToken);
@@ -57,6 +59,13 @@ export const AuthProvider = ({ children }) => {
       toast.success('Login successful!');
       return { success: true };
     } catch (error) {
+      console.error('Login error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: error.config
+      }); // Debug log
+      
       const message = error.response?.data?.message || 'Login failed';
       toast.error(message);
       return { success: false, message };
@@ -66,7 +75,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       console.log('Attempting registration with:', userData);
-      const response = await axios.post('/api/auth/register', userData);
+      const response = await axios.post(buildApiUrl('/api/auth/register'), userData);
       console.log('Registration response:', response.data);
       
       const { token: newToken, user: newUser } = response.data;
@@ -102,7 +111,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (updates) => {
     try {
-      const response = await axios.put('/api/auth/profile', updates);
+      const response = await axios.put(buildApiUrl('/api/auth/profile'), updates);
       setUser(response.data.user);
       toast.success('Profile updated successfully');
       return { success: true };
@@ -115,7 +124,7 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (currentPassword, newPassword) => {
     try {
-      await axios.put('/api/auth/change-password', { currentPassword, newPassword });
+      await axios.put(buildApiUrl('/api/auth/change-password'), { currentPassword, newPassword });
       toast.success('Password changed successfully');
       return { success: true };
     } catch (error) {
@@ -127,7 +136,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshToken = async () => {
     try {
-      const response = await axios.post('/api/auth/refresh-token');
+      const response = await axios.post(buildApiUrl('/api/auth/refresh-token'));
       const { token: newToken } = response.data;
       
       setToken(newToken);
