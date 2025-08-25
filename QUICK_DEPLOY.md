@@ -44,6 +44,6 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 ## 💰 Cost
 
-- **Render**: Free tier available
+- **Render**: $7/month starter plan
 - **MongoDB Atlas**: Free tier (512MB)
-- **Total**: $0/month for basic usage
+- **Total**: $7/month for basic usage
