@@ -348,51 +348,58 @@ const Journal = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="bg-white rounded-lg shadow-lg p-6 mb-8"
+              className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg shadow-lg p-6 mb-8 relative overflow-hidden"
+              style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
             >
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Entry</h3>
+              {/* Film grain overlay */}
+              <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+              
+              {/* Reason Strip */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] to-[#3CCB7F]"></div>
+              
+              <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">Create New Entry</h3>
               
               <form onSubmit={handleCreateEntry} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
                       Title *
                     </label>
                     <input
                       type="text"
                       value={newEntry.title}
                       onChange={(e) => setNewEntry({ ...newEntry, title: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                       placeholder="What's on your mind?"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
                       Entry Type
                     </label>
                     <select
                       value={newEntry.type}
                       onChange={(e) => setNewEntry({ ...newEntry, type: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                     >
                       {entryTypes.map(type => (
-                        <option key={type.value} value={type.value}>{type.label}</option>
+                        <option key={type.value} value={type.value} className="bg-[#0A0C0F] text-[#E8EEF2]">{type.label}</option>
                       ))}
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
                     Content *
                   </label>
                   <textarea
                     value={newEntry.content}
                     onChange={(e) => setNewEntry({ ...newEntry, content: e.target.value })}
                     rows={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                     placeholder="Write your thoughts, feelings, or experiences..."
                     required
                   />
@@ -400,22 +407,22 @@ const Journal = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
                       Mood
                     </label>
                     <select
                       value={newEntry.mood}
                       onChange={(e) => setNewEntry({ ...newEntry, mood: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                     >
                       {moods.map(mood => (
-                        <option key={mood.value} value={mood.value}>{mood.label}</option>
+                        <option key={mood.value} value={mood.value} className="bg-[#0A0C0F] text-[#E8EEF2]">{mood.label}</option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
                       Tags
                     </label>
                     <div className="flex">
@@ -424,13 +431,13 @@ const Journal = () => {
                         value={tagInput}
                         onChange={(e) => setTagInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="flex-1 px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                         placeholder="Add a tag"
                       />
                       <button
                         type="button"
                         onClick={addTag}
-                        className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg hover:bg-gray-200"
+                        className="px-3 py-2 bg-[#2A313A] border border-l-0 border-[#2A313A] rounded-r-lg hover:bg-[#3A414A] text-[#E8EEF2]"
                       >
                         Add
                       </button>
@@ -462,9 +469,9 @@ const Journal = () => {
                         type="checkbox"
                         checked={newEntry.isPrivate}
                         onChange={(e) => setNewEntry({ ...newEntry, isPrivate: e.target.checked })}
-                        className="mr-2"
+                        className="mr-2 rounded border-[#2A313A] text-[#3CCB7F] focus:ring-[#3CCB7F] bg-[#0A0C0F]"
                       />
-                      <span className="text-sm text-gray-700">Private entry</span>
+                      <span className="text-sm text-[#C9D1D9] font-inter">Private entry</span>
                     </label>
                   </div>
                 </div>
@@ -473,13 +480,13 @@ const Journal = () => {
                   <button
                     type="button"
                     onClick={() => setShowNewEntryForm(false)}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                    className="px-4 py-2 text-[#E8EEF2] bg-[#2A313A] rounded-lg hover:bg-[#3A414A] transition-colors duration-200 font-oswald tracking-wide"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
+                    className="px-4 py-2 bg-[#3CCB7F] text-[#0A0C0F] rounded-lg hover:bg-[#2FB86B] transition-colors duration-200 font-oswald tracking-wide"
                   >
                     Create Entry
                   </button>
@@ -493,9 +500,9 @@ const Journal = () => {
         <div className="space-y-6">
           {filteredEntries.length === 0 ? (
             <div className="text-center py-12">
-              <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No entries yet</h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <BookOpen className="mx-auto h-12 w-12 text-[#C9D1D9]" />
+              <h3 className="mt-2 text-sm font-medium text-[#E8EEF2] font-oswald tracking-wide">No entries yet</h3>
+              <p className="mt-1 text-sm text-[#C9D1D9] font-inter">
                 {filters.type || filters.mood ? 'Try adjusting your filters' : 'Get started by creating your first journal entry'}
               </p>
             </div>
@@ -506,17 +513,21 @@ const Journal = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-lg shadow-lg overflow-hidden"
+                className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg shadow-lg overflow-hidden relative"
+                style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
               >
-                <div className="p-6">
+                {/* Film grain overlay */}
+                <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+                
+                <div className="p-6 relative z-10">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className={`p-2 rounded-lg ${getTypeIcon(entry.type).color} bg-opacity-20`}>
-                        {React.createElement(getTypeIcon(entry.type), { className: "h-5 w-5 text-gray-700" })}
+                        {React.createElement(getTypeIcon(entry.type), { className: "h-5 w-5 text-[#E8EEF2]" })}
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{entry.title}</h3>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <h3 className="text-lg font-semibold text-[#E8EEF2] font-oswald tracking-wide">{entry.title}</h3>
+                        <div className="flex items-center space-x-4 text-sm text-[#C9D1D9] font-inter">
                           <span className="capitalize">{entry.type}</span>
                           <span>•</span>
                           <span>{new Date(entry.createdAt).toLocaleDateString()}</span>
@@ -533,12 +544,12 @@ const Journal = () => {
 
                     <div className="flex items-center space-x-2">
                       <div className={`w-3 h-3 rounded-full ${getMoodColor(entry.mood)}`}></div>
-                      <span className="text-sm text-gray-500 capitalize">{entry.mood}</span>
+                      <span className="text-sm text-[#C9D1D9] capitalize font-inter">{entry.mood}</span>
                     </div>
                   </div>
 
                   <div className="prose max-w-none mb-4">
-                    <p className="text-gray-700 whitespace-pre-wrap">{entry.content}</p>
+                    <p className="text-[#C9D1D9] whitespace-pre-wrap font-inter">{entry.content}</p>
                   </div>
 
                   {entry.tags.length > 0 && (
@@ -546,7 +557,7 @@ const Journal = () => {
                       {entry.tags.map(tag => (
                         <span
                           key={tag}
-                          className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                          className="inline-flex items-center px-2 py-1 bg-[#2A313A] text-[#E8EEF2] text-xs rounded-full"
                         >
                           <Tag className="h-3 w-3 mr-1" />
                           {tag}
@@ -556,7 +567,7 @@ const Journal = () => {
                   )}
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <div className="flex items-center space-x-4 text-sm text-[#C9D1D9] font-inter">
                       {entry.location?.city && (
                         <div className="flex items-center">
                           <MapPin className="h-4 w-4 mr-1" />
@@ -574,7 +585,7 @@ const Journal = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleDeleteEntry(entry._id)}
-                        className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200"
+                        className="p-2 text-[#C9D1D9] hover:text-red-400 transition-colors duration-200"
                         title="Delete entry"
                       >
                         <Trash2 className="h-4 w-4" />

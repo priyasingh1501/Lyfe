@@ -27,6 +27,47 @@ import {
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
+const ConsistentPopup = ({ isOpen, onClose, title, children, maxWidth = "md", showReasonStrip = true, reasonStripColor = "from-[#FFD200] to-[#3CCB7F]" }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4" onClick={onClose}>
+      <div className={`bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 w-full max-w-${maxWidth} max-h-[90vh] overflow-y-auto shadow-2xl relative overflow-hidden`} 
+           style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }} 
+           onClick={(e) => e.stopPropagation()}>
+        
+        {/* Film grain overlay */}
+        <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+        
+        {/* Reason Strip */}
+        {showReasonStrip && (
+          <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${reasonStripColor}`}></div>
+        )}
+        
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-[#E8EEF2] font-oswald tracking-wide">
+            {title}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-[#C9D1D9] hover:text-[#E8EEF2] transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        {/* Content */}
+        <div className="relative z-10">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Layout = () => {
   console.log('🔍 Layout component mounting...');
   
@@ -54,8 +95,6 @@ const Layout = () => {
     { name: 'Food', href: '/food', icon: Utensils },
     { name: 'Pantry', href: '/pantry', icon: Package },
     { name: 'Finance', href: '/finance', icon: DollarSign },
-    { name: 'Documents', href: '/documents', icon: FileText },
-    { name: 'Health', href: '/health', icon: Heart },
     { name: 'Content', href: '/content', icon: BookOpen },
   ];
 
@@ -385,4 +424,5 @@ const Layout = () => {
   );
 };
 
+export { ConsistentPopup };
 export default Layout;

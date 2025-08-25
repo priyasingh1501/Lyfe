@@ -93,7 +93,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#0A0C0F] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -106,15 +106,15 @@ const Register = () => {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="mx-auto w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg"
+            className="mx-auto w-20 h-20 bg-gradient-to-r from-[#FFD200] via-[#3CCB7F] to-[#4ECDC4] rounded-2xl flex items-center justify-center shadow-lg"
           >
-            <span className="text-white font-bold text-3xl">L</span>
+            <span className="text-[#0A0C0F] font-bold text-3xl">L</span>
           </motion.div>
           <motion.h2
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="mt-6 text-3xl font-extrabold text-gray-900"
+            className="mt-6 text-3xl font-extrabold text-[#E8EEF2] font-oswald tracking-wide"
           >
             Create your account
           </motion.h2>
@@ -122,7 +122,7 @@ const Register = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="mt-2 text-sm text-gray-600"
+            className="mt-2 text-sm text-[#C9D1D9]"
           >
             Start managing your lifestyle with Alfred
           </motion.p>
@@ -137,7 +137,7 @@ const Register = () => {
         >
           <Link
             to="/login"
-            className="inline-flex items-center text-sm text-primary-600 hover:text-primary-500 transition-colors duration-200"
+            className="inline-flex items-center text-sm text-[#3CCB7F] hover:text-[#2BB870] transition-colors duration-200"
           >
             <ArrowLeft size={16} className="mr-1" />
             Back to login
@@ -155,12 +155,12 @@ const Register = () => {
           <div className="space-y-4">
             {/* First Name Field */}
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="firstName" className="block text-sm font-medium text-[#C9D1D9] mb-2 font-oswald tracking-wide">
                 First Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User size={20} className="text-gray-400" />
+                  <User size={20} className="text-[#2A313A]" />
                 </div>
                 <input
                   id="firstName"
@@ -170,27 +170,27 @@ const Register = () => {
                   required
                   value={formData.firstName}
                   onChange={handleChange}
-                  className={`appearance-none relative block w-full pl-10 pr-3 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 ${
+                  className={`appearance-none relative block w-full pl-10 pr-3 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 bg-[#11151A] text-[#E8EEF2] placeholder-[#6B7280] ${
                     errors.firstName 
-                      ? 'border-danger-300 focus:ring-danger-500 focus:border-danger-500' 
-                      : 'border-gray-300 focus:ring-primary-500 focus:border-primary-500 hover:border-primary-300'
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-[#2A313A] focus:ring-[#3CCB7F] focus:border-[#3CCB7F] hover:border-[#3A414A]'
                   }`}
                   placeholder="Enter your first name"
                 />
               </div>
               {errors.firstName && (
-                <p className="mt-1 text-sm text-danger-600">{errors.firstName}</p>
+                <p className="mt-1 text-sm text-red-400">{errors.firstName}</p>
               )}
             </div>
 
             {/* Last Name Field */}
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="lastName" className="block text-sm font-medium text-[#C9D1D9] mb-2 font-oswald tracking-wide">
                 Last Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User size={20} className="text-gray-400" />
+                  <User size={20} className="text-[#2A313A]" />
                 </div>
                 <input
                   id="lastName"
@@ -200,27 +200,27 @@ const Register = () => {
                   required
                   value={formData.lastName}
                   onChange={handleChange}
-                  className={`appearance-none relative block w-full pl-10 pr-3 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 ${
+                  className={`appearance-none relative block w-full pl-10 pr-3 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 bg-[#11151A] text-[#E8EEF2] placeholder-[#6B7280] ${
                     errors.lastName 
-                      ? 'border-danger-300 focus:ring-danger-500 focus:border-danger-500' 
-                      : 'border-gray-300 focus:ring-primary-500 focus:border-primary-500 hover:border-primary-300'
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-[#2A313A] focus:ring-[#3CCB7F] focus:border-[#3CCB7F] hover:border-[#3A414A]'
                   }`}
                   placeholder="Enter your last name"
                 />
               </div>
               {errors.lastName && (
-                <p className="mt-1 text-sm text-danger-600">{errors.lastName}</p>
+                <p className="mt-1 text-sm text-red-400">{errors.lastName}</p>
               )}
             </div>
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-[#C9D1D9] mb-2 font-oswald tracking-wide">
                 Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail size={20} className="text-gray-400" />
+                  <Mail size={20} className="text-[#2A313A]" />
                 </div>
                 <input
                   id="email"
@@ -230,27 +230,27 @@ const Register = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className={`appearance-none relative block w-full pl-10 pr-3 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 ${
+                  className={`appearance-none relative block w-full pl-10 pr-3 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 bg-[#11151A] text-[#E8EEF2] placeholder-[#6B7280] ${
                     errors.email 
-                      ? 'border-danger-300 focus:ring-danger-500 focus:border-danger-500' 
-                      : 'border-gray-300 focus:ring-primary-500 focus:border-primary-500 hover:border-primary-300'
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-[#2A313A] focus:ring-[#3CCB7F] focus:border-[#3CCB7F] hover:border-[#3A414A]'
                   }`}
                   placeholder="Enter your email"
                 />
               </div>
               {errors.email && (
-                <p className="mt-1 text-sm text-danger-600">{errors.email}</p>
+                <p className="mt-1 text-sm text-red-400">{errors.email}</p>
               )}
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-[#C9D1D9] mb-2 font-oswald tracking-wide">
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock size={20} className="text-gray-400" />
+                  <Lock size={20} className="text-[#2A313A]" />
                 </div>
                 <input
                   id="password"
@@ -260,10 +260,10 @@ const Register = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className={`appearance-none relative block w-full pl-10 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 ${
+                  className={`appearance-none relative block w-full pl-10 pr-12 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 bg-[#11151A] text-[#E8EEF2] placeholder-[#6B7280] ${
                     errors.password 
-                      ? 'border-danger-300 focus:ring-danger-500 focus:border-danger-500' 
-                      : 'border-gray-300 focus:ring-primary-500 focus:border-primary-500 hover:border-primary-300'
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-[#2A313A] focus:ring-[#3CCB7F] focus:border-[#3CCB7F] hover:border-[#3A414A]'
                   }`}
                   placeholder="Create a password"
                 />
@@ -273,25 +273,25 @@ const Register = () => {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showPassword ? (
-                    <EyeOff size={20} className="text-gray-400 hover:text-gray-600" />
+                    <EyeOff size={20} className="text-[#2A313A] hover:text-[#C9D1D9]" />
                   ) : (
-                    <Eye size={20} className="text-gray-400 hover:text-gray-600" />
+                    <Eye size={20} className="text-[#2A313A] hover:text-[#C9D1D9]" />
                   )}
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-danger-600">{errors.password}</p>
+                <p className="mt-1 text-sm text-red-400">{errors.password}</p>
               )}
             </div>
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#C9D1D9] mb-2 font-oswald tracking-wide">
                 Confirm Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock size={20} className="text-gray-400" />
+                  <Lock size={20} className="text-[#2A313A]" />
                 </div>
                 <input
                   id="confirmPassword"
@@ -301,10 +301,10 @@ const Register = () => {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`appearance-none relative block w-full pl-10 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 ${
+                  className={`appearance-none relative block w-full pl-10 pr-12 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 bg-[#11151A] text-[#E8EEF2] placeholder-[#6B7280] ${
                     errors.confirmPassword 
-                      ? 'border-danger-300 focus:ring-danger-500 focus:border-danger-500' 
-                      : 'border-gray-300 focus:ring-primary-500 focus:border-primary-500 hover:border-primary-300'
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-[#2A313A] focus:ring-primary-500 focus:border-[#3CCB7F] hover:border-[#3A414A]'
                   }`}
                   placeholder="Confirm your password"
                 />
@@ -314,14 +314,14 @@ const Register = () => {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showConfirmPassword ? (
-                    <EyeOff size={20} className="text-gray-400 hover:text-gray-600" />
+                    <EyeOff size={20} className="text-[#2A313A] hover:text-[#C9D1D9]" />
                   ) : (
-                    <Eye size={20} className="text-gray-400 hover:text-gray-600" />
+                    <Eye size={20} className="text-[#2A313A] hover:text-[#C9D1D9]" />
                   )}
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-danger-600">{errors.confirmPassword}</p>
+                <p className="mt-1 text-sm text-red-400">{errors.confirmPassword}</p>
               )}
             </div>
           </div>

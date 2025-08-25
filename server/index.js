@@ -1,8 +1,14 @@
+// Load environment variables FIRST, before any other imports
+const dotenv = require('dotenv');
+const path = require('path');
+
+// Load environment variables from current directory
+console.log('🔍 Loading .env from current directory');
+dotenv.config({ path: '.env' });
+
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const path = require('path');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -22,7 +28,14 @@ const habitRoutes = require('./routes/habits');
 const foodRoutes = require('./routes/food');
 const pantryRoutes = require('./routes/pantry');
 
-dotenv.config({ path: '../.env' });
+// Debug environment variable loading
+console.log('🔍 Environment check on startup:');
+console.log('🔍 Current working directory:', process.cwd());
+console.log('🔍 .env file path:', path.resolve('../.env'));
+console.log('🔍 OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
+console.log('🔍 OPENAI_API_KEY length:', process.env.OPENAI_API_KEY?.length || 0);
+console.log('🔍 PORT:', process.env.PORT);
+console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
 
 const app = express();
 const PORT = process.env.PORT || 5002;

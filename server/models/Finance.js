@@ -45,6 +45,11 @@ const expenseSchema = new mongoose.Schema({
     filename: String,
     url: String
   },
+  billImage: {
+    filename: String,
+    url: String,
+    data: String // Base64 data for OCR analysis
+  },
   tags: [String],
   isRecurring: {
     type: Boolean,
