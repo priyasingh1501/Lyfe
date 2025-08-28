@@ -7,13 +7,9 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server/index.js",
     "client": "cd client && npm start",
-    "build": "echo 'Backend build complete - no build step needed'",
-    "build:all": "npm install && cd client && npm install && cd client && npm run build",
-    "install-all": "npm install && cd client && npm install",
     "start": "node server/index.js",
-    "deploy:render": "npm run build:all",
-    "deploy:heroku": "npm run build:all && git add . && git commit -m 'Deploy to Heroku' && git push heroku main",
-    "deploy:railway": "npm install"
+    "deploy:railway": "npm install --production --ignore-scripts",
+    "railway:start": "node server/index.js"
   },
   "dependencies": {
     "@openai/agents": "^0.0.17",

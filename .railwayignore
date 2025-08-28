@@ -35,3 +35,29 @@ client/VERCEL_DEPLOYMENT.md
 vercel.json
 VERCEL_DEPLOYMENT.md
 deploy-vercel.sh
+
+# Exclude any build-related files
+build/
+dist/
+*.build
+*.bundle
+
+# Exclude any files that might trigger builds
+*.ts
+*.tsx
+*.jsx
+*.css
+*.scss
+*.sass
+*.less
+*.styl
+*.vue
+*.svelte
+*.astro
+
+# Only include server files
+!server/
+!package.json
+!package-lock.json
+!railway.json
+!.railwayignore
