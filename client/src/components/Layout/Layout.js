@@ -1,22 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  Menu,
   X,
   Home,
   DollarSign,
-  FileText,
-  Users,
-  MessageSquare,
   Settings,
   LogOut,
   Brain,
-  ShoppingCart,
-  Heart,
-  BookOpen,
-  Video,
-  Film,
   Plus,
   Search,
   Bell,
@@ -26,13 +17,14 @@ import {
   Package
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { componentStyles, colors, typography } from '../../styles/designTokens';
 
-const ConsistentPopup = ({ isOpen, onClose, title, children, maxWidth = "md", showReasonStrip = true, reasonStripColor = "from-[#FFD200] to-[#3CCB7F]" }) => {
+const ConsistentPopup = ({ isOpen, onClose, title, children, maxWidth = "md", showReasonStrip = true, reasonStripColor = "from-accent-yellow to-accent-green" }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4" onClick={onClose}>
-      <div className={`bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 w-full max-w-${maxWidth} max-h-[90vh] overflow-y-auto shadow-2xl relative overflow-hidden`} 
+    <div className="fixed inset-0 bg-background-overlay flex items-center justify-center z-[99999] p-4" onClick={onClose}>
+      <div className={`bg-background-card border-2 border-border-primary rounded-2xl p-6 w-full max-w-${maxWidth} max-h-[90vh] overflow-y-auto shadow-2xl relative overflow-hidden`} 
            style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }} 
            onClick={(e) => e.stopPropagation()}>
         
@@ -46,12 +38,13 @@ const ConsistentPopup = ({ isOpen, onClose, title, children, maxWidth = "md", sh
         
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-[#E8EEF2] font-oswald tracking-wide">
+          <h3 className={`text-xl font-semibold text-text-primary ${typography.fontFamily.display} tracking-wide`}>
             {title}
           </h3>
           <button
             onClick={onClose}
-            className="text-[#C9D1D9] hover:text-[#E8EEF2] transition-colors"
+            className="text-text-secondary hover:text-text-primary transition-colors"
+            aria-label="Close popup"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -69,12 +62,9 @@ const ConsistentPopup = ({ isOpen, onClose, title, children, maxWidth = "md", sh
 };
 
 const Layout = () => {
-  console.log('🔍 Layout component mounting...');
-  
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(true);
   const [rightToolbarOpen, setRightToolbarOpen] = useState(true);
   const [aiMessages, setAiMessages] = useState([
@@ -86,8 +76,6 @@ const Layout = () => {
   ]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
-  
-  console.log('🔍 Layout state initialized:', { aiChatOpen, aiMessages: aiMessages.length, aiInput, aiLoading });
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -95,7 +83,7 @@ const Layout = () => {
     { name: 'Food', href: '/food', icon: Utensils },
     { name: 'Pantry', href: '/pantry', icon: Package },
     { name: 'Finance', href: '/finance', icon: DollarSign },
-    { name: 'Content', href: '/content', icon: BookOpen },
+    { name: 'Content', href: '/content', icon: Brain },
   ];
 
   const rightTools = [
@@ -121,10 +109,6 @@ const Layout = () => {
   const handleAiMessage = async (message) => {
     if (!message.trim()) return;
     
-    console.log('🚀 Sending message:', message);
-    console.log('🚀 Function called successfully');
-    console.log('🚀 Message length:', message.length);
-    
     // Add user message
     const userMessage = {
       role: 'user',
@@ -138,9 +122,6 @@ const Layout = () => {
     try {
       // Send message to AI chat API
       const token = localStorage.getItem('token');
-      console.log('🔑 Token available:', !!token);
-      console.log('🔑 Token length:', token ? token.length : 0);
-      console.log('🔑 Token preview:', token ? token.substring(0, 20) + '...' : 'none');
       
       const requestUrl = '/api/ai-chat/chat';
       const requestBody = { message };
@@ -148,13 +129,6 @@ const Layout = () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       };
-      
-      console.log('🌐 Making fetch request to:', requestUrl);
-      console.log('🌐 Request body:', requestBody);
-      console.log('🌐 Request headers:', requestHeaders);
-      console.log('🌐 Full request URL:', window.location.origin + requestUrl);
-      
-      console.log('🌐 About to make fetch request...');
       
       let response;
       try {
@@ -166,33 +140,22 @@ const Layout = () => {
           },
           body: JSON.stringify(requestBody)
         });
-        console.log('✅ Fetch request completed successfully');
       } catch (fetchError) {
         console.error('❌ Fetch request failed:', fetchError);
         throw fetchError;
       }
       
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
-      
       if (response.ok) {
         const data = await response.json();
-        console.log('📡 Response data:', data);
-        console.log('📡 Response keys:', Object.keys(data));
-        console.log('📡 Response content:', data.response);
-        console.log('📡 Response actions:', data.actions);
         
         const aiResponse = {
           role: 'assistant',
           content: data.response || data.content || 'I understand. How else can I help?',
           timestamp: new Date()
         };
-        console.log('🤖 AI Response:', aiResponse);
         
         setAiMessages(prev => {
-          console.log('📝 Previous messages:', prev);
           const newMessages = [...prev, aiResponse];
-          console.log('📝 New messages array:', newMessages);
           return newMessages;
         });
       } else {
@@ -216,213 +179,198 @@ const Layout = () => {
         stack: error.stack
       });
       
-      const errorResponse = {
+      // Fallback response on error
+      const fallbackResponse = {
         role: 'assistant',
-        content: `Sorry, I'm having trouble connecting right now. Error: ${error.message}`,
+        content: 'I\'m experiencing some technical difficulties. Please try again in a moment.',
         timestamp: new Date()
       };
-      setAiMessages(prev => [...prev, errorResponse]);
+      setAiMessages(prev => [...prev, fallbackResponse]);
     } finally {
       setAiLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0C0F] grid [grid-template-columns:clamp(260px,28vw,360px)_minmax(0,1fr)_72px] overflow-hidden">
-      {/* Left Sidebar - AI Chat - Alfred Bar */}
-      <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-80 bg-[#11151A] border-r-2 border-[#2A313A] shadow-2xl transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:inset-0 lg:flex-shrink-0 lg:w-80 flex flex-col h-screen",
-        aiChatOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      )}>
-        <div className="flex items-center justify-between h-16 px-6 border-b-2 border-[#2A313A] flex-shrink-0 bg-[#0A0C0F]">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-gradient-to-br from-[#FFD200] to-[#FFD200] rounded-lg flex items-center justify-center border border-[#FFD200]">
-              <Brain size={20} className="text-[#0A0C0F]" />
+    <div className="min-h-screen bg-background-primary text-text-primary">
+      {/* Main Layout */}
+      <div className="flex h-screen">
+        {/* Left Sidebar */}
+        <div className="w-64 bg-background-secondary border-r border-border-primary flex flex-col">
+          {/* Logo */}
+          <div className="p-6 border-b border-border-primary">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-accent-yellow via-accent-green to-accent-teal rounded-xl flex items-center justify-center">
+                <span className="text-text-inverse font-bold text-xl">L</span>
+              </div>
+              <span className={`text-xl font-bold ${typography.fontFamily.display} tracking-wide`}>
+                Lyfe
+              </span>
             </div>
-            <h1 className="ml-3 text-xl font-bold text-[#E8EEF2] font-oswald tracking-wide">ALFRED AI</h1>
           </div>
-          <button
-            onClick={() => setAiChatOpen(false)}
-            className="lg:hidden p-1 rounded-md text-[#C9D1D9] hover:text-[#FFD200] hover:bg-[#2A313A] transition-colors"
-          >
-            <X size={20} />
-          </button>
+
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-2">
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              const isActive = isActiveRoute(item.href);
+              
+              return (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200",
+                    isActive
+                      ? "bg-accent-green/20 text-accent-green border border-accent-green/30"
+                      : "text-text-secondary hover:text-text-primary hover:bg-background-tertiary"
+                  )}
+                >
+                  <Icon size={20} />
+                  <span className="font-medium">{item.name}</span>
+                </a>
+              );
+            })}
+          </nav>
+
+          {/* User Section */}
+          <div className="p-4 border-t border-border-primary">
+            <div className="flex items-center space-x-3 p-3 rounded-xl bg-background-tertiary">
+              <div className="w-8 h-8 bg-accent-green rounded-full flex items-center justify-center">
+                <span className="text-text-inverse text-sm font-semibold">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-text-primary truncate">
+                  {user?.email || 'User'}
+                </p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="text-text-muted hover:text-text-primary transition-colors"
+                aria-label="Logout"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          </div>
         </div>
-        
-        {/* AI Chat Content */}
+
+        {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Chat Header */}
-          <div className="bg-[#0A0C0F] p-3 border-b-2 border-[#2A313A] flex-shrink-0">
-            <h3 className="font-semibold text-[#E8EEF2] mb-1 font-oswald tracking-wide">MISSION BRIEFING</h3>
-            <p className="text-xs text-[#C9D1D9] font-inter">
-              Ask me to track expenses, add tasks, or get lifestyle insights
-            </p>
-          </div>
-          
-          {/* Chat Messages - Scrollable Area */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-[#11151A]">
-            {aiMessages.length > 0 ? (
-              aiMessages.map((msg, index) => (
+          {/* Top Bar */}
+          <header className="h-16 bg-background-secondary border-b border-border-primary flex items-center justify-between px-6">
+            <div className="flex items-center space-x-4">
+              <h1 className={`text-xl font-semibold ${typography.fontFamily.display} tracking-wide`}>
+                {navigation.find(item => item.href === location.pathname)?.name || 'Dashboard'}
+              </h1>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              {rightTools.map((tool) => {
+                const Icon = tool.icon;
+                return (
+                  <button
+                    key={tool.name}
+                    className="p-2 text-text-muted hover:text-text-primary hover:bg-background-tertiary rounded-lg transition-all duration-200"
+                    aria-label={tool.name}
+                  >
+                    <Icon size={20} />
+                  </button>
+                );
+              })}
+            </div>
+          </header>
+
+          {/* Page Content */}
+          <main className="flex-1 overflow-auto bg-background-primary">
+            <Outlet />
+          </main>
+        </div>
+
+        {/* Right Sidebar - AI Chat */}
+        {aiChatOpen && (
+          <div className="w-80 bg-background-secondary border-l border-border-primary flex flex-col">
+            {/* AI Chat Header */}
+            <div className="p-4 border-b border-border-primary">
+              <div className="flex items-center justify-between">
+                <h3 className={`text-lg font-semibold ${typography.fontFamily.display} tracking-wide`}>
+                  AI Assistant
+                </h3>
+                <button
+                  onClick={() => setAiChatOpen(false)}
+                  className="text-text-muted hover:text-text-primary transition-colors"
+                  aria-label="Close AI chat"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* AI Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {aiMessages.map((msg, index) => (
                 <div
                   key={index}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={cn(
+                    "flex",
+                    msg.role === 'user' ? 'justify-end' : 'justify-start'
+                  )}
                 >
                   <div
-                    className={`max-w-[85%] rounded-lg px-3 py-2 text-sm border border-[#2A313A] ${
+                    className={cn(
+                      "max-w-xs px-4 py-2 rounded-2xl",
                       msg.role === 'user'
-                        ? 'bg-[#FFD200] text-[#0A0C0F]'
-                        : 'bg-[#0A0C0F] text-[#C9D1D9] border-[#2A313A]'
-                    }`}
+                        ? "bg-accent-green text-text-inverse"
+                        : "bg-background-tertiary text-text-primary"
+                    )}
                   >
-                    {msg.content}
+                    <p className="text-sm">{msg.content}</p>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-[#C9D1D9]">
-                <p className="text-sm font-inter">Start a conversation with Alfred</p>
-              </div>
-            )}
-            {aiLoading && (
-              <div className="flex justify-start">
-                <div className="bg-[#0A0C0F] border border-[#2A313A] rounded-lg px-3 py-2 text-sm text-[#C9D1D9]">
-                  <div className="flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-[#FFD200] rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-[#FFD200] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-[#FFD200] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Chat Input - Always Visible at Bottom */}
-          <div className="p-3 border-t-2 border-[#2A313A] bg-[#0A0C0F] flex-shrink-0 mt-auto">
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={aiInput}
-                onChange={(e) => {
-                  console.log('🔍 Input change:', e.target.value);
-                  setAiInput(e.target.value);
-                }}
-                onKeyPress={(e) => {
-                  console.log('🔍 Key press:', e.key);
-                  if (e.key === 'Enter' && aiInput.trim() && !aiLoading) {
-                    e.preventDefault();
-                    console.log('🔍 Enter pressed, calling handleAiMessage');
-                    handleAiMessage(aiInput);
-                  }
-                }}
-                placeholder="Ask Alfred anything..."
-                className="flex-1 px-3 py-2 border-2 border-[#2A313A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFD200] focus:border-[#FFD200] text-sm bg-[#11151A] text-[#E8EEF2] placeholder-[#C9D1D9] font-inter"
-                disabled={aiLoading}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  console.log('🔍 Send button clicked');
-                  if (aiInput.trim() && !aiLoading) {
-                    console.log('🔍 Calling handleAiMessage from button');
-                    handleAiMessage(aiInput);
-                  }
-                }}
-                disabled={aiLoading || !aiInput.trim()}
-                className="px-3 py-2 bg-[#FFD200] text-[#0A0C0F] rounded-lg hover:bg-[#FFD200]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-[#FFD200]"
-              >
-                <Send size={16} />
-              </button>
+              ))}
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Main Content Area */}
-      <div className="flex flex-col overflow-auto min-w-0">
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-[#0A0C0F]">
-          <div className="pr-6 py-6">
-            <div className="w-full">
-              <Outlet />
+            {/* AI Chat Input */}
+            <div className="p-4 border-t border-border-primary">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  placeholder="Ask Alfred anything..."
+                  value={aiInput}
+                  onChange={(e) => {
+                    setAiInput(e.target.value);
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && aiInput.trim() && !aiLoading) {
+                      e.preventDefault();
+                      handleAiMessage(aiInput);
+                    }
+                  }}
+                  className={componentStyles.input.base}
+                  disabled={aiLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (aiInput.trim() && !aiLoading) {
+                      handleAiMessage(aiInput);
+                    }
+                  }}
+                  disabled={aiLoading || !aiInput.trim()}
+                  className="p-3 bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Send message"
+                >
+                  <Send size={16} />
+                </button>
+              </div>
             </div>
-          </div>
-        </main>
-      </div>
-
-      {/* Right Toolbar */}
-      <div className={cn(
-        "fixed inset-y-0 right-0 z-40 w-16 bg-[#11151A] border-l-2 border-[#2A313A] shadow-2xl transform transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:inset-0 lg:flex-shrink-0 overflow-auto min-w-0",
-        rightToolbarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
-      )}>
-        {/* Toolbar Toggle Indicator when hidden */}
-        {!rightToolbarOpen && (
-          <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-8 lg:hidden">
-            <button
-              onClick={() => setRightToolbarOpen(true)}
-              className="p-2 bg-[#0A0C0F] text-[#FFD200] rounded-l-lg shadow-lg hover:bg-[#2A313A] transition-colors border border-[#2A313A]"
-            >
-              <Settings size={16} />
-            </button>
           </div>
         )}
-        <div className="flex flex-col items-center py-6 space-y-4">
-          {/* Navigation Icons */}
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.name}
-                onClick={() => navigate(item.href)}
-                className={cn(
-                  "p-3 rounded-lg transition-colors group relative border border-transparent hover:border-[#2A313A]",
-                  isActiveRoute(item.href)
-                    ? "text-[#FFD200] bg-[#2A313A] border-[#2A313A]"
-                    : "text-[#C9D1D9] hover:text-[#FFD200] hover:bg-[#2A313A]"
-                )}
-                title={item.name}
-              >
-                <Icon size={20} />
-                
-                {/* Tooltip */}
-                <div className="absolute left-full ml-2 px-2 py-1 text-xs text-[#E8EEF2] bg-[#0A0C0F] border border-[#2A313A] rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 font-oswald tracking-wide">
-                  {item.name}
-                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-0 h-0 border-r-4 border-l-4 border-t-4 border-b-4 border-transparent border-r-[#0A0C0F]"></div>
-                </div>
-              </button>
-            );
-          })}
-          
-          {/* Divider */}
-          <div className="w-8 h-px bg-[#2A313A]"></div>
-           
-           {/* Logout */}
-           <button 
-             onClick={handleLogout}
-             className="p-3 rounded-lg text-[#C9D1D9] hover:text-[#D64545] hover:bg-[#2A313A] transition-colors group relative border border-transparent hover:border-[#D64545]"
-             title="Logout"
-           >
-             <LogOut size={20} />
-             <div className="absolute left-full ml-2 px-2 py-1 text-xs text-[#E8EEF2] bg-[#0A0C0F] border border-[#2A313A] rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 font-oswald tracking-wide">
-               Logout
-               <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-0 h-0 border-r-4 border-l-4 border-t-4 border-b-4 border-transparent border-r-[#0A0C0F]"></div>
-             </div>
-           </button>
-         </div>
-       </div>
-
-      {/* Mobile AI Chat Toggle */}
-      {!aiChatOpen && (
-        <button
-          onClick={() => setAiChatOpen(true)}
-          className="fixed bottom-4 left-4 z-50 lg:hidden p-3 bg-[#0A0C0F] text-[#FFD200] rounded-full shadow-2xl hover:bg-[#2A313A] transition-colors border-2 border-[#FFD200]"
-        >
-          <Brain size={20} />
-        </button>
-      )}
+      </div>
     </div>
   );
 };
 
-export { ConsistentPopup };
 export default Layout;

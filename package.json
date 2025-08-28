@@ -1,45 +1,37 @@
 {
-  "name": "alfred-lifestyle-manager",
+  "name": "lyfe",
   "version": "1.0.0",
-  "description": "Alfred - A comprehensive lifestyle management application for time, energy, tasks, and life organization",
+  "description": "Lifestyle management platform",
   "main": "server/index.js",
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "nodemon server/index.js",
-    "client": "cd client && npm start",
     "start": "node server/index.js",
-    "deploy:railway": "npm install --production --ignore-scripts",
-    "railway:start": "node server/index.js"
-  },
-  "dependencies": {
-    "@openai/agents": "^0.0.17",
-    "@vercel/analytics": "^1.5.0",
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.2",
-    "moment": "^2.29.4",
-    "mongoose": "^7.5.0",
-    "multer": "^1.4.5-lts.1",
-    "nodemailer": "^6.9.4",
-    "openai": "^5.15.0",
-    "uuid": "^9.0.0"
-  },
-  "devDependencies": {
-    "concurrently": "^8.2.0",
-    "nodemon": "^3.0.1"
+    "dev": "nodemon server/index.js",
+    "seed:all": "node scripts/seedUpgrader.js",
+    "seed:qa": "node scripts/seedUpgrader.js --qa-only",
+    "seed:ifct": "node scripts/seedFoodData.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "lifestyle",
-    "management",
-    "productivity",
-    "organization"
+    "health",
+    "nutrition",
+    "meal-planning"
   ],
-  "author": "Your Name",
-  "license": "MIT",
-  "engines": {
-    "node": ">=20 <21",
-    "npm": ">=10"
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.11.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.1",
+    "multer": "^2.0.2",
+    "openai": "^4.20.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   }
 }

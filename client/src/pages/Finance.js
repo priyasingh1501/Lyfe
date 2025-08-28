@@ -7,11 +7,8 @@ import {
   Plus, 
   Edit3,
   Trash2,
-  Filter,
-  Download,
   Upload,
-  Image,
-  Receipt
+  Image
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -64,17 +61,10 @@ const Finance = () => {
     fetchFinancialData();
   }, []);
 
-  // Debug: Monitor form data changes
-  useEffect(() => {
-    console.log('🔍 Form data changed:', formData);
-  }, [formData]);
-
   const fetchFinancialData = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      
-      console.log('🔍 Fetching financial data with token:', token ? 'Present' : 'Missing');
       
       const [expensesRes, summaryRes, goalsRes] = await Promise.all([
         axios.get(buildApiUrl('/api/finance/expenses'), {
@@ -88,31 +78,12 @@ const Finance = () => {
         })
       ]);
 
-      console.log('📊 Financial data received:', {
-        expenses: expensesRes.data,
-        summary: summaryRes.data,
-        goals: goalsRes.data
-      });
-
-      console.log('🔍 Setting state with:', {
-        expensesCount: expensesRes.data.length,
-        summaryKeys: Object.keys(summaryRes.data),
-        goalsCount: goalsRes.data.length
-      });
-
       setExpenses(expensesRes.data);
       setSummary(summaryRes.data);
       setExpenseGoals(goalsRes.data);
-      
-      // Update category goals from fetched goals
-      const goalsMap = {};
-      goalsRes.data.forEach(goal => {
-        goalsMap[goal.category] = goal.amount;
-      });
-      setCategoryGoals(goalsMap);
     } catch (error) {
-      console.error('❌ Error fetching financial data:', error);
-      console.error('Error details:', error.response?.data || error.message);
+      console.error('Error fetching financial data:', error);
+      toast.error('Failed to load financial data');
     } finally {
       setLoading(false);
     }

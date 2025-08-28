@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  Plus, 
-  Package, 
-  ShoppingCart, 
-  TrendingUp, 
   AlertTriangle,
   Edit3,
   Trash2,
-  Clock,
   CheckCircle,
   XCircle,
   Snowflake,
@@ -19,7 +13,6 @@ import {
 import axios from 'axios';
 
 const Pantry = () => {
-  const { user } = useAuth();
   const [inventory, setInventory] = useState([]);
   const [summary, setSummary] = useState([]);
   const [lowStockItems, setLowStockItems] = useState([]);

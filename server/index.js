@@ -26,7 +26,9 @@ const aiChatRoutes = require('./routes/aiChat');
 const goalRoutes = require('./routes/goals');
 const habitRoutes = require('./routes/habits');
 const foodRoutes = require('./routes/food');
+const mealsRoutes = require('./routes/meals');
 const pantryRoutes = require('./routes/pantry');
+const devRoutes = require('./routes/dev');
 
 // Debug environment variable loading
 console.log('🔍 Environment check on startup:');
@@ -89,7 +91,9 @@ app.use('/api/ai-chat', aiChatRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/food', foodRoutes);
+app.use('/api/meals', mealsRoutes);
 app.use('/api/pantry', pantryRoutes);
+app.use('/api/dev', devRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

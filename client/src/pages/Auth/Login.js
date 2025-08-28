@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Button, Input, Header, Section } from '../../components/ui';
+import { componentStyles, animations } from '../../styles/designTokens';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -38,7 +40,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0C0F] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <Section className="flex items-center justify-center py-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -51,23 +53,20 @@ const Login = () => {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="mx-auto w-20 h-20 bg-gradient-to-r from-[#FFD200] via-[#3CCB7F] to-[#4ECDC4] rounded-2xl flex items-center justify-center shadow-lg"
+            className="mx-auto w-20 h-20 bg-gradient-to-r from-accent-yellow via-accent-green to-accent-teal rounded-2xl flex items-center justify-center shadow-lg"
           >
-            <span className="text-[#0A0C0F] font-bold text-3xl">L</span>
+            <span className="text-text-inverse font-bold text-3xl">L</span>
           </motion.div>
-          <motion.h2
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-6 text-3xl font-extrabold text-[#E8EEF2] font-oswald tracking-wide"
-          >
+          
+          <Header level={2} className="mt-6">
             Welcome back to Alfred
-          </motion.h2>
+          </Header>
+          
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="mt-2 text-sm text-[#C9D1D9]"
+            className="mt-2 text-sm text-text-secondary"
           >
             Sign in to manage your lifestyle
           </motion.p>
@@ -83,36 +82,27 @@ const Login = () => {
         >
           <div className="space-y-4">
             {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-[#C9D1D9] mb-2 font-oswald tracking-wide">
-                Email address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail size={20} className="text-[#2A313A]" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full pl-10 pr-3 py-3 border-2 border-[#2A313A] placeholder-[#6B7280] text-[#E8EEF2] bg-[#11151A] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3CCB7F] focus:border-[#3CCB7F] focus:z-10 sm:text-sm transition-all duration-200 hover:border-[#3A414A]"
-                  placeholder="Enter your email"
-                />
-              </div>
-            </div>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              label="Email address"
+              autoComplete="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Enter your email"
+              icon={<Mail size={20} className="text-text-muted" />}
+            />
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-[#C9D1D9] mb-2 font-oswald tracking-wide">
+              <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-2">
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock size={20} className="text-[#2A313A]" />
+                  <Lock size={20} className="text-text-muted" />
                 </div>
                 <input
                   id="password"
@@ -122,18 +112,19 @@ const Login = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="appearance-none relative block w-full pl-10 pr-12 py-3 border-2 border-[#2A313A] placeholder-[#6B7280] text-[#E8EEF2] bg-[#11151A] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3CCB7F] focus:border-[#3CCB7F] focus:z-10 sm:text-sm transition-all duration-200 hover:border-[#3A414A]"
+                  className={componentStyles.input.base}
                   placeholder="Enter your password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted hover:text-text-secondary transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
-                    <EyeOff size={20} className="text-[#2A313A] hover:text-[#C9D1D9]" />
+                    <EyeOff size={20} />
                   ) : (
-                    <Eye size={20} className="text-[#2A313A] hover:text-[#C9D1D9]" />
+                    <Eye size={20} />
                   )}
                 </button>
               </div>
@@ -147,45 +138,42 @@ const Login = () => {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 text-[#3CCB7F] focus:ring-[#3CCB7F] border-[#2A313A] rounded bg-[#11151A]"
+                className="h-4 w-4 text-accent-green focus:ring-accent-green border-border-primary rounded bg-background-secondary"
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-[#C9D1D9]">
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-text-secondary">
                 Remember me
               </label>
             </div>
 
             <div className="text-sm">
-              <a href="#" className="font-medium text-[#3CCB7F] hover:text-[#2BB870] transition-colors duration-200">
+              <button 
+                type="button"
+                className="font-medium text-accent-green hover:text-accent-green/80 transition-colors duration-200"
+                onClick={() => {/* TODO: Implement forgot password */}}
+              >
                 Forgot your password?
-              </a>
+              </button>
             </div>
           </div>
 
           {/* Submit Button */}
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-[#0A0C0F] bg-gradient-to-r from-[#FFD200] via-[#3CCB7F] to-[#4ECDC4] hover:from-[#FFB800] hover:via-[#2BB870] hover:to-[#3DB8B0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3CCB7F] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl font-oswald tracking-wide"
-            >
-              {loading ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#0A0C0F] mr-2"></div>
-                  Signing in...
-                </div>
-              ) : (
-                'Sign in'
-              )}
-            </button>
-          </div>
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            loading={loading}
+            className="w-full"
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
+          </Button>
 
           {/* Sign up link */}
           <div className="text-center">
-            <p className="text-sm text-[#C9D1D9]">
+            <p className="text-sm text-text-secondary">
               Don't have an account?{' '}
               <Link
                 to="/register"
-                className="font-medium text-[#3CCB7F] hover:text-[#2BB870] transition-colors duration-200"
+                className="font-medium text-accent-green hover:text-accent-green/80 transition-colors duration-200"
               >
                 Sign up here
               </Link>
@@ -200,19 +188,27 @@ const Login = () => {
           transition={{ delay: 0.8 }}
           className="text-center"
         >
-          <p className="text-xs text-[#6B7280]">
+          <p className="text-xs text-text-muted">
             By signing in, you agree to our{' '}
-            <a href="#" className="text-[#3CCB7F] hover:text-[#2BB870]">
+            <button 
+              type="button"
+              className="text-accent-green hover:text-accent-green/80"
+              onClick={() => {/* TODO: Implement Terms of Service */}}
+            >
               Terms of Service
-            </a>{' '}
+            </button>{' '}
             and{' '}
-            <a href="#" className="text-[#3CCB7F] hover:text-[#2BB870]">
+            <button 
+              type="button"
+              className="text-accent-green hover:text-accent-green/80"
+              onClick={() => {/* TODO: Implement Privacy Policy */}}
+            >
               Privacy Policy
-            </a>
+            </button>
           </p>
         </motion.div>
       </motion.div>
-    </div>
+    </Section>
   );
 };
 

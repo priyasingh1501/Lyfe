@@ -1,199 +1,259 @@
 const express = require('express');
 const router = express.Router();
+const FoodItem = require('../models/FoodItem');
 const auth = require('../middleware/auth');
-const FoodTracking = require('../models/FoodTracking');
+const { foldName } = require('../lib/meal/norm');
 
-// Get all food tracking entries for a user
-router.get('/', auth, async (req, res) => {
+/**
+ * Search food items by name
+ * GET /api/food/search?q=query&includeProvenance=true
+ */
+router.get('/search', auth, async (req, res) => {
   try {
-    const { startDate, endDate, mealType } = req.query;
-    const userId = req.user.userId;
+    const { q, limit = 20, includeProvenance = false } = req.query;
     
-    let query = { userId };
-    
-    if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
+    if (!q || q.trim().length === 0) {
+      return res.status(400).json({ 
+        message: 'Search query is required',
+        foods: []
+      });
     }
-    
-    if (mealType) {
-      query.mealType = mealType;
-    }
-    
-    const foodEntries = await FoodTracking.find(query)
-      .sort({ date: -1, mealType: 1 })
-      .limit(100);
-    
-    res.json(foodEntries);
-  } catch (error) {
-    console.error('Error fetching food entries:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
-// Get weekly nutrition summary
-router.get('/weekly-summary', auth, async (req, res) => {
-  try {
-    const { weekStart } = req.query;
-    const userId = req.user.userId;
+    const searchQuery = foldName(q.trim());
     
-    let startDate, endDate;
-    
-    if (weekStart) {
-      startDate = new Date(weekStart);
-      endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 6);
-    } else {
-      // Default to current week
-      const now = new Date();
-      startDate = new Date(now);
-      startDate.setDate(now.getDate() - now.getDay());
-      startDate.setHours(0, 0, 0, 0);
+    // Text search on nameFold
+    const foods = await FoodItem.find(
+      { $text: { $search: searchQuery } },
+      { score: { $meta: 'textScore' } }
+    )
+          .sort({ score: { $meta: 'textScore' } })
+      .limit(parseInt(limit))
+      .select('name portionGramsDefault portionUnits nutrients tags gi fodmap novaClass provenance qualityFlags');
+
+    // If no results from text search, try fuzzy matching
+    if (foods.length === 0) {
+      const fuzzyFoods = await FoodItem.find({
+        $or: [
+          { nameFold: { $regex: searchQuery, $options: 'i' } },
+          { aliases: { $regex: searchQuery, $options: 'i' } }
+        ]
+      })
+      .limit(parseInt(limit))
+      .select('name portionGramsDefault nutrients tags gi fodmap novaClass provenance qualityFlags');
       
-      endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 6);
-      endDate.setHours(23, 59, 59, 999);
+      return res.json({
+        message: 'Foods found',
+        foods: includeProvenance ? fuzzyFoods : fuzzyFoods.map(food => ({
+          ...food.toObject(),
+          provenance: {
+            source: food.provenance?.source || food.source,
+            measured: food.provenance?.measured || false,
+            confidence: food.provenance?.confidence || 0.5,
+            giOrigin: food.provenance?.giOrigin || 'unknown',
+            novaOrigin: food.provenance?.novaOrigin || 'unknown',
+            fodmapOrigin: food.provenance?.fodmapOrigin || 'unknown'
+          }
+        })),
+        searchType: 'fuzzy'
+      });
     }
-    
-    const weeklyEntries = await FoodTracking.find({
-      userId,
-      date: { $gte: startDate, $lte: endDate }
+
+    res.json({
+      message: 'Foods found',
+      foods: includeProvenance ? foods : foods.map(food => ({
+        ...food.toObject(),
+        provenance: {
+          source: food.provenance?.source || food.source,
+          measured: food.provenance?.measured || false,
+          confidence: food.provenance?.confidence || 0.5,
+          giOrigin: food.provenance?.giOrigin || 'unknown',
+          novaOrigin: food.provenance?.novaOrigin || 'unknown',
+          fodmapOrigin: food.provenance?.fodmapOrigin || 'unknown'
+        }
+      })),
+      searchType: 'text'
     });
-    
-    // Calculate weekly nutrition metrics
-    const summary = {
-      totalMeals: weeklyEntries.length,
-      carbHeavy: weeklyEntries.filter(entry => entry.isCarbHeavy).length,
-      fatHeavy: weeklyEntries.filter(entry => entry.isFatHeavy).length,
-      processed: weeklyEntries.filter(entry => entry.isProcessed).length,
-      fiberRich: weeklyEntries.filter(entry => entry.isFiberRich).length,
-      proteinHeavy: weeklyEntries.filter(entry => entry.isProteinHeavy).length,
-      ironRich: weeklyEntries.filter(entry => entry.isIronRich).length,
-      highSugar: weeklyEntries.filter(entry => entry.isHighSugar).length,
-      averageSatiety: weeklyEntries.length > 0 
-        ? (weeklyEntries.reduce((sum, entry) => sum + entry.satiety, 0) / weeklyEntries.length).toFixed(1)
-        : 0,
-      averageCravings: weeklyEntries.length > 0
-        ? (weeklyEntries.reduce((sum, entry) => sum + entry.postMealCravings, 0) / weeklyEntries.length).toFixed(1)
-        : 0,
-      mindfulMeals: weeklyEntries.filter(entry => entry.mindfulPractice !== 'none').length
-    };
-    
-    res.json(summary);
+
   } catch (error) {
-    console.error('Error fetching weekly summary:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error searching foods:', error);
+    res.status(500).json({ 
+      message: 'Error searching foods',
+      error: error.message 
+    });
   }
 });
 
-// Get health goals progress
-router.get('/health-goals', auth, async (req, res) => {
+/**
+ * Get food categories
+ * GET /api/food/categories
+ */
+router.get('/categories', auth, async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
-    const userId = req.user.userId;
-    
-    let query = { userId };
-    
-    if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
-    }
-    
-    const entries = await FoodTracking.find(query);
-    
-    const goals = {
-      steady_energy: {
-        count: entries.filter(entry => entry.healthGoals.includes('steady_energy')).length,
-        total: entries.length
+    const categories = await FoodItem.aggregate([
+      {
+        $group: {
+          _id: '$source',
+          count: { $sum: 1 }
+        }
       },
-      muscle_building: {
-        count: entries.filter(entry => entry.healthGoals.includes('muscle_building')).length,
-        total: entries.length
-      },
-      gut_comfort: {
-        count: entries.filter(entry => entry.healthGoals.includes('gut_comfort')).length,
-        total: entries.length
-      },
-      immunity_building: {
-        count: entries.filter(entry => entry.healthGoals.includes('immunity_building')).length,
-        total: entries.length
+      {
+        $sort: { count: -1 }
       }
-    };
-    
-    res.json(goals);
+    ]);
+
+    res.json({
+      message: 'Categories found',
+      categories
+    });
+
   } catch (error) {
-    console.error('Error fetching health goals:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ 
+      message: 'Error fetching categories',
+      error: error.message 
+    });
   }
 });
 
-// Create new food tracking entry
-router.post('/', auth, async (req, res) => {
+/**
+ * Get popular foods
+ * GET /api/food/popular
+ */
+router.get('/popular', auth, async (req, res) => {
   try {
-    const userId = req.user.userId;
-    const foodData = { ...req.body, userId };
+    const { limit = 10 } = req.query;
     
-    const foodEntry = new FoodTracking(foodData);
-    
-    // Calculate nutrition analysis
-    foodEntry.calculateNutritionAnalysis();
-    
-    await foodEntry.save();
-    
-    res.status(201).json(foodEntry);
+    // For now, return foods with high protein or fiber
+    // In the future, this could be based on user preferences or usage
+    const popularFoods = await FoodItem.find({
+      $or: [
+        { 'nutrients.protein': { $gte: 15 } },
+        { 'nutrients.fiber': { $gte: 5 } },
+        { tags: { $in: ['veg', 'protein'] } }
+      ]
+    })
+    .sort({ 'nutrients.protein': -1 })
+    .limit(parseInt(limit))
+    .select('name portionGramsDefault portionUnits nutrients tags gi fodmap novaClass provenance qualityFlags');
+
+    res.json({
+      message: 'Popular foods found',
+      foods: popularFoods
+    });
+
   } catch (error) {
-    console.error('Error creating food entry:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching popular foods:', error);
+    res.status(500).json({ 
+      message: 'Error fetching popular foods',
+      error: error.message 
+    });
   }
 });
 
-// Update food tracking entry
-router.put('/:id', auth, async (req, res) => {
+/**
+ * Get food suggestions based on current meal
+ * GET /api/food/suggestions
+ */
+router.get('/suggestions', auth, async (req, res) => {
   try {
-    const userId = req.user.userId;
-    const { id } = req.params;
+    const { currentFoods, mealType, limit = 5 } = req.query;
     
-    const foodEntry = await FoodTracking.findOneAndUpdate(
-      { _id: id, userId },
-      req.body,
-      { new: true, runValidators: true }
-    );
+    let suggestions = [];
     
-    if (!foodEntry) {
-      return res.status(404).json({ message: 'Food entry not found' });
+    if (currentFoods && currentFoods.length > 0) {
+      // Analyze current foods and suggest complementary items
+      const currentFoodIds = currentFoods.split(',').map(id => id.trim());
+      
+      // Get current foods to analyze
+      const foods = await FoodItem.find({ _id: { $in: currentFoodIds } });
+      
+      // Check if we need protein, vegetables, or fiber
+      let needsProtein = true;
+      let needsVeg = true;
+      let needsFiber = true;
+      
+      foods.forEach(food => {
+        if (food.nutrients.protein >= 20) needsProtein = false;
+        if (food.tags && food.tags.includes('veg')) needsVeg = false;
+        if (food.nutrients.fiber >= 5) needsFiber = false;
+      });
+      
+      // Build suggestion query
+      const suggestionQuery = {};
+      
+      if (needsProtein) {
+        suggestionQuery.$or = [
+          { 'nutrients.protein': { $gte: 15 } },
+          { tags: { $in: ['protein'] } }
+        ];
+      }
+      
+      if (needsVeg || needsFiber) {
+        suggestionQuery.$or = suggestionQuery.$or || [];
+        suggestionQuery.$or.push(
+          { tags: { $in: ['veg', 'leafy'] } },
+          { 'nutrients.fiber': { $gte: 3 } }
+        );
+      }
+      
+      if (Object.keys(suggestionQuery).length > 0) {
+        suggestions = await FoodItem.find(suggestionQuery)
+          .limit(parseInt(limit))
+          .select('name portionGramsDefault portionUnits nutrients tags gi fodmap novaClass provenance qualityFlags');
+      }
     }
     
-    // Recalculate nutrition analysis
-    foodEntry.calculateNutritionAnalysis();
-    await foodEntry.save();
-    
-    res.json(foodEntry);
+    // If no specific suggestions, return some healthy defaults
+    if (suggestions.length === 0) {
+      suggestions = await FoodItem.find({
+        tags: { $in: ['veg', 'protein'] },
+        'nutrients.fiber': { $gte: 3 }
+      })
+      .limit(parseInt(limit))
+      .select('name portionGramsDefault portionUnits nutrients tags gi fodmap novaClass provenance qualityFlags');
+    }
+
+    res.json({
+      message: 'Food suggestions found',
+      suggestions
+    });
+
   } catch (error) {
-    console.error('Error updating food entry:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching food suggestions:', error);
+    res.status(500).json({ 
+      message: 'Error fetching food suggestions',
+      error: error.message 
+    });
   }
 });
 
-// Delete food tracking entry
-router.delete('/:id', auth, async (req, res) => {
+/**
+ * Get food item by ID
+ * GET /api/food/:id
+ */
+router.get('/:id', auth, async (req, res) => {
   try {
-    const userId = req.user.userId;
     const { id } = req.params;
     
-    const foodEntry = await FoodTracking.findOneAndDelete({ _id: id, userId });
+    const food = await FoodItem.findById(id);
     
-    if (!foodEntry) {
-      return res.status(404).json({ message: 'Food entry not found' });
+    if (!food) {
+      return res.status(404).json({ 
+        message: 'Food item not found' 
+      });
     }
-    
-    res.json({ message: 'Food entry deleted successfully' });
+
+    res.json({
+      message: 'Food item found',
+      food
+    });
+
   } catch (error) {
-    console.error('Error deleting food entry:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching food item:', error);
+    res.status(500).json({ 
+      message: 'Error fetching food item',
+      error: error.message 
+    });
   }
 });
 
