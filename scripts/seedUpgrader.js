@@ -14,6 +14,19 @@ const { foldName } = require('../server/lib/meal/norm');
 const CONFIG = {
   USDA_API_KEY: process.env.USDA_API_KEY,
   OFF_DISABLE: process.env.OFF_DISABLE === 'true',
+  OFF_BARCODES: process.env.OFF_BARCODES ? process.env.OFF_BARCODES.split(',') : [
+    // Real Indian food product barcodes (examples - you should replace with actual ones)
+    '8901012000000', // Parle-G
+    '8901012000001', // Britannia Good Day
+    '8901012000002', // Kurkure
+    '8901012000003', // Lay's
+    '8901012000004', // Maggi
+    '8901012000005', // Amul Butter
+    '8901012000006', // Mother Dairy Curd
+    '8901012000007', // Kwality Walls
+    '8901012000008', // Cadbury Dairy Milk
+    '8901012000009'  // Nestle Munch
+  ],
   QA_ATWATER_TOLERANCE: parseInt(process.env.SEED_QA_ATWATER_TOLERANCE) || 30,
   QA_PORTION_BANDS: JSON.parse(process.env.SEED_QA_PORTION_BANDS || '{"roti": [35,60], "idli": [80,180]}'),
   REPORTS_DIR: path.join(__dirname, '../reports')
@@ -290,9 +303,168 @@ class SeedUpgrader {
   }
 
   async ingestOpenFoodFacts() {
-    // Placeholder for Open Food Facts ingestion
-    // Would use OFF API by barcode/name
-    return [];
+    console.log('🌍 Starting Open Food Facts ingestion...');
+    
+    // Use configured barcodes or default list
+    const barcodesToProcess = CONFIG.OFF_BARCODES;
+    
+    if (barcodesToProcess.length === 0) {
+      console.log('⚠️  No barcodes configured for Open Food Facts ingestion');
+      return [];
+    }
+    
+    const offData = [];
+    let successCount = 0;
+    let errorCount = 0;
+    
+    console.log(`📱 Processing ${barcodesToProcess.length} barcodes...`);
+    
+    for (const barcode of barcodesToProcess) {
+      try {
+        console.log(`🔍 Fetching barcode: ${barcode}`);
+        const product = await this.fetchOffProduct(barcode);
+        if (product) {
+          const normalizedProduct = this.normalizeOffProduct(product);
+          offData.push(normalizedProduct);
+          successCount++;
+          console.log(`✅ Successfully processed: ${product.name}`);
+          
+          // Rate limiting - be respectful to OFF API
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } else {
+          console.log(`⚠️  No product found for barcode: ${barcode}`);
+        }
+      } catch (error) {
+        errorCount++;
+        console.log(`❌ Failed to fetch barcode ${barcode}: ${error.message}`);
+        
+        // Continue with next barcode even if one fails
+        continue;
+      }
+    }
+    
+    console.log(`✅ Open Food Facts: ${successCount} successful, ${errorCount} failed`);
+    return offData;
+  }
+
+  async fetchOffProduct(barcode) {
+    const UA = "LyfeApp/1.0 (support@lyfe.example)";
+    const BASE = "https://world.openfoodfacts.org/api/v2";
+    
+    const fields = [
+      "code","product_name","brands","quantity","serving_size",
+      "nutriments","nutrition_data_per","nova_group","nutriscore_grade",
+      "categories_tags_en","countries_tags_en",
+      "ingredients_text","ingredients_analysis_tags",
+      "additives_tags","allergens_tags","images","last_modified_t"
+    ].join(",");
+    
+    const res = await axios.get(`${BASE}/product/${barcode}.json?fields=${fields}`, {
+      headers: { "User-Agent": UA },
+      timeout: 10000
+    });
+    
+    if (res.status !== 200) {
+      throw new Error(`OFF ${res.status}`);
+    }
+    
+    const { product } = res.data;
+    if (!product) return null;
+
+    const n = product.nutriments || {};
+    const per100 = {
+      kcal: n["energy-kcal_100g"] ?? n["energy-kcal_serving"],
+      protein: n["proteins_100g"],
+      fat: n["fat_100g"],
+      carbs: n["carbohydrates_100g"],
+      fiber: n["fiber_100g"],
+      sugar: n["sugars_100g"],
+      sodium: n["sodium_100g"]
+    };
+
+    return {
+      barcode: product.code,
+      name: product.product_name || product.brands || "Unknown",
+      brand: product.brands || null,
+      servingSize: product.serving_size || null,
+      novaClass: product.nova_group ?? null,
+      nutriments100g: per100,
+      flags: {
+        vegan: (product.ingredients_analysis_tags || []).includes("en:vegan"),
+        vegetarian: (product.ingredients_analysis_tags || []).includes("en:vegetarian"),
+        additives: product.additives_tags || [],
+        allergens: product.allergens_tags || []
+      },
+      proofImage: product.image_url || null,
+      offLastModified: product.last_modified_t
+    };
+  }
+
+  normalizeOffProduct(product) {
+    // Convert OFF product to our FoodItem format
+    const nutrients = product.nutriments100g || {};
+    
+    // Determine tags based on product characteristics
+    const tags = [];
+    if (product.flags.vegan) tags.push('vegan');
+    if (product.flags.vegetarian) tags.push('vegetarian');
+    if (product.novaClass === 4) tags.push('ultra-processed');
+    if (product.novaClass === 3) tags.push('processed');
+    if (product.novaClass === 2) tags.push('cooked');
+    if (product.novaClass === 1) tags.push('unprocessed');
+    
+    // Add category tags if available
+    if (product.categories_tags_en) {
+      product.categories_tags_en.forEach(cat => {
+        const cleanCat = cat.replace('en:', '').replace(/_/g, ' ');
+        tags.push(cleanCat);
+      });
+    }
+    
+    return {
+      name: product.name,
+      source: 'OpenFoodFacts',
+      externalId: product.barcode,
+      portionGramsDefault: 100, // Standard per-100g
+      portionUnits: [{
+        unit: 'grams',
+        grams: 100,
+        description: '100g portion',
+        isDefault: true,
+        commonFoods: ['all']
+      }],
+      nutrients: {
+        kcal: nutrients.kcal || 0,
+        protein: nutrients.protein || 0,
+        fat: nutrients.fat || 0,
+        carbs: nutrients.carbs || 0,
+        fiber: nutrients.fiber || 0,
+        sugar: nutrients.sugar || 0,
+        vitaminC: 0, // Not typically available in OFF
+        zinc: 0,     // Not typically available in OFF
+        selenium: 0, // Not typically available in OFF
+        iron: 0,     // Not typically available in OFF
+        omega3: 0    // Not typically available in OFF
+      },
+      tags: tags,
+      novaClass: product.novaClass || 1,
+      provenance: {
+        'nutrition': {
+          source: 'OpenFoodFacts',
+          origin: 'measured',
+          confidence: 0.8,
+          lastVerifiedAt: new Date(product.offLastModified * 1000),
+          notes: `OFF barcode: ${product.barcode}, last modified: ${new Date(product.offLastModified * 1000).toISOString()}`
+        },
+        'nova': {
+          source: 'OpenFoodFacts',
+          origin: 'measured',
+          confidence: 0.9,
+          lastVerifiedAt: new Date(product.offLastModified * 1000),
+          notes: 'NOVA classification from OFF database'
+        }
+      }
+    };
   }
 
   parseCSV(csvContent) {

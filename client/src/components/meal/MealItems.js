@@ -2,6 +2,30 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Edit3, Save, X } from 'lucide-react';
 
+// Helper function to normalize nutrient data from different sources
+const getNormalizedNutrients = (food) => {
+  if (!food) return null;
+  
+  // Handle local database format
+  if (food.nutrients) {
+    return food.nutrients;
+  }
+  
+  // Handle Open Food Facts format
+  if (food.nutriments100g) {
+    return {
+      kcal: food.nutriments100g.kcal || 0,
+      protein: food.nutriments100g.protein || 0,
+      fat: food.nutriments100g.fat || 0,
+      carbs: food.nutriments100g.carbs || 0,
+      fiber: food.nutriments100g.fiber || 0,
+      sugar: food.nutriments100g.sugar || 0
+    };
+  }
+  
+  return null;
+};
+
 const MealItems = ({ items, onRemoveFood, onUpdatePortion }) => {
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -118,30 +142,37 @@ const MealItems = ({ items, onRemoveFood, onUpdatePortion }) => {
                 )}
                 
                 {/* Nutritional info */}
-                {item.food && (
-                  <div className="grid grid-cols-4 gap-2 text-sm text-[#C9D1D9]">
-                    <div>
-                      <span className="text-[#FFD200] font-medium">kcal:</span>
-                      <br />
-                      {Math.round((item.food.nutrients?.kcal || 0) * item.grams / 100)}
+                {item.food && (() => {
+                  const nutrients = getNormalizedNutrients(item.food);
+                  return nutrients ? (
+                    <div className="grid grid-cols-4 gap-2 text-sm text-[#C9D1D9]">
+                      <div>
+                        <span className="text-[#FFD200] font-medium">kcal:</span>
+                        <br />
+                        {Math.round((nutrients.kcal || 0) * item.grams / 100)}
+                      </div>
+                      <div>
+                        <span className="text-[#FFD200] font-medium">P:</span>
+                        <br />
+                        {((nutrients.protein || 0) * item.grams / 100).toFixed(1)}g
+                      </div>
+                      <div>
+                        <span className="text-[#FFD200] font-medium">C:</span>
+                        <br />
+                        {((nutrients.carbs || 0) * item.grams / 100).toFixed(1)}g
+                      </div>
+                      <div>
+                        <span className="text-[#FFD200] font-medium">F:</span>
+                        <br />
+                        {((nutrients.fat || 0) * item.grams / 100).toFixed(1)}g
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-[#FFD200] font-medium">P:</span>
-                      <br />
-                      {((item.food.nutrients?.protein || 0) * item.grams / 100).toFixed(1)}g
+                  ) : (
+                    <div className="text-sm text-[#6B7280] italic">
+                      Nutritional data not available
                     </div>
-                    <div>
-                      <span className="text-[#FFD200] font-medium">C:</span>
-                      <br />
-                      {((item.food.nutrients?.carbs || 0) * item.grams / 100).toFixed(1)}g
-                    </div>
-                    <div>
-                      <span className="text-[#FFD200] font-medium">F:</span>
-                      <br />
-                      {((item.food.nutrients?.fat || 0) * item.grams / 100).toFixed(1)}g
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
               
               {/* Action buttons */}

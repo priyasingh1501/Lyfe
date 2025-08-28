@@ -3,6 +3,35 @@ import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 
 const MealAnalysis = ({ mealItems, context }) => {
+  // Helper function to normalize nutrient data from different sources
+  const getNormalizedNutrients = (food) => {
+    if (!food) return null;
+    
+    // Handle local database format
+    if (food.nutrients) {
+      return food.nutrients;
+    }
+    
+    // Handle Open Food Facts format
+    if (food.nutriments100g) {
+      return {
+        kcal: food.nutriments100g.kcal || 0,
+        protein: food.nutriments100g.protein || 0,
+        fat: food.nutriments100g.fat || 0,
+        carbs: food.nutriments100g.carbs || 0,
+        fiber: food.nutriments100g.fiber || 0,
+        sugar: food.nutriments100g.sugar || 0,
+        vitaminC: 0, // Not available in OFF data
+        zinc: 0,     // Not available in OFF data
+        selenium: 0, // Not available in OFF data
+        iron: 0,     // Not available in OFF data
+        omega3: 0    // Not available in OFF data
+      };
+    }
+    
+    return null;
+  };
+
   // Calculate totals
   const totals = useMemo(() => {
     if (mealItems.length === 0) return null;
@@ -22,11 +51,12 @@ const MealAnalysis = ({ mealItems, context }) => {
     };
 
     mealItems.forEach(item => {
-      if (item.food && item.food.nutrients) {
+      const nutrients = getNormalizedNutrients(item.food);
+      if (nutrients) {
         const factor = item.grams / 100;
         Object.keys(totals).forEach(nutrient => {
-          if (item.food.nutrients[nutrient] !== undefined) {
-            totals[nutrient] += (item.food.nutrients[nutrient] || 0) * factor;
+          if (nutrients[nutrient] !== undefined && nutrients[nutrient] !== null) {
+            totals[nutrient] += (nutrients[nutrient] || 0) * factor;
           }
         });
       }
@@ -59,8 +89,9 @@ const MealAnalysis = ({ mealItems, context }) => {
     let weightedGISum = 0;
     
     mealItems.forEach(item => {
-      if (item.food?.gi && item.food.nutrients?.carbs) {
-        const carbs = item.food.nutrients.carbs * item.grams / 100;
+      const nutrients = getNormalizedNutrients(item.food);
+      if (item.food?.gi && nutrients?.carbs) {
+        const carbs = nutrients.carbs * item.grams / 100;
         totalCarbWeight += carbs;
         weightedGISum += carbs * item.food.gi;
       }
