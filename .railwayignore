@@ -17,3 +17,21 @@ yarn-error.log*
 *.swp
 *.swo
 *~
+
+# Exclude all client-related files
+client/**/*
+client/build/
+client/node_modules/
+client/package.json
+client/package-lock.json
+client/vercel.json
+client/.vercelignore
+client/.nvmrc
+client/build.sh
+client/env.example
+client/VERCEL_DEPLOYMENT.md
+
+# Exclude deployment files for other platforms
+vercel.json
+VERCEL_DEPLOYMENT.md
+deploy-vercel.sh
