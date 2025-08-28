@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
@@ -14,17 +14,13 @@ import {
   Edit3,
   Trash2,
   Eye,
-  EyeOff,
-  Filter,
-  BarChart3,
-  TrendingUp
+  EyeOff
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const Journal = () => {
   const { token } = useAuth();
-  const [journal, setJournal] = useState(null);
   const [entries, setEntries] = useState([]);
   const [showNewEntryForm, setShowNewEntryForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -65,14 +61,7 @@ const Journal = () => {
     { value: 'terrible', label: 'Terrible', color: 'bg-red-500' }
   ];
 
-  useEffect(() => {
-    if (token) {
-      fetchJournal();
-      fetchStats();
-    }
-  }, [token]);
-
-  const fetchJournal = async () => {
+  const fetchJournal = useCallback(async () => {
     try {
       const response = await fetch('/api/journal', {
         headers: {
@@ -80,7 +69,6 @@ const Journal = () => {
         }
       });
       const data = await response.json();
-      setJournal(data);
       setEntries(data.entries || []);
       setLoading(false);
     } catch (error) {
@@ -88,9 +76,9 @@ const Journal = () => {
       toast.error('Failed to load journal');
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await fetch('/api/journal/stats', {
         headers: {
@@ -102,7 +90,14 @@ const Journal = () => {
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      fetchJournal();
+      fetchStats();
+    }
+  }, [token, fetchJournal, fetchStats]);
 
   const handleCreateEntry = async (e) => {
     e.preventDefault();
@@ -125,7 +120,6 @@ const Journal = () => {
       if (response.ok) {
         const data = await response.json();
         setEntries([data.entry, ...entries]);
-        setJournal(data.journal);
         setShowNewEntryForm(false);
         setNewEntry({
           title: '',

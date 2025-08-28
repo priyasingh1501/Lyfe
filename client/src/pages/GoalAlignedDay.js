@@ -1,28 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
+
 import { 
   Plus, 
   Target, 
-  Clock, 
-  TrendingUp, 
-  Calendar,
   Edit3,
-  Trash2,
   Flame,
-  CheckCircle,
-  Star,
   Repeat
 } from 'lucide-react';
 import axios from 'axios';
 import { buildApiUrl } from '../config';
 
 const GoalAlignedDay = () => {
-  const { user } = useAuth();
   const [goals, setGoals] = useState([]);
   const [todayMetrics, setTodayMetrics] = useState(null);
-  const [streakInfo, setStreakInfo] = useState({});
-  const [weeklyData, setWeeklyData] = useState([]);
   const [todayTasks, setTodayTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showGoalForm, setShowGoalForm] = useState(false);
@@ -30,11 +21,6 @@ const GoalAlignedDay = () => {
   const [showHabitForm, setShowHabitForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
   const [activeTab, setActiveTab] = useState('day');
-  
-  // Filter states for different tabs
-  const [taskFilter, setTaskFilter] = useState('daily');
-  const [goalFilter, setGoalFilter] = useState('daily');
-  const [habitFilter, setHabitFilter] = useState('daily');
   
   // State to track which hours are marked as mindful
   const [mindfulHours, setMindfulHours] = useState(new Set());
@@ -47,8 +33,6 @@ const GoalAlignedDay = () => {
     targetHours: 1,
     priority: 'medium'
   });
-
-
 
   const [taskFormData, setTaskFormData] = useState({
     title: '',
@@ -66,15 +50,12 @@ const GoalAlignedDay = () => {
     fetchData();
   }, []);
 
-
-
   const fetchData = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      console.log('Fetching data with token:', token ? 'Token exists' : 'No token'); // Debug log
       
-      const [goalsRes, metricsRes, streakRes, weeklyRes, tasksRes] = await Promise.all([
+      const [goalsRes, metricsRes, tasksRes] = await Promise.all([
         axios.get(buildApiUrl('/api/goals'), {
           headers: { Authorization: `Bearer ${token}` }
         }),
@@ -82,9 +63,6 @@ const GoalAlignedDay = () => {
           headers: { Authorization: `Bearer ${token}` }
         }),
         axios.get(buildApiUrl('/api/goals/streak'), {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get(buildApiUrl('/api/goals/weekly'), {
           headers: { Authorization: `Bearer ${token}` }
         }),
         axios.get(buildApiUrl('/api/tasks'), {
@@ -95,24 +73,12 @@ const GoalAlignedDay = () => {
         })
       ]);
 
-
-
-      console.log('Goals fetched:', goalsRes.data); // Debug log
-      console.log('Metrics fetched:', metricsRes.data); // Debug log
       setGoals(goalsRes.data);
       setTodayMetrics(metricsRes.data);
-      setStreakInfo(streakRes.data);
-      setWeeklyData(weeklyRes.data);
-      setTodayTasks(tasksRes.data.tasks || []);
+
+      setTodayTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
     } catch (error) {
       console.error('Error fetching data:', error);
-      
-      // Set empty states on error
-      setGoals([]);
-      setTodayMetrics(null);
-      setStreakInfo({});
-      setWeeklyData([]);
-      setTodayTasks([]);
     } finally {
       setLoading(false);
     }
@@ -122,20 +88,15 @@ const GoalAlignedDay = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      console.log('Submitting goal:', goalFormData); // Debug log
       
       if (editingGoal) {
-        console.log('Updating existing goal:', editingGoal._id); // Debug log
-        const response = await axios.put(buildApiUrl(`/api/goals/${editingGoal._id}`), goalFormData, {
+        await axios.put(buildApiUrl(`/api/goals/${editingGoal._id}`), goalFormData, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        console.log('Update response:', response.data); // Debug log
       } else {
-        console.log('Creating new goal'); // Debug log
-        const response = await axios.post(buildApiUrl('/api/goals'), goalFormData, {
+        await axios.post(buildApiUrl('/api/goals'), goalFormData, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        console.log('Create response:', response.data); // Debug log
       }
       
       setShowGoalForm(false);
@@ -152,12 +113,9 @@ const GoalAlignedDay = () => {
       await fetchData();
     } catch (error) {
       console.error('Error saving goal:', error);
-      console.error('Error details:', error.response?.data); // Debug log
       alert(`Error saving goal: ${error.response?.data?.message || error.message}`);
     }
   };
-
-
 
   const handleTaskSubmit = async (e) => {
     e.preventDefault();
@@ -201,9 +159,8 @@ const GoalAlignedDay = () => {
     try {
       const token = localStorage.getItem('token');
       
-      // Convert time to minutes (assuming time is in HH:MM format)
-      const [hours, minutes] = habitFormData.time.split(':').map(Number);
-      const durationInMinutes = hours * 60 + minutes;
+      // Convert hours to minutes
+      const durationInMinutes = Math.round(parseFloat(habitFormData.time) * 60);
 
       const habitData = {
         title: habitFormData.title,
@@ -243,7 +200,7 @@ const GoalAlignedDay = () => {
         completedAt: new Date()
       };
       
-      await axios.put(`/api/tasks/${habit._id}`, updatedHabit, {
+      await axios.put(buildApiUrl(`/api/tasks/${habit._id}`), updatedHabit, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -271,19 +228,7 @@ const GoalAlignedDay = () => {
     setShowGoalForm(true);
   };
 
-  const handleDeleteGoal = async (goalId) => {
-    if (window.confirm('Are you sure you want to delete this goal?')) {
-      try {
-        const token = localStorage.getItem('token');
-        await axios.delete(buildApiUrl(`/api/goals/${goalId}`), {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        fetchData();
-      } catch (error) {
-        console.error('Error deleting goal:', error);
-      }
-    }
-  };
+
 
   const formatTime = (minutes) => {
     const hours = Math.floor(minutes / 60);
@@ -291,9 +236,7 @@ const GoalAlignedDay = () => {
     return `${hours}h ${mins}m`;
   };
 
-  const formatPercentage = (percentage) => {
-    return `${percentage}%`;
-  };
+
 
   const toggleHourMindfulness = (hour) => {
     setMindfulHours(prev => {
@@ -307,17 +250,37 @@ const GoalAlignedDay = () => {
     });
   };
 
-  const calculateMindfulnessScore = () => {
-    if (todayMetrics && todayMetrics.averageMindfulRating) {
-      return todayMetrics.averageMindfulRating;
+
+
+  // Calculate current streak based on daily KPI logging
+  const calculateCurrentStreak = () => {
+    // Ensure todayTasks is an array and has data
+    if (!Array.isArray(todayTasks) || todayTasks.length === 0) return 0;
+    
+    let streak = 0;
+    let currentDate = new Date();
+    
+    // Check consecutive days backwards from today
+    for (let i = 0; i < 365; i++) { // Check up to 1 year back
+      const checkDate = new Date(currentDate);
+      checkDate.setDate(currentDate.getDate() - i);
+      const dateString = checkDate.toISOString().split('T')[0];
+      
+      // Check if there are any tasks for this date
+      const hasTasksForDate = todayTasks.some(task => {
+        if (!task || !task.completedAt) return false;
+        const taskDate = new Date(task.completedAt).toISOString().split('T')[0];
+        return taskDate === dateString;
+      });
+      
+      if (hasTasksForDate) {
+        streak++;
+      } else {
+        break; // Streak broken
+      }
     }
-    if (!todayTasks || todayTasks.length === 0) return 0;
     
-    const totalRating = todayTasks.reduce((sum, task) => {
-      return sum + (task.mindfulRating || 3); // Default to 3 if no rating
-    }, 0);
-    
-    return Math.round(totalRating / todayTasks.length * 20) / 20; // Round to 1 decimal place
+    return streak;
   };
 
   if (loading) {
@@ -373,7 +336,7 @@ const GoalAlignedDay = () => {
             <div className="text-center">
               <div className="text-xs text-[#C9D1D9] font-oswald tracking-wide">STREAK</div>
               <div className="text-sm font-bold text-[#FFD200] font-mono">
-                {streakInfo.currentStreak || 0} days
+                {!loading && Array.isArray(todayTasks) ? calculateCurrentStreak() : 0} days
               </div>
             </div>
           </div>
@@ -397,13 +360,13 @@ const GoalAlignedDay = () => {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#FFD200] rounded-lg">
             <p className="text-lg font-bold text-[#FFD200] font-mono">
-              {mindfulHours.size}
+              {mindfulHours ? mindfulHours.size : 0}
             </p>
             <p className="text-xs text-[#FFD200]/80 font-oswald tracking-wide">MINDFUL HOURS</p>
           </div>
           <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3EA6FF] rounded-lg">
             <p className="text-lg font-bold text-[#3EA6FF] font-mono">
-              {24 - mindfulHours.size}
+              {24 - (mindfulHours ? mindfulHours.size : 0)}
             </p>
             <p className="text-xs text-[#3EA6FF]/80 font-oswald tracking-wide">NOT MINDFUL HOURS</p>
           </div>
@@ -425,12 +388,7 @@ const GoalAlignedDay = () => {
               const hourEnd = new Date(hourStart);
               hourEnd.setHours(hour + 1, 0, 0, 0);
               
-              // Check if this hour has any activity
-              const hasActivity = todayTasks.some(task => {
-                if (!task.completedAt) return false;
-                const taskTime = new Date(task.completedAt);
-                return taskTime >= hourStart && taskTime < hourEnd;
-              });
+
               
               // Check if this hour is marked as mindful
               const isMindful = mindfulHours.has(hour);
@@ -446,42 +404,14 @@ const GoalAlignedDay = () => {
               // Format hour for display
               const displayHour = hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
               
-              // Get tasks for this hour
-              const hourTasks = todayTasks.filter(task => {
-                if (!task.completedAt) return false;
-                const taskTime = new Date(task.completedAt);
-                return taskTime >= hourStart && taskTime < hourEnd;
-              });
+                                                  // Get tasks for this hour
+                  const hourTasks = Array.isArray(todayTasks) ? todayTasks.filter(task => {
+                    if (!task.completedAt) return false;
+                    const taskTime = new Date(task.completedAt);
+                    return taskTime >= hourStart && taskTime < hourEnd;
+                  }) : [];
               
-              // Build detailed tooltip content
-              let tooltipContent = `${displayHour}\n${status}`;
-              if (hourTasks.length > 0) {
-                tooltipContent += `\n\nTasks:`;
-                hourTasks.forEach((task, index) => {
-                  const taskTime = new Date(task.completedAt);
-                  const timeStr = taskTime.toLocaleTimeString('en-US', { 
-                    hour: 'numeric', 
-                    minute: '2-digit',
-                    hour12: true 
-                  });
-                  const goalNames = task.goalIds && task.goalIds.length > 0 
-                    ? task.goalIds.map(goalId => {
-                        const goal = goals.find(g => g._id === goalId);
-                        return goal ? goal.name : 'Unknown Goal';
-                      }).join(', ')
-                    : 'No Goal';
-                  const mindfulText = task.mindfulRating >= 3 ? '✓ Mindful' : '✗ Not Mindful';
-                  
-                  tooltipContent += `\n${index + 1}. ${task.title}`;
-                  tooltipContent += `\n   Time: ${timeStr}`;
-                  tooltipContent += `\n   Goal: ${goalNames}`;
-                  tooltipContent += `\n   ${mindfulText}`;
-                  if (task.isHabit) {
-                    tooltipContent += `\n   Habit: ${task.habitCadence}`;
-                  }
-                  tooltipContent += `\n`;
-                });
-              }
+
               
               return (
                 <div key={hour} className="flex flex-col items-center group relative">
@@ -571,10 +501,50 @@ const GoalAlignedDay = () => {
               </button>
             </div>
             
+            {/* Daily Goals Summary */}
+            {goals.length > 0 && (
+              <div className="mb-6 p-4 bg-[#0A0C0F] border border-[#2A313A] rounded-lg">
+                <h4 className="text-sm font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide text-center">DAILY GOALS SUMMARY</h4>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-lg font-bold text-[#3CCB7F] font-mono">
+                      {goals.reduce((total, goal) => {
+                        const completedHours = Array.isArray(todayTasks) ? todayTasks
+                          .filter(task => 
+                            task.goalIds && 
+                            task.goalIds.includes(goal._id) && 
+                            task.completedAt
+                          )
+                          .reduce((total, task) => {
+                            const duration = task.estimatedDuration ? 
+                              parseFloat(task.estimatedDuration) / 60 : 0;
+                            return total + duration;
+                          }, 0) : 0;
+                        return total + completedHours;
+                      }, 0).toFixed(1)}h
+                    </p>
+                    <p className="text-xs text-[#C9D1D9] font-inter">Total Hours Completed</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-[#FFD200] font-mono">
+                      {goals.reduce((total, goal) => total + (goal.targetHours || 0), 0).toFixed(1)}h
+                    </p>
+                    <p className="text-xs text-[#C9D1D9] font-inter">Total Target Hours</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-[#3EA6FF] font-mono">
+                      {goals.length}
+                    </p>
+                    <p className="text-xs text-[#C9D1D9] font-inter">Active Goals</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="grid grid-cols-3 gap-4">
               {goals.slice(0, 3).map((goal) => {
                 const goalHours = goal.targetHours || 0;
-                const completedHours = todayTasks
+                const completedHours = Array.isArray(todayTasks) ? todayTasks
                   .filter(task => 
                     task.goalIds && 
                     task.goalIds.includes(goal._id) && 
@@ -584,7 +554,7 @@ const GoalAlignedDay = () => {
                     const duration = task.estimatedDuration ? 
                       parseFloat(task.estimatedDuration) / 60 : 0; // Convert minutes to hours
                     return total + duration;
-                  }, 0);
+                  }, 0) : 0;
                 
                 const percentage = goalHours > 0 ? Math.min((completedHours / goalHours) * 100, 100) : 0;
                 
@@ -746,40 +716,7 @@ const GoalAlignedDay = () => {
               </div>
             )}
             
-            {/* Goal Progress Summary */}
-            {goals.length > 0 && (
-              <div className="mt-6 p-4 bg-[#0A0C0F] border border-[#2A313A] rounded-lg">
-                <h4 className="text-sm font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide text-center">DAILY PROGRESS SUMMARY</h4>
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <p className="text-lg font-bold text-[#3CCB7F] font-mono">
-                      {goals.reduce((total, goal) => {
-                        const goalHours = goal.targetHours || 0;
-                        const completedHours = todayTasks
-                          .filter(task => 
-                            task.goalIds && 
-                            task.goalIds.includes(goal._id) && 
-                            task.completedAt
-                          )
-                          .reduce((total, task) => {
-                            const duration = task.estimatedDuration ? 
-                              parseFloat(task.estimatedDuration) / 60 : 0;
-                            return total + duration;
-                          }, 0);
-                        return total + completedHours;
-                      }, 0).toFixed(1)}h
-                    </p>
-                    <p className="text-xs text-[#C9D1D9] font-inter">Total Hours Completed</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-[#FFD200] font-mono">
-                      {goals.reduce((total, goal) => total + (goal.targetHours || 0), 0).toFixed(1)}h
-                    </p>
-                    <p className="text-xs text-[#C9D1D9] font-inter">Total Target Hours</p>
-                  </div>
-                </div>
-              </div>
-            )}
+
           </div>
 
 
@@ -807,7 +744,7 @@ const GoalAlignedDay = () => {
               <h3 className="text-lg font-semibold text-[#E8EEF2] font-oswald tracking-wide">DAILY HABITS</h3>
               <div className="flex items-center space-x-4">
                 <div className="text-xs text-[#C9D1D9] font-inter">
-                  {todayTasks.filter(task => task.isHabit).length} habits today
+                  {Array.isArray(todayTasks) ? todayTasks.filter(task => task.isHabit).length : 0} habits today
                 </div>
                 <button
                   onClick={() => setShowHabitForm(true)}
@@ -818,7 +755,7 @@ const GoalAlignedDay = () => {
               </div>
             </div>
             
-            {todayTasks.filter(task => task.isHabit).length > 0 ? (
+            {Array.isArray(todayTasks) && todayTasks.filter(task => task.isHabit).length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {todayTasks.filter(task => task.isHabit).map((habit) => (
                   <div key={habit._id} className="bg-[#0A0C0F] border-2 border-[#2A313A] rounded-lg p-4 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
@@ -984,126 +921,120 @@ const GoalAlignedDay = () => {
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3EA6FF] to-[#FFD200]"></div>
           
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-[#E8EEF2] font-oswald tracking-wide">TASK MANAGEMENT</h3>
-            <button
-              onClick={() => setShowTaskForm(true)}
-              className="bg-[#FFD200] text-[#0A0C0F] px-4 py-2 rounded-lg hover:bg-[#FFD200]/90 transition-colors font-medium font-oswald tracking-wide"
-            >
-              ADD TASK
-            </button>
-          </div>
-          
-          {/* Time Filter */}
-          <div className="bg-[#0A0C0F] border-2 border-[#2A313A] rounded-lg p-4 mb-6 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3EA6FF] to-[#FFD200]"></div>
-            
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-sm font-semibold text-[#E8EEF2] font-oswald tracking-wide">TIME PERIOD</h4>
-              <div className="text-xs text-[#C9D1D9] font-inter">
-                {taskFilter === 'daily' ? 'Today' : taskFilter === 'weekly' ? 'This Week' : 'This Month'}
-              </div>
-            </div>
-            
-            <div className="flex space-x-2">
-              {['daily', 'weekly', 'monthly'].map((period) => (
-                <button
-                  key={period}
-                  onClick={() => setTaskFilter(period)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium font-oswald tracking-wide transition-all ${
-                    taskFilter === period
-                      ? 'bg-[#FFD200] text-[#0A0C0F] shadow-lg'
-                      : 'bg-[#2A313A] text-[#C9D1D9] border border-[#2A313A] hover:border-[#FFD200]/50'
-                  }`}
-                >
-                  {period.charAt(0).toUpperCase() + period.slice(1)}
-                </button>
-              ))}
+            <h3 className="text-xl font-semibold text-[#E8EEF2] font-oswald tracking-wide">MONTHLY MINDFULNESS TRACKER</h3>
+            <div className="text-xs text-[#C9D1D9] font-inter">
+              {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
             </div>
           </div>
           
-          {todayTasks && todayTasks.length > 0 ? (
-            <div className="space-y-3">
-              {todayTasks.map((task) => (
-                <div key={task._id} className={`bg-[#0A0C0F] border-2 border-[#2A313A] rounded-lg p-4 ${
-                  task.isHabit 
-                    ? 'border-[#3CCB7F] bg-[#0A0C0F]' 
-                    : 'border-[#2A313A]'
-                }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      {task.isHabit && (
-                        <div className="flex items-center space-x-1">
-                          <div className="w-2 h-2 bg-[#3CCB7F] rounded-full"></div>
-                          <span className="text-xs text-[#3CCB7F] font-medium bg-[#2A313A] px-2 py-1 rounded-full font-oswald tracking-wide">
-                            {task.habitCadence} HABIT
-                          </span>
-                        </div>
-                      )}
-                      <span className={`font-semibold font-oswald tracking-wide ${
-                        task.isHabit ? 'text-[#3CCB7F]' : 'text-[#E8EEF2]'
-                      }`}>{task.title}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-[#FFD200] font-mono">
-                        {task.start && task.end 
-                          ? `${new Date(task.start).toLocaleTimeString()} - ${new Date(task.end).toLocaleTimeString()}`
-                          : `${formatTime(task.estimatedDuration || 25)}`
-                        }
-                      </span>
-                    </div>
-                  </div>
+          {/* Month Grid - 5x7 layout */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide">MINDFULNESS SCORE GRID</h4>
+            <div className="grid grid-cols-7 gap-1 max-w-4xl mx-auto">
+              {(() => {
+                const currentDate = new Date();
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const firstDayOfMonth = new Date(year, month, 1).getDay();
+                
+                // Create array of all days in month
+                const days = [];
+                
+                // Add empty cells for days before month starts
+                for (let i = 0; i < firstDayOfMonth; i++) {
+                  days.push(null);
+                }
+                
+                // Add all days in month
+                for (let i = 1; i <= daysInMonth; i++) {
+                  days.push(i);
+                }
+                
+                // Fill remaining cells to complete 5x7 grid (35 cells)
+                while (days.length < 35) {
+                  days.push(null);
+                }
+                
+                return days.map((day, index) => {
+                  if (day === null) {
+                    return <div key={index} className="w-8 h-8"></div>;
+                  }
                   
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <span className="text-sm text-[#C9D1D9] font-inter">MINDFUL:</span>
-                        {[1, 2, 3, 4, 5].map((rating) => (
-                          <Star
-                            key={rating}
-                            size={14}
-                            className={`${
-                              rating <= (task.mindfulRating || 3)
-                                ? 'text-[#FFD200] fill-current'
-                                : 'text-[#2A313A]'
-                            }`}
-                          />
-                        ))}
-                      </div>
+                  // Calculate mindfulness score for this day (mock data for now)
+                  const mindfulnessScore = Math.floor(Math.random() * 5) + 1; // 1-5 score
+                  const intensity = mindfulnessScore / 5; // 0-1 intensity
+                  
+                  // Create yellow shade based on score
+                  const yellowShade = `rgba(255, 210, 0, ${intensity * 0.8 + 0.2})`; // 20%-100% opacity
+                  
+                  return (
+                    <div key={index} className="group relative">
+                      <div 
+                        className="w-8 h-8 rounded border border-[#2A313A] cursor-pointer transition-all duration-200 hover:scale-110"
+                        style={{ backgroundColor: yellowShade }}
+                        title={`Day ${day}: Mindfulness Score ${mindfulnessScore}/5`}
+                      />
+                      <span className="text-xs text-[#C9D1D9] mt-1 block text-center font-mono">
+                        {day}
+                      </span>
                       
-                      {task.goalIds && task.goalIds.length > 0 && (
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-[#C9D1D9] font-inter">GOALS:</span>
-                          <div className="flex space-x-1">
-                            {task.goalIds.map((goalId) => {
-                              const goal = goals.find(g => g._id === goalId);
-                              return goal ? (
-                                <div
-                                  key={goalId}
-                                  className="w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: goal.color }}
-                                  title={goal.name}
-                                ></div>
-                              ) : null;
-                            })}
-                          </div>
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-[#0A0C0F] border-2 border-[#2A313A] rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
+                        <div className="text-[#E8EEF2] text-xs font-inter">
+                          <div className="font-oswald tracking-wide text-[#FFD200] mb-1">Day {day}</div>
+                          <div className="text-[#C9D1D9]">Mindfulness Score: {mindfulnessScore}/5</div>
                         </div>
-                      )}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#0A0C0F]"></div>
+                      </div>
                     </div>
-                    
-                    <div className="text-sm text-[#C9D1D9] font-inter">
-                      Completed at {new Date(task.completedAt).toLocaleTimeString()}
+                  );
+                });
+              })()}
+            </div>
+          </div>
+          
+          {/* Monthly Goals Summary */}
+          <div className="bg-[#0A0C0F] border border-[#2A313A] rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide text-center">MONTHLY GOALS SUMMARY</h4>
+            {goals.length > 0 ? (
+              <div className="space-y-3">
+                {goals.map((goal) => {
+                  // Calculate monthly stats for this goal
+                  const monthlyTasks = Array.isArray(todayTasks) ? todayTasks.filter(task => 
+                    task.goalIds && 
+                    task.goalIds.includes(goal._id) && 
+                    task.completedAt &&
+                    new Date(task.completedAt).getMonth() === new Date().getMonth()
+                  ) : [];
+                  
+                  const totalHours = monthlyTasks.reduce((total, task) => {
+                    const duration = task.estimatedDuration ? parseFloat(task.estimatedDuration) / 60 : 0;
+                    return total + duration;
+                  }, 0);
+                  
+                  const tasksCompleted = monthlyTasks.length;
+                  
+                  return (
+                    <div key={goal._id} className="flex items-center justify-between p-3 bg-[#11151A] rounded border border-[#2A313A]">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: goal.color }}></div>
+                        <span className="text-sm font-medium text-[#E8EEF2] font-oswald tracking-wide">{goal.name}</span>
+                      </div>
+                      <div className="flex items-center space-x-4 text-xs text-[#C9D1D9] font-inter">
+                        <span>{totalHours.toFixed(1)}h</span>
+                        <span>{tasksCompleted} tasks</span>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-[#C9D1D9] font-inter">No tasks completed today</p>
-              <p className="text-sm text-[#C9D1D9]/80 font-inter">Add your first task to get started!</p>
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-[#C9D1D9] font-inter">
+                No goals set for this month
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1123,12 +1054,92 @@ const GoalAlignedDay = () => {
             </div>
           </div>
           
-          <div className="text-center py-8">
-            <div className="w-16 h-16 bg-[#2A313A] rounded-full mx-auto mb-4 flex items-center justify-center">
-              <Calendar className="text-[#C9D1D9]" size={24} />
+          {/* Year Grid - 52 weeks */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide">WEEKLY PROGRESS GRID</h4>
+            <div className="grid grid-cols-13 gap-1 max-w-6xl mx-auto">
+              {(() => {
+                const weeks = [];
+                for (let week = 1; week <= 52; week++) {
+                  weeks.push(week);
+                }
+                
+                return weeks.map((week) => {
+                  // Calculate weekly stats (mock data for now)
+                  const weeklyTasks = Math.floor(Math.random() * 10) + 1; // 1-10 tasks
+                  const weeklyHours = Math.floor(Math.random() * 20) + 1; // 1-20 hours
+                  const intensity = (weeklyTasks + weeklyHours) / 30; // 0-1 intensity
+                  
+                  // Create color based on activity level
+                  const color = `rgba(62, 166, 255, ${intensity * 0.8 + 0.2})`; // Blue with varying opacity
+                  
+                  return (
+                    <div key={week} className="group relative">
+                      <div 
+                        className="w-6 h-6 rounded border border-[#2A313A] cursor-pointer transition-all duration-200 hover:scale-110"
+                        style={{ backgroundColor: color }}
+                        title={`Week ${week}: ${weeklyTasks} tasks, ${weeklyHours}h`}
+                      />
+                      
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-[#0A0C0F] border-2 border-[#2A313A] rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
+                        <div className="text-[#E8EEF2] text-xs font-inter">
+                          <div className="font-oswald tracking-wide text-[#3EA6FF] mb-1">Week {week}</div>
+                          <div className="text-[#C9D1D9]">{weeklyTasks} tasks completed</div>
+                          <div className="text-[#C9D1D9]">{weeklyHours}h total</div>
+                        </div>
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#0A0C0F]"></div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
-            <h4 className="text-md font-semibold text-[#E8EEF2] mb-2 font-oswald tracking-wide">YEARLY FEATURES COMING SOON</h4>
-            <p className="text-[#C9D1D9] font-inter text-sm">Annual progress tracking and insights will be available here</p>
+            <div className="text-center mt-2">
+              <p className="text-xs text-[#C9D1D9] font-inter">52 weeks of the year</p>
+            </div>
+          </div>
+          
+          {/* Yearly Goals Summary */}
+          <div className="bg-[#0A0C0F] border border-[#2A313A] rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide text-center">YEARLY GOALS SUMMARY</h4>
+            {goals.length > 0 ? (
+              <div className="space-y-3">
+                {goals.map((goal) => {
+                  // Calculate yearly stats for this goal
+                  const yearlyTasks = Array.isArray(todayTasks) ? todayTasks.filter(task => 
+                    task.goalIds && 
+                    task.goalIds.includes(goal._id) && 
+                    task.completedAt &&
+                    new Date(task.completedAt).getFullYear() === new Date().getFullYear()
+                  ) : [];
+                  
+                  const totalHours = yearlyTasks.reduce((total, task) => {
+                    const duration = task.estimatedDuration ? parseFloat(task.estimatedDuration) / 60 : 0;
+                    return total + duration;
+                  }, 0);
+                  
+                  const tasksCompleted = yearlyTasks.length;
+                  
+                  return (
+                    <div key={goal._id} className="flex items-center justify-between p-3 bg-[#11151A] rounded border border-[#2A313A]">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: goal.color }}></div>
+                        <span className="text-sm font-medium text-[#E8EEF2] font-oswald tracking-wide">{goal.name}</span>
+                      </div>
+                      <div className="flex items-center space-x-4 text-xs text-[#C9D1D9] font-inter">
+                        <span>{totalHours.toFixed(1)}h</span>
+                        <span>{tasksCompleted} tasks</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-[#C9D1D9] font-inter">
+                No goals set for this year
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1371,15 +1382,19 @@ const GoalAlignedDay = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Time Everyday *</label>
+                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Hours Everyday *</label>
                 <input
-                  type="time"
+                  type="number"
+                  step="0.25"
+                  min="0.25"
+                  max="24"
                   value={habitFormData.time}
                   onChange={(e) => setHabitFormData({...habitFormData, time: e.target.value})}
                   className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                  placeholder="1.5"
                   required
                 />
-                <p className="text-xs text-[#C9D1D9] mt-1 font-inter">Set the time you want to do this habit daily</p>
+                <p className="text-xs text-[#C9D1D9] mt-1 font-inter">Enter hours per day (e.g., 1.5 for 1 hour 30 minutes)</p>
               </div>
               
               <div>

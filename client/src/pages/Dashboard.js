@@ -18,6 +18,8 @@ const Dashboard = () => {
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [welcomeImage, setWelcomeImage] = useState('/welcome.png');
   const [showImageUpload, setShowImageUpload] = useState(false);
+  const [dashboardQuotes, setDashboardQuotes] = useState([]);
+  const [quotesLoading, setQuotesLoading] = useState(true);
   
   // Debug: Log state changes
   useEffect(() => {
@@ -28,6 +30,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
+    fetchDashboardQuotes();
   }, []);
 
   const fetchData = async () => {
@@ -48,6 +51,24 @@ const Dashboard = () => {
       console.error('Error fetching tasks:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDashboardQuotes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.get(buildApiUrl('/api/book-documents/quotes/all'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log('Dashboard quotes response:', response.data);
+      setDashboardQuotes(response.data || []);
+    } catch (error) {
+      console.error('Error fetching dashboard quotes:', error);
+    } finally {
+      setQuotesLoading(false);
     }
   };
 
@@ -108,26 +129,60 @@ const Dashboard = () => {
   const getQuoteOfTheDay = () => {
     const today = new Date();
     const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
-    const dailyIndex = dayOfYear % quotes.length;
-    return quotes[(dailyIndex + quoteIndex) % quotes.length];
+    
+    if (dashboardQuotes.length === 0) {
+      // Fallback to hardcoded quotes if no dashboard quotes
+      const dailyIndex = dayOfYear % quotes.length;
+      return quotes[(dailyIndex + quoteIndex) % quotes.length];
+    }
+    
+    const dailyIndex = dayOfYear % dashboardQuotes.length;
+    return dashboardQuotes[(dailyIndex + quoteIndex) % dashboardQuotes.length]?.content || "No quotes available";
   };
 
   const getQuoteAuthor = () => {
     const today = new Date();
     const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
-    const dailyIndex = dayOfYear % quotes.length;
-    return authors[(dailyIndex + quoteIndex) % quotes.length];
+    
+    if (dashboardQuotes.length === 0) {
+      // Fallback to hardcoded quotes if no dashboard quotes
+      const dailyIndex = dayOfYear % quotes.length;
+      return authors[(dailyIndex + quoteIndex) % quotes.length];
+    }
+    
+    const dailyIndex = dayOfYear % dashboardQuotes.length;
+    return dashboardQuotes[(dailyIndex + quoteIndex) % dashboardQuotes.length]?.bookAuthor || "Unknown";
   };
 
   const refreshQuote = () => {
-    setQuoteIndex(prev => (prev + 1) % quotes.length);
+    if (dashboardQuotes.length === 0) {
+      setQuoteIndex(prev => (prev + 1) % quotes.length);
+    } else {
+      setQuoteIndex(prev => (prev + 1) % dashboardQuotes.length);
+    }
   };
 
   const getCurrentQuoteNumber = () => {
     const today = new Date();
     const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
-    const dailyIndex = dayOfYear % quotes.length;
-    return ((dailyIndex + quoteIndex) % quotes.length) + 1;
+    
+    if (dashboardQuotes.length === 0) {
+      const dailyIndex = dayOfYear % quotes.length;
+      return ((dailyIndex + quoteIndex) % quotes.length) + 1;
+    }
+    
+    const dailyIndex = dayOfYear % dashboardQuotes.length;
+    return ((dailyIndex + quoteIndex) % dashboardQuotes.length) + 1;
+  };
+
+  const getQuoteSource = () => {
+    if (dashboardQuotes.length === 0) return "";
+    
+    const today = new Date();
+    const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+    const dailyIndex = dayOfYear % dashboardQuotes.length;
+    const currentQuote = dashboardQuotes[(dailyIndex + quoteIndex) % dashboardQuotes.length];
+    return currentQuote?.bookTitle || "";
   };
 
   const handleImageUpload = (e) => {
@@ -296,16 +351,45 @@ const Dashboard = () => {
             >
               <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" />
             </button>
+            <button
+              onClick={fetchDashboardQuotes}
+              className="p-1 text-[#3EA6FF] hover:text-[#3EA6FF]/80 hover:bg-[#2A313A] rounded transition-all duration-200 group"
+              title="Refresh quotes from API"
+            >
+              <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" />
+            </button>
             <span className="text-xs text-[#C9D1D9] font-mono">
-              {getCurrentQuoteNumber()}/{quotes.length}
+              {getCurrentQuoteNumber()}/{dashboardQuotes.length > 0 ? dashboardQuotes.length : quotes.length}
             </span>
           </div>
-          <blockquote className="text-lg font-medium text-[#E8EEF2] mb-3 italic leading-relaxed font-inter">
-            "{getQuoteOfTheDay()}"
-          </blockquote>
-          <cite className="text-sm text-[#FFD200] font-medium font-oswald tracking-wide">
-            — {getQuoteAuthor()}
-          </cite>
+          {quotesLoading ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#FFD200]"></div>
+            </div>
+          ) : (
+            <>
+              <blockquote className="text-lg font-medium text-[#E8EEF2] mb-3 italic leading-relaxed font-inter">
+                "{getQuoteOfTheDay()}"
+              </blockquote>
+              <cite className="text-sm text-[#FFD200] font-medium font-oswald tracking-wide">
+                — {getQuoteAuthor()}
+              </cite>
+              {dashboardQuotes.length > 0 && getQuoteSource() && (
+                <p className="text-xs text-[#C9D1D9] font-inter mt-2">
+                  from <span className="text-[#3EA6FF] font-medium">{getQuoteSource()}</span>
+                </p>
+              )}
+              {dashboardQuotes.length === 0 && !quotesLoading && (
+                <p className="text-xs text-[#C9D1D9] font-inter mt-2">
+                  <span className="text-[#FFD200]">💡</span> Add quotes in Content tab to see them here
+                </p>
+              )}
+              {/* Debug info - remove in production */}
+              <div className="text-xs text-[#C9D1D9] font-inter mt-2 opacity-60">
+                Debug: {dashboardQuotes.length} quotes loaded, {quotesLoading ? 'loading' : 'ready'}
+              </div>
+            </>
+          )}
           
           {/* Corner accents */}
           <div className="absolute top-0 left-0 w-6 h-6 bg-[#FFD200]"></div>

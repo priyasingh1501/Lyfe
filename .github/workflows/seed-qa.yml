@@ -1,0 +1,95 @@
+name: Seed QA and Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  seed-qa:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Create .env file
+      run: |
+        cp env.example .env
+        echo "MONGODB_URI=mongodb://localhost:27017/lyfe" >> .env
+        echo "JWT_SECRET=test-secret" >> .env
+        echo "SEED_QA_ATWATER_TOLERANCE=30" >> .env
+        echo "SEED_QA_PORTION_BANDS='{\"roti\": [35,60], \"idli\": [80,180]}'" >> .env
+    
+    - name: Run Seed QA
+      run: npm run seed:qa
+      env:
+        MONGODB_URI: mongodb://localhost:27017/lyfe
+        JWT_SECRET: test-secret
+        SEED_QA_ATWATER_TOLERANCE: 30
+        SEED_QA_PORTION_BANDS: '{"roti": [35,60], "idli": [80,180]}'
+    
+    - name: Upload QA reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: seed-qa-reports
+        path: reports/
+        retention-days: 30
+    
+    - name: Check QA results
+      run: |
+        if [ -f "reports/seed_qa_failures.csv" ]; then
+          ERROR_COUNT=$(grep -c "ERROR" reports/seed_qa_failures.csv || echo "0")
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "❌ Found $ERROR_COUNT QA errors. Build failed."
+            exit 1
+          fi
+        fi
+        echo "✅ No QA errors found. Build passed."
+
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Run tests
+      run: npm test
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: test-results/
+        retention-days: 30

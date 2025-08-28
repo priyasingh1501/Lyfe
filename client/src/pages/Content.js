@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
@@ -54,14 +54,9 @@ const Content = () => {
 
   const difficulties = ['beginner', 'intermediate', 'advanced'];
 
-  useEffect(() => {
-    if (token) {
-      fetchBookDocuments();
-      createDefaultJournal();
-    }
-  }, [token]);
 
-  const fetchBookDocuments = async () => {
+
+  const fetchBookDocuments = useCallback(async () => {
     try {
       const response = await fetch(buildApiUrl('/api/book-documents'), {
         headers: {
@@ -76,9 +71,9 @@ const Content = () => {
       toast.error('Failed to load book documents');
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const createDefaultJournal = async () => {
+  const createDefaultJournal = useCallback(async () => {
     try {
       const response = await fetch(buildApiUrl('/api/book-documents/journal/default'), {
         headers: {
@@ -96,7 +91,15 @@ const Content = () => {
     } catch (error) {
       console.error('Error creating default journal:', error);
     }
-  };
+  }, [token, bookDocuments]);
+
+  // Move useEffect here after functions are defined
+  useEffect(() => {
+    if (token) {
+      fetchBookDocuments();
+      createDefaultJournal();
+    }
+  }, [token, fetchBookDocuments, createDefaultJournal]);
 
   const handleCreateBook = async (e) => {
     e.preventDefault();
@@ -146,6 +149,9 @@ const Content = () => {
   const handleAddNote = async (e) => {
     e.preventDefault();
     
+    console.log('Submitting note with data:', newNote);
+    console.log('Note isQuote flag:', newNote.isQuote);
+    
     if (!newNote.content.trim()) {
       toast.error('Please enter note content');
       return;
@@ -168,6 +174,9 @@ const Content = () => {
 
       if (response.ok) {
         const data = await response.json();
+        
+        console.log('Note created successfully:', data.note);
+        console.log('Note isQuote flag:', data.note.isQuote);
         
         // Update the book with the new note
         setBookDocuments(bookDocuments.map(book => 
@@ -246,7 +255,7 @@ const Content = () => {
 
   const handleUpdateNote = async (bookId, noteId, updates) => {
     try {
-      const response = await fetch(`/api/book-documents/${bookId}/notes/${noteId}`, {
+      const response = await fetch(buildApiUrl(`/api/book-documents/${bookId}/notes/${noteId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -338,7 +347,7 @@ const Content = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#FFD200]"></div>
       </div>
     );
   }
@@ -604,36 +613,36 @@ const Content = () => {
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Note Content *
-                  </label>
-                  <textarea
-                    value={newNote.content}
-                    onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="Write your note here..."
-                    required
-                  />
-                </div>
+                                  <div>
+                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
+                      Note Content *
+                    </label>
+                    <textarea
+                      value={newNote.content}
+                      onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
+                      rows={4}
+                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                      placeholder="Write your note here..."
+                      required
+                    />
+                  </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
                       Location (Optional)
                     </label>
                     <input
                       type="text"
                       value={newNote.location}
                       onChange={(e) => setNewNote({ ...newNote, location: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                       placeholder="e.g., Page 45, Chapter 3"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
                       Tags
                     </label>
                     <div className="flex">
@@ -642,13 +651,13 @@ const Content = () => {
                         value={noteTagInput}
                         onChange={(e) => setNoteTagInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addNoteTag())}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="flex-1 px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-l-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                         placeholder="Add a tag"
                       />
                       <button
                         type="button"
                         onClick={addNoteTag}
-                        className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg hover:bg-gray-200"
+                        className="px-3 py-2 bg-[#2A313A] border border-l-0 border-[#2A313A] rounded-r-lg hover:bg-[#3A414A] text-[#C9D1D9]"
                       >
                         Add
                       </button>
@@ -658,13 +667,13 @@ const Content = () => {
                         {newNote.tags.map(tag => (
                           <span
                             key={tag}
-                            className="inline-flex items-center px-2 py-1 bg-primary-100 text-primary-800 text-xs rounded-full"
+                            className="inline-flex items-center px-2 py-1 bg-[#2A313A] text-[#C9D1D9] text-xs rounded-full"
                           >
                             {tag}
                             <button
                               type="button"
                               onClick={() => removeNoteTag(tag)}
-                              className="ml-1 text-primary-600 hover:text-primary-800"
+                              className="ml-1 text-[#FFD200] hover:text-[#FFB800]"
                             >
                               ×
                             </button>
@@ -681,9 +690,9 @@ const Content = () => {
                       type="checkbox"
                       checked={newNote.isImportant}
                       onChange={(e) => setNewNote({ ...newNote, isImportant: e.target.checked })}
-                      className="mr-2"
+                      className="mr-2 h-4 w-4 text-[#FFD200] focus:ring-[#FFD200] border-[#2A313A] rounded"
                     />
-                    <span className="text-sm text-gray-700">Mark as important</span>
+                    <span className="text-sm text-[#C9D1D9] font-inter">Mark as important</span>
                   </label>
                   
                   <label className="flex items-center">
@@ -691,9 +700,9 @@ const Content = () => {
                       type="checkbox"
                       checked={newNote.isQuote}
                       onChange={(e) => setNewNote({ ...newNote, isQuote: e.target.checked })}
-                      className="mr-2"
+                      className="mr-2 h-4 w-4 text-[#FFD200] focus:ring-[#FFD200] border-[#2A313A] rounded"
                     />
-                    <span className="text-sm text-gray-700">Include in dashboard quotes</span>
+                    <span className="text-sm text-[#C9D1D9] font-inter">Include in dashboard quotes</span>
                   </label>
                 </div>
 

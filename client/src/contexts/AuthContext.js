@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { buildApiUrl } from '../config';
@@ -18,17 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
-  // Configure axios defaults
-  useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUserProfile();
-    } else {
-      setLoading(false);
-    }
-  }, [token]);
-
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     try {
       const response = await axios.get(buildApiUrl('/api/auth/profile'));
       setUser(response.data.user);
@@ -39,15 +29,29 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const logout = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    delete axios.defaults.headers.common['Authorization'];
+    toast.success('Logged out successfully');
+  }, []);
+
+  // Configure axios defaults
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      fetchUserProfile();
+    } else {
+      setLoading(false);
+    }
+  }, [token, fetchUserProfile]);
 
   const login = async (email, password) => {
     try {
-      console.log('Attempting login to:', buildApiUrl('/api/auth/login')); // Debug log
-      console.log('Login credentials:', { email, password: '***' }); // Debug log
-      
       const response = await axios.post(buildApiUrl('/api/auth/login'), { email, password });
-      console.log('Login response:', response.data); // Debug log
       
       const { token: newToken, user: userData } = response.data;
       
@@ -59,13 +63,6 @@ export const AuthProvider = ({ children }) => {
       toast.success('Login successful!');
       return { success: true };
     } catch (error) {
-      console.error('Login error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: error.config
-      }); // Debug log
-      
       const message = error.response?.data?.message || 'Login failed';
       toast.error(message);
       return { success: false, message };
@@ -74,9 +71,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      console.log('Attempting registration with:', userData);
       const response = await axios.post(buildApiUrl('/api/auth/register'), userData);
-      console.log('Registration response:', response.data);
       
       const { token: newToken, user: newUser } = response.data;
       
@@ -88,25 +83,10 @@ export const AuthProvider = ({ children }) => {
       toast.success('Registration successful!');
       return { success: true };
     } catch (error) {
-      console.error('Registration error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: error.config
-      });
-      
       const message = error.response?.data?.message || error.message || 'Registration failed';
       toast.error(message);
       return { success: false, message };
     }
-  };
-
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
-    toast.success('Logged out successfully');
   };
 
   const updateProfile = async (updates) => {
