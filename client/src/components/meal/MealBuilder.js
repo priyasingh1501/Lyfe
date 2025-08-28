@@ -32,15 +32,18 @@ const MealBuilder = () => {
     
     setIsSearching(true);
     try {
-      const response = await fetch(buildApiUrl(`/api/food/search?q=${encodeURIComponent(query)}`), {
+      const response = await fetch(buildApiUrl('/api/food/search'), {
+        method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify({ query: query.trim() })
       });
       
       if (response.ok) {
         const data = await response.json();
-        setSearchResults(data.foods || []);
+        setSearchResults(data.results || []);
       } else {
         toast.error('Failed to search foods');
       }
@@ -54,10 +57,12 @@ const MealBuilder = () => {
 
   // Add food to meal
   const addFoodToMeal = useCallback((food, selectedUnit = null) => {
-    const existingItem = mealItems.find(item => item.foodId === food._id);
+    // Handle different ID formats from different sources
+    const foodId = food._id || food.id || food.barcode;
+    const existingItem = mealItems.find(item => item.foodId === foodId);
     
     // Determine the portion to add
-    let portionToAdd = food.portionGramsDefault;
+    let portionToAdd = food.portionGramsDefault || 100; // Default to 100g if not specified
     let unitDescription = '';
     
     if (selectedUnit) {
@@ -68,7 +73,7 @@ const MealBuilder = () => {
     if (existingItem) {
       // Update existing item
       setMealItems(prev => prev.map(item => 
-        item.foodId === food._id 
+        item.foodId === foodId 
           ? { ...item, grams: item.grams + portionToAdd }
           : item
       ));
@@ -79,7 +84,7 @@ const MealBuilder = () => {
     } else {
       // Add new item
       const newItem = {
-        foodId: food._id,
+        foodId: foodId,
         customName: food.name,
         grams: portionToAdd,
         food: food, // Store full food object for analysis

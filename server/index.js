@@ -53,10 +53,24 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
+    
+    // Allow local development origins
     if (allowedOrigins.filter(Boolean).includes(origin)) {
       return callback(null, true);
     }
+    
+    // Allow file:// protocol for local testing
+    if (origin.startsWith('file://')) {
+      return callback(null, true);
+    }
+    
+    // Allow localhost variations
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,

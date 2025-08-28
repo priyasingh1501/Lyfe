@@ -3,9 +3,10 @@ const router = express.Router();
 const FoodItem = require('../models/FoodItem');
 const auth = require('../middleware/auth');
 const { foldName } = require('../lib/meal/norm');
+const axios = require('axios');
 
 /**
- * Search food items by name
+ * Search food items by name (legacy GET endpoint)
  * GET /api/food/search?q=query&includeProvenance=true
  */
 router.get('/search', auth, async (req, res) => {
@@ -76,6 +77,141 @@ router.get('/search', auth, async (req, res) => {
 
   } catch (error) {
     console.error('Error searching foods:', error);
+    res.status(500).json({ 
+      message: 'Error searching foods',
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * Enhanced search with multiple sources (requires auth)
+ * POST /api/food/search
+ */
+router.post('/search', auth, async (req, res) => {
+  try {
+    const { query, source = 'combined', limit = 20 } = req.body;
+    
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({ 
+        message: 'Search query is required',
+        results: []
+      });
+    }
+
+    const searchQuery = query.trim();
+    let results = [];
+
+    // Search local database
+    if (source === 'combined' || source === 'local') {
+      const localResults = await searchLocalDatabase(searchQuery, limit);
+      results.push(...localResults);
+    }
+
+    // Search USDA database
+    if (source === 'combined' || source === 'usda') {
+      try {
+        const usdaResults = await searchUSDADatabase(searchQuery, limit);
+        results.push(...usdaResults);
+      } catch (error) {
+        console.error('USDA search error:', error);
+        // Continue with other sources
+      }
+    }
+
+    // Search Open Food Facts
+    if (source === 'combined' || source === 'off') {
+      try {
+        const offResults = await searchOpenFoodFacts(searchQuery, limit);
+        results.push(...offResults);
+      } catch (error) {
+        console.error('Open Food Facts search error:', error);
+        // Continue with other sources
+      }
+    }
+
+    // Deduplicate results based on name similarity and source
+    results = deduplicateResults(results);
+    
+    // Filter out low-relevance results (minimum threshold)
+    results = results.filter(result => (result.relevanceScore || 0) >= 0.4);
+    
+    // Sort results by relevance and limit
+    results = results
+      .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
+      .slice(0, limit);
+
+    res.json({
+      message: 'Search completed',
+      results,
+      totalFound: results.length,
+      sources: source === 'combined' ? ['local', 'usda', 'off'] : [source]
+    });
+
+  } catch (error) {
+    console.error('Error in enhanced search:', error);
+    res.status(500).json({ 
+      message: 'Error searching foods',
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * Test search endpoint (no auth required)
+ * POST /api/food/test-search
+ */
+router.post('/test-search', async (req, res) => {
+  try {
+    const { query, source = 'combined', limit = 20 } = req.body;
+    
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({ 
+        message: 'Search query is required',
+        results: []
+      });
+    }
+
+    const searchQuery = query.trim();
+    let results = [];
+
+    // Search local database
+    if (source === 'combined' || source === 'local') {
+      const localResults = await searchLocalDatabase(searchQuery, limit);
+      results.push(...localResults);
+    }
+
+    // Search Open Food Facts
+    if (source === 'combined' || source === 'off') {
+      try {
+        const offResults = await searchOpenFoodFacts(searchQuery, limit);
+        results.push(...offResults);
+      } catch (error) {
+        console.error('Open Food Facts search error:', error);
+        // Continue with other sources
+      }
+    }
+
+    // Deduplicate results based on name similarity and source
+    results = deduplicateResults(results);
+    
+    // Filter out low-relevance results (minimum threshold)
+    results = results.filter(result => (result.relevanceScore || 0) >= 0.4);
+    
+    // Sort results by relevance and limit
+    results = results
+      .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
+      .slice(0, limit);
+
+    res.json({
+      message: 'Test search completed',
+      results,
+      totalFound: results.length,
+      sources: source === 'combined' ? ['local', 'off'] : [source]
+    });
+
+  } catch (error) {
+    console.error('Error in test search:', error);
     res.status(500).json({ 
       message: 'Error searching foods',
       error: error.message 
@@ -256,5 +392,318 @@ router.get('/:id', auth, async (req, res) => {
     });
   }
 });
+
+// Helper function to search local database
+async function searchLocalDatabase(query, limit) {
+  const searchQuery = foldName(query);
+  const searchWords = query.toLowerCase().split(' ').filter(word => word.length > 2);
+  
+  // Try exact name match first (highest relevance)
+  let foods = await FoodItem.find({
+    nameFold: { $regex: `^${searchQuery}$`, $options: 'i' }
+  })
+    .limit(limit)
+    .select('name portionGramsDefault portionUnits nutrients tags gi fodmap novaClass provenance qualityFlags');
+
+  // If no exact matches, try partial name matches
+  if (foods.length === 0) {
+    foods = await FoodItem.find({
+      nameFold: { $regex: searchQuery, $options: 'i' }
+    })
+      .limit(limit)
+      .select('name portionGramsDefault portionUnits nutrients tags gi fodmap novaClass provenance qualityFlags');
+  }
+
+  // If still no results, try word-based search
+  if (foods.length === 0) {
+    const wordQueries = searchWords.map(word => ({ nameFold: { $regex: word, $options: 'i' } }));
+    foods = await FoodItem.find({
+      $or: wordQueries
+    })
+      .limit(limit * 2) // Get more results for better filtering
+      .select('name portionGramsDefault portionUnits nutrients tags gi fodmap novaClass provenance qualityFlags');
+  }
+
+  // Calculate relevance scores and filter results
+  const scoredFoods = foods.map(food => {
+    const name = food.name.toLowerCase();
+    let score = 0;
+    
+    // Exact match gets highest score
+    if (name === query.toLowerCase()) {
+      score = 1.0;
+    }
+    // Starts with query gets high score
+    else if (name.startsWith(query.toLowerCase())) {
+      score = 0.9;
+    }
+    // Contains query gets medium score
+    else if (name.includes(query.toLowerCase())) {
+      score = 0.8;
+    }
+    // Word-based matching gets lower score
+    else {
+      const matchingWords = searchWords.filter(word => name.includes(word));
+      score = Math.min(0.7, matchingWords.length / searchWords.length * 0.7);
+    }
+    
+    return {
+      ...food.toObject(),
+      source: 'local',
+      relevanceScore: score,
+      provenance: {
+        source: food.provenance?.source || food.source || 'Local Database',
+        measured: food.provenance?.measured || false,
+        confidence: food.provenance?.confidence || 0.5
+      }
+    };
+  });
+
+  // Filter out low-relevance results and sort by score
+  return scoredFoods
+    .filter(food => food.relevanceScore >= 0.3)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore)
+    .slice(0, limit);
+}
+
+// Helper function to search USDA database
+async function searchUSDADatabase(query, limit) {
+  try {
+    // Check if USDA API key is configured
+    const usdaApiKey = process.env.USDA_API_KEY;
+    if (!usdaApiKey) {
+      console.log('USDA API key not configured, skipping USDA search');
+      return [];
+    }
+
+    const response = await axios.get(
+      `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${usdaApiKey}&query=${encodeURIComponent(query)}&pageSize=${limit}`,
+      { timeout: 10000 }
+    );
+
+    if (!response.data || !response.data.foods) {
+      return [];
+    }
+
+    // Calculate relevance scores for USDA results
+    const searchWords = query.toLowerCase().split(' ').filter(word => word.length > 2);
+    const scoredFoods = response.data.foods.map(food => {
+      const name = food.description.toLowerCase();
+      let score = 0;
+      
+      // Exact name match gets highest score
+      if (name === query.toLowerCase()) {
+        score = 1.0;
+      }
+      // Starts with query gets high score
+      else if (name.startsWith(query.toLowerCase())) {
+        score = 0.9;
+      }
+      // Contains query gets medium score
+      else if (name.includes(query.toLowerCase())) {
+        score = 0.8;
+      }
+      // Word-based matching gets lower score
+      else {
+        const matchingWords = searchWords.filter(word => name.includes(word));
+        score = Math.min(0.7, matchingWords.length / searchWords.length * 0.7);
+      }
+      
+      // Boost score for foods with complete nutrition data
+      if (food.foodNutrients && food.foodNutrients.length > 0) {
+        score += 0.1;
+      }
+      
+      return {
+        id: `usda_${food.fdcId}`,
+        name: food.description,
+        brand: food.brandOwner || null,
+        source: 'usda',
+        relevanceScore: score,
+        nutriments100g: {
+          kcal: food.foodNutrients?.find(n => n.nutrientName === 'Energy')?.value || null,
+          protein: food.foodNutrients?.find(n => n.nutrientName === 'Protein')?.value || null,
+          fat: food.foodNutrients?.find(n => n.nutrientName === 'Total lipid (fat)')?.value || null,
+          carbs: food.foodNutrients?.find(n => n.nutrientName === 'Carbohydrate, by difference')?.value || null,
+          fiber: food.foodNutrients?.find(n => n.nutrientName === 'Fiber, total dietary')?.value || null,
+          sugar: food.foodNutrients?.find(n => n.nutrientName === 'Sugars, total including NLEA')?.value || null
+        },
+        provenance: {
+          source: 'USDA Database',
+          measured: true,
+          confidence: 0.9,
+          lastUpdated: new Date().toISOString()
+        }
+      };
+    });
+
+    // Filter out low-relevance results and sort by score
+    return scoredFoods
+      .filter(food => food.relevanceScore >= 0.5)
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, limit);
+  } catch (error) {
+    console.error('USDA search error:', error);
+    return [];
+  }
+}
+
+// Helper function to deduplicate search results
+function deduplicateResults(results) {
+  const deduplicated = [];
+  
+  // Sort by source priority and relevance score first
+  const sortedResults = results.sort((a, b) => {
+    // Priority: local > usda > off (higher priority = lower number)
+    const sourcePriority = { local: 1, usda: 2, off: 3 };
+    const aPriority = sourcePriority[a.source] || 4;
+    const bPriority = sourcePriority[b.source] || 4;
+    
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority;
+    }
+    
+    // If same source, sort by relevance score
+    return (b.relevanceScore || 0) - (a.relevanceScore || 0);
+  });
+  
+  for (const result of sortedResults) {
+    // Check if this result is similar to any existing result
+    const isDuplicate = deduplicated.some(existing => 
+      areFoodsSimilar(result, existing)
+    );
+    
+    if (!isDuplicate) {
+      deduplicated.push(result);
+    }
+    // If duplicate found, skip it (we already have the higher priority one)
+  }
+  
+  return deduplicated;
+}
+
+// Helper function to generate deduplication key
+function generateDeduplicationKey(food) {
+  // Normalize the name for comparison
+  const normalizedName = food.name.toLowerCase()
+    .replace(/[^\w\s]/g, '') // Remove special characters
+    .replace(/\s+/g, ' ')    // Normalize whitespace
+    .trim();
+  
+  // For cross-source deduplication, use just the normalized name
+  // This will help identify same foods from different sources
+  return normalizedName;
+}
+
+// Helper function to check if two foods are similar enough to be considered duplicates
+function areFoodsSimilar(food1, food2) {
+  const name1 = food1.name.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+  const name2 = food2.name.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+  
+  // Check for exact name match
+  if (name1 === name2) return true;
+  
+  // Check for very similar names (e.g., "rice" vs "rice (cooked)")
+  const words1 = name1.split(' ');
+  const words2 = name2.split(' ');
+  
+  // If both have the same core words, they might be similar
+  const coreWords1 = words1.filter(word => word.length > 2);
+  const coreWords2 = words2.filter(word => word.length > 2);
+  
+  const commonWords = coreWords1.filter(word => coreWords2.includes(word));
+  
+  // If they share most core words, consider them similar
+  return commonWords.length >= Math.min(coreWords1.length, coreWords2.length) * 0.7;
+}
+
+// Helper function to search Open Food Facts
+async function searchOpenFoodFacts(query, limit) {
+  try {
+    const UA = "LyfeApp/1.0 (support@lyfe.example)";
+    const BASE = "https://world.openfoodfacts.org/cgi/search.pl";
+    
+    const params = new URLSearchParams({
+      search_terms: query,
+      search_simple: 1,
+      action: 'process',
+      json: 1,
+      page_size: limit * 2 // Get more results for better filtering
+    });
+
+    const response = await axios.get(`${BASE}?${params}`, {
+      headers: { "User-Agent": UA },
+      timeout: 10000
+    });
+
+    if (!response.data || !response.data.products) {
+      return [];
+    }
+
+    // Calculate relevance scores and filter results
+    const searchWords = query.toLowerCase().split(' ').filter(word => word.length > 2);
+    const scoredProducts = response.data.products.map(product => {
+      const name = (product.product_name || product.brands || 'Unknown').toLowerCase();
+      let score = 0;
+      
+      // Exact name match gets highest score
+      if (name === query.toLowerCase()) {
+        score = 1.0;
+      }
+      // Starts with query gets high score
+      else if (name.startsWith(query.toLowerCase())) {
+        score = 0.9;
+      }
+      // Contains query gets medium score
+      else if (name.includes(query.toLowerCase())) {
+        score = 0.8;
+      }
+      // Word-based matching gets lower score
+      else {
+        const matchingWords = searchWords.filter(word => name.includes(word));
+        score = Math.min(0.6, matchingWords.length / searchWords.length * 0.6);
+      }
+      
+      // Boost score for products with complete nutrition data
+      if (product.nutriments && product.nutriments['energy-kcal_100g']) {
+        score += 0.1;
+      }
+      
+      return {
+        id: `off_${product.code}`,
+        barcode: product.code,
+        name: product.product_name || product.brands || 'Unknown',
+        brand: product.brands || null,
+        source: 'off',
+        relevanceScore: score,
+        nutriments100g: {
+          kcal: product.nutriments?.['energy-kcal_100g'] || null,
+          protein: product.nutriments?.proteins_100g || null,
+          fat: product.nutriments?.fat_100g || null,
+          carbs: product.nutriments?.carbohydrates_100g || null,
+          fiber: product.nutriments?.fiber_100g || null,
+          sugar: product.nutriments?.sugars_100g || null
+        },
+        novaClass: product.nova_group || null,
+        tags: product.categories_tags?.map(tag => tag.replace('en:', '')) || [],
+        provenance: {
+          source: 'Open Food Facts',
+          measured: false,
+          confidence: 0.7,
+          lastUpdated: product.last_modified_t ? new Date(product.last_modified_t * 1000).toISOString() : null
+        }
+      };
+    });
+
+    // Filter out low-relevance results and sort by score
+    return scoredProducts
+      .filter(product => product.relevanceScore >= 0.4)
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, limit);
+  } catch (error) {
+    console.error('Open Food Facts search error:', error);
+    return [];
+  }
+}
 
 module.exports = router;
