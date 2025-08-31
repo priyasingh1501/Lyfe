@@ -141,7 +141,6 @@ const Journal = () => {
   };
 
   const handleDeleteEntry = async (entryId) => {
-    if (!window.confirm('Are you sure you want to delete this entry?')) return;
 
     try {
       const response = await fetch(`/api/journal/entries/${entryId}`, {

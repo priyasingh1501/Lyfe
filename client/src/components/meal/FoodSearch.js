@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Loader2, Info } from 'lucide-react';
 
-const FoodSearch = ({ results, isSearching, onAddFood }) => {
+const FoodSearch = ({ results, isSearching, hasSearched, onAddFood }) => {
   if (isSearching) {
     return (
       <div className="flex justify-center py-8">
@@ -11,7 +11,15 @@ const FoodSearch = ({ results, isSearching, onAddFood }) => {
     );
   }
 
-  if (results.length === 0) {
+  if (hasSearched && results.length === 0) {
+    return (
+      <div className="text-center py-8 text-[#6B7280]">
+        <p className="text-sm text-red-600">No results found. Try a different search term.</p>
+      </div>
+    );
+  }
+
+  if (!hasSearched) {
     return (
       <div className="text-center py-8 text-[#6B7280]">
         <p>Search for foods to add to your meal</p>
@@ -69,9 +77,9 @@ const FoodSearch = ({ results, isSearching, onAddFood }) => {
     return (
       <div className="flex flex-wrap gap-1 mt-2">
         <span className="text-xs text-[#FFD200] font-medium">Click to add:</span>
-        {food.portionUnits.map((unit, index) => (
+        {food.portionUnits.map((unit, unitIndex) => (
           <button
-            key={index}
+            key={`unit-${food._id || food.id || food.barcode || unitIndex}-${unitIndex}`}
             onClick={() => onAddFood(food, unit)}
             className={`inline-flex items-center px-3 py-1 text-xs rounded-full border transition-all duration-200 hover:scale-105 cursor-pointer ${
               unit.isDefault
@@ -92,14 +100,19 @@ const FoodSearch = ({ results, isSearching, onAddFood }) => {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-medium text-[#E8EEF2] mb-3">
-        Search Results ({results.length})
-      </h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-medium text-[#E8EEF2]">
+          Search Results
+        </h3>
+        <span className="text-sm text-[#6B7280]">
+          Showing {results.length} results
+        </span>
+      </div>
       
       <AnimatePresence>
         {results.map((food, index) => (
           <motion.div
-            key={food._id}
+            key={`meal-food-${food._id || food.id || food.barcode || index}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -108,39 +121,45 @@ const FoodSearch = ({ results, isSearching, onAddFood }) => {
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <h4 className="font-semibold text-[#E8EEF2] mb-2">
-                  {food.name}
-                </h4>
-                
-                {/* Nutritional info */}
-                <div className="grid grid-cols-4 gap-2 text-sm text-[#C9D1D9]">
-                  <div>
-                    <span className="text-[#FFD200] font-medium">kcal:</span>
-                    <br />
-                    {food.nutrients?.kcal || 0}
-                  </div>
-                  <div>
-                    <span className="text-[#FFD200] font-medium">P:</span>
-                    <br />
-                    {food.nutrients?.protein || 0}g
-                  </div>
-                  <div>
-                    <span className="text-[#FFD200] font-medium">C:</span>
-                    <br />
-                    {food.nutrients?.carbs || 0}g
-                  </div>
-                  <div>
-                    <span className="text-[#FFD200] font-medium">F:</span>
-                    <br />
-                    {food.nutrients?.fat || 0}g
-                  </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <h4 className="font-semibold text-[#E8EEF2]">
+                    {food.name}
+                  </h4>
+                  {/* Source indicator */}
+                  <span className={`px-2 py-1 text-xs rounded-full border ${
+                    food.source === 'IFCT' 
+                      ? 'bg-green-900/30 text-green-300 border-green-700/50'
+                      : food.source === 'USDA'
+                      ? 'bg-blue-900/30 text-blue-300 border-blue-700/50'
+                      : food.source === 'OpenFoodFacts'
+                      ? 'bg-purple-900/30 text-purple-300 border-purple-700/50'
+                      : 'bg-gray-900/30 text-gray-300 border-gray-700/50'
+                  }`}>
+                    {food.source}
+                  </span>
+                  {/* Relevance score for external sources */}
+                  {food.relevanceScore && food.source !== 'IFCT' && (
+                    <span className="px-2 py-1 text-xs rounded-full bg-[#FFD200]/20 text-[#FFD200] border border-[#FFD200]/50">
+                      {Math.round(food.relevanceScore * 100)}% match
+                    </span>
+                  )}
                 </div>
+                
+                                  {/* Default portion info */}
+                  <div className="text-sm text-[#C9D1D9]">
+                    <span className="text-[#FFD200] font-medium">Default portion:</span> {food.portionGramsDefault || 100}g
+                    {food.brand && (
+                      <span className="ml-3 text-[#6B7280]">
+                        <span className="text-[#FFD200] font-medium">Brand:</span> {food.brand}
+                      </span>
+                    )}
+                  </div>
                 
                 {/* Tags and badges */}
                 <div className="flex flex-wrap gap-2 mt-3">
                   {food.tags?.map((tag, tagIndex) => (
                     <span
-                      key={tagIndex}
+                      key={`tag-${food._id || food.id || food.barcode || index}-${tagIndex}`}
                       className="px-2 py-1 bg-[#2A313A] text-[#C9D1D9] text-xs rounded-full"
                     >
                       {tag}
@@ -189,9 +208,9 @@ const FoodSearch = ({ results, isSearching, onAddFood }) => {
                 {/* Traditional Units */}
                 {getTraditionalUnits(food)}
                 
-                {/* Default portion */}
-                <div className="mt-2 text-sm text-[#6B7280]">
-                  Default portion: {food.portionGramsDefault}g
+                {/* Default portion - more prominent */}
+                <div className="mt-3 text-sm text-[#FFD200] font-medium">
+                  Default portion: {food.portionGramsDefault || 100}g
                 </div>
               </div>
               

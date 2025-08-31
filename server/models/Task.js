@@ -71,6 +71,10 @@ const taskSchema = new mongoose.Schema({
     enum: ['daily', 'weekly', 'monthly'],
     default: 'daily'
   },
+  habitEndDate: {
+    type: Date,
+    default: null
+  },
   subtasks: [{
     title: String,
     completed: { type: Boolean, default: false }

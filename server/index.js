@@ -2,9 +2,9 @@
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Load environment variables from current directory
-console.log('🔍 Loading .env from current directory');
-dotenv.config({ path: '.env' });
+// Load environment variables from project root directory
+console.log('🔍 Loading .env from project root directory');
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const express = require('express');
 const cors = require('cors');
@@ -25,6 +25,7 @@ const bookDocumentRoutes = require('./routes/bookDocuments');
 const aiChatRoutes = require('./routes/aiChat');
 const goalRoutes = require('./routes/goals');
 const habitRoutes = require('./routes/habits');
+const mindfulnessRoutes = require('./routes/mindfulness');
 const foodRoutes = require('./routes/food');
 const mealsRoutes = require('./routes/meals');
 const pantryRoutes = require('./routes/pantry');
@@ -36,6 +37,8 @@ console.log('🔍 Current working directory:', process.cwd());
 console.log('🔍 .env file path:', path.resolve('../.env'));
 console.log('🔍 OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
 console.log('🔍 OPENAI_API_KEY length:', process.env.OPENAI_API_KEY?.length || 0);
+console.log('🔍 USDA_API_KEY exists:', !!process.env.USDA_API_KEY);
+console.log('🔍 USDA_API_KEY length:', process.env.USDA_API_KEY?.length || 0);
 console.log('🔍 PORT:', process.env.PORT);
 console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
 
@@ -104,6 +107,7 @@ app.use('/api/book-documents', bookDocumentRoutes);
 app.use('/api/ai-chat', aiChatRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/habits', habitRoutes);
+app.use('/api/mindfulness', mindfulnessRoutes);
 app.use('/api/food', foodRoutes);
 app.use('/api/meals', mealsRoutes);
 app.use('/api/pantry', pantryRoutes);

@@ -204,7 +204,6 @@ const Content = () => {
   };
 
   const handleDeleteBook = async (bookId) => {
-    if (!window.confirm('Are you sure you want to delete this book? All notes will be lost.')) return;
 
     try {
       const response = await fetch(buildApiUrl(`/api/book-documents/${bookId}`), {
@@ -227,7 +226,6 @@ const Content = () => {
   };
 
   const handleDeleteNote = async (bookId, noteId) => {
-    if (!window.confirm('Are you sure you want to delete this note?')) return;
 
     try {
       const response = await fetch(buildApiUrl(`/api/book-documents/${bookId}/notes/${noteId}`), {

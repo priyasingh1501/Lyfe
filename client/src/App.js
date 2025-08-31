@@ -65,7 +65,7 @@ const PublicRoute = ({ children }) => {
   }
   
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/overview" replace />;
   }
   
   return children;
@@ -121,8 +121,8 @@ function App() {
                   <Layout />
                 </ProtectedRoute>
               }>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
+                <Route index element={<Navigate to="/overview" replace />} />
+                <Route path="overview" element={<Dashboard />} />
                 <Route path="tasks" element={<Tasks />} />
                 <Route path="time-management" element={<TimeManagement />} />
                 <Route path="health" element={<Health />} />
@@ -140,7 +140,7 @@ function App() {
               </Route>
               
               {/* Catch all route */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="*" element={<Navigate to="/overview" replace />} />
             </Routes>
           </div>
         </Router>

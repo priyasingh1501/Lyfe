@@ -5,16 +5,11 @@ import {
   X,
   Home,
   DollarSign,
-  Settings,
   LogOut,
   Brain,
-  Plus,
-  Search,
-  Bell,
   Send,
   Target,
-  Utensils,
-  Package
+  Utensils
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { componentStyles, colors, typography } from '../../styles/designTokens';
@@ -65,8 +60,9 @@ const Layout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [aiChatOpen, setAiChatOpen] = useState(true);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
   const [rightToolbarOpen, setRightToolbarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [aiMessages, setAiMessages] = useState([
     {
       role: 'assistant',
@@ -77,21 +73,17 @@ const Layout = () => {
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
+
+
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Goal-Aligned Day', href: '/goal-aligned-day', icon: Target },
+    { name: 'Overview', href: '/overview', icon: Home },
+    { name: 'Goals', href: '/goal-aligned-day', icon: Target },
     { name: 'Food', href: '/food', icon: Utensils },
-    { name: 'Pantry', href: '/pantry', icon: Package },
     { name: 'Finance', href: '/finance', icon: DollarSign },
     { name: 'Content', href: '/content', icon: Brain },
   ];
 
-  const rightTools = [
-    { name: 'Quick Add', icon: Plus, action: 'quick-add' },
-    { name: 'Search', icon: Search, action: 'search' },
-    { name: 'Notifications', icon: Bell, action: 'notifications' },
-    { name: 'Settings', icon: Settings, action: 'settings' },
-  ];
+
 
   const handleLogout = async () => {
     try {
@@ -102,9 +94,9 @@ const Layout = () => {
     }
   };
 
-  const isActiveRoute = (href) => {
-    return location.pathname === href;
-  };
+
+
+
 
   const handleAiMessage = async (message) => {
     if (!message.trim()) return;
@@ -196,60 +188,105 @@ const Layout = () => {
       {/* Main Layout */}
       <div className="flex h-screen">
         {/* Left Sidebar */}
-        <div className="w-64 bg-background-secondary border-r border-border-primary flex flex-col">
+        <div 
+          className={`bg-background-secondary border-r border-border-primary flex flex-col transition-all duration-300 ease-in-out ${
+            sidebarCollapsed ? 'w-16' : 'w-64'
+          }`}
+        >
           {/* Logo */}
-          <div className="p-6 border-b border-border-primary">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-accent-yellow via-accent-green to-accent-teal rounded-xl flex items-center justify-center">
-                <span className="text-text-inverse font-bold text-xl">L</span>
-              </div>
-              <span className={`text-xl font-bold ${typography.fontFamily.display} tracking-wide`}>
+          <div className={`border-b border-border-primary transition-all duration-300 ${
+            sidebarCollapsed ? 'p-3' : 'p-6'
+          }`}>
+            <div className={`flex items-center transition-all duration-300 ${
+              sidebarCollapsed ? 'justify-center' : 'space-x-3'
+            }`}>
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="w-full flex items-center rounded-xl transition-all duration-200 text-white hover:text-gray-200 px-2 py-3"
+                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {sidebarCollapsed ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  </svg>
+                )}
+              </button>
+              <span className={`text-xl font-bold ${typography.fontFamily.display} tracking-wide transition-all duration-300 ${
+                sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+              }`}>
                 Lyfe
               </span>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              const isActive = isActiveRoute(item.href);
-              
-              return (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200",
-                    isActive
-                      ? "bg-accent-green/20 text-accent-green border border-accent-green/30"
-                      : "text-text-secondary hover:text-text-primary hover:bg-background-tertiary"
-                  )}
-                >
-                  <Icon size={20} />
-                  <span className="font-medium">{item.name}</span>
-                </a>
-              );
-            })}
+          <nav className={`flex-1 transition-all duration-300 ${
+            sidebarCollapsed ? 'p-2' : 'p-4'
+          }`}>
+            <div className={`space-y-2 ${
+              sidebarCollapsed ? 'space-y-3' : 'space-y-2'
+            }`}>
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.href;
+                
+                return (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className={cn(
+                      "w-full flex items-center rounded-xl transition-all duration-200",
+                      sidebarCollapsed 
+                        ? "justify-center px-2 py-3" 
+                        : "justify-start space-x-3 px-4 py-3",
+                      isActive
+                        ? "bg-accent-green/20 text-accent-green border border-accent-green/30"
+                        : "text-text-secondary hover:text-text-primary hover:bg-background-tertiary"
+                    )}
+                    title={sidebarCollapsed ? item.name : ''}
+                  >
+                    <Icon size={20} />
+                    <span className={`font-medium transition-all duration-300 ${
+                      sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                    }`}>
+                      {item.name}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
           </nav>
 
           {/* User Section */}
-          <div className="p-4 border-t border-border-primary">
-            <div className="flex items-center space-x-3 p-3 rounded-xl bg-background-tertiary">
+          <div className={`border-t border-border-primary transition-all duration-300 ${
+            sidebarCollapsed ? 'p-2' : 'p-4'
+          }`}>
+            <div className={`flex items-center rounded-xl bg-background-tertiary transition-all duration-300 ${
+              sidebarCollapsed ? 'justify-center p-2' : 'space-x-3 p-3'
+            }`}>
               <div className="w-8 h-8 bg-accent-green rounded-full flex items-center justify-center">
                 <span className="text-text-inverse text-sm font-semibold">
                   {user?.email?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className={`flex-1 min-w-0 transition-all duration-300 ${
+                sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+              }`}>
                 <p className="text-sm font-medium text-text-primary truncate">
                   {user?.email || 'User'}
                 </p>
               </div>
               <button
                 onClick={handleLogout}
-                className="text-text-muted hover:text-text-primary transition-colors"
+                className={`text-text-muted hover:text-text-primary transition-colors transition-all duration-300 ${
+                  sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                }`}
                 aria-label="Logout"
+                title={sidebarCollapsed ? 'Logout' : ''}
               >
                 <LogOut size={16} />
               </button>
@@ -263,23 +300,20 @@ const Layout = () => {
           <header className="h-16 bg-background-secondary border-b border-border-primary flex items-center justify-between px-6">
             <div className="flex items-center space-x-4">
               <h1 className={`text-xl font-semibold ${typography.fontFamily.display} tracking-wide`}>
-                {navigation.find(item => item.href === location.pathname)?.name || 'Dashboard'}
+                Lyfe
               </h1>
             </div>
             
             <div className="flex items-center space-x-3">
-              {rightTools.map((tool) => {
-                const Icon = tool.icon;
-                return (
-                  <button
-                    key={tool.name}
-                    className="p-2 text-text-muted hover:text-text-primary hover:bg-background-tertiary rounded-lg transition-all duration-200"
-                    aria-label={tool.name}
-                  >
-                    <Icon size={20} />
-                  </button>
-                );
-              })}
+              {/* Chat with Alfred Button */}
+              <button
+                onClick={() => setAiChatOpen(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-accent-green text-text-inverse rounded-lg hover:bg-accent-green/90 transition-all duration-200 font-medium"
+                aria-label="Chat with Alfred"
+              >
+                <Brain size={18} />
+                <span>Chat with Alfred</span>
+              </button>
             </div>
           </header>
 

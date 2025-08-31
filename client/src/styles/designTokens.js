@@ -316,6 +316,36 @@ export const componentStyles = {
       hover:bg-background-secondary 
       hover:text-text-secondary
     `,
+    outline: `
+      bg-transparent 
+      border border-border-primary 
+      text-text-primary 
+      font-medium 
+      px-6 
+      py-3 
+      rounded-xl 
+      transition-all 
+      duration-200 
+      hover:bg-background-secondary 
+      hover:border-border-accent/50 
+      hover:scale-[1.02] 
+      active:scale-[0.98]
+    `,
+    default: `
+      bg-background-secondary 
+      border border-border-primary 
+      text-text-primary 
+      font-medium 
+      px-6 
+      py-3 
+      rounded-xl 
+      transition-all 
+      duration-200 
+      hover:bg-background-tertiary 
+      hover:border-border-accent/50 
+      hover:scale-[1.02] 
+      active:scale-[0.98]
+    `,
   },
   
   // Input styles
@@ -324,7 +354,7 @@ export const componentStyles = {
       bg-background-secondary 
       border border-border-primary 
       text-text-primary 
-      placeholder-text-muted 
+      placeholder:text-text-muted 
       px-4 
       py-3 
       rounded-xl 
@@ -350,6 +380,21 @@ export const componentStyles = {
       font-medium 
       transition-colors 
       duration-200
+    `,
+    default: `
+      bg-background-secondary 
+      text-text-primary 
+      border border-border-primary
+    `,
+    secondary: `
+      bg-background-tertiary 
+      text-text-secondary 
+      border border-border-secondary
+    `,
+    outline: `
+      bg-transparent 
+      text-text-primary 
+      border border-border-primary
     `,
     success: `
       bg-status-success/20 
@@ -492,16 +537,7 @@ export const animations = {
     transition: { duration: 0.2, ease: 'easeOut' }
   },
   
-  // Stagger animations for lists
-  stagger: {
-    animate: {
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  },
-  
-  // Hover animations
+  // Interactive animations
   hover: {
     scale: 1.02,
     transition: { duration: 0.2, ease: 'easeOut' }
@@ -510,18 +546,16 @@ export const animations = {
   tap: {
     scale: 0.98,
     transition: { duration: 0.1, ease: 'easeOut' }
+  },
+  
+  // Stagger animations for lists
+  stagger: {
+    animate: {
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
   }
 };
 
-export default {
-  colors,
-  typography,
-  spacing,
-  borderRadius,
-  shadows,
-  transitions,
-  breakpoints,
-  zIndex,
-  componentStyles,
-  animations
-};
+

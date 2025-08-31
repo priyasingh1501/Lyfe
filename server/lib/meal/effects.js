@@ -7,13 +7,85 @@
  * @param {Object} totals - Nutrient totals
  * @param {Object} badges - Badge information
  * @param {Object} context - Meal context
- * @returns {Object} - Effects for strength, immunity, and inflammation
+ * @returns {Object} - Effects for all 7 categories
  */
 function computeMealEffects(totals, badges, context = {}) {
   return {
+    // Core Body Effect Categories
+    fatForming: computeFatForming(totals, badges, context),
     strength: computeStrength(totals, badges, context),
     immunity: computeImmunity(totals, badges, context),
-    inflammation: computeInflammation(totals, badges, context)
+    inflammation: computeInflammation(totals, badges, context),
+    
+    // Everyday Felt Effects
+    energizing: computeEnergizing(totals, badges, context),
+    gutFriendly: computeGutFriendly(totals, badges, context),
+    moodLifting: computeMoodLifting(totals, badges, context)
+  };
+}
+
+/**
+ * Compute fat-forming effect (0-10, lower is better)
+ * @param {Object} totals - Nutrient totals
+ * @param {Object} badges - Badge information
+ * @param {Object} context - Meal context
+ * @returns {Object} - Fat-forming score and reasons
+ */
+function computeFatForming(totals, badges, context) {
+  let score = 0;
+  const reasons = [];
+
+  // High fat content (0-3 points)
+  const fatGrams = totals.fat || 0;
+  if (fatGrams >= 50) {
+    score += 3;
+    reasons.push('Very high fat content (≥50g) promotes fat storage');
+  } else if (fatGrams >= 35) {
+    score += 2;
+    reasons.push('High fat content (≥35g) may contribute to weight gain');
+  } else if (fatGrams >= 25) {
+    score += 1;
+    reasons.push('Moderate fat content (≥25g)');
+  }
+
+  // High sugar content (0-3 points)
+  const sugarGrams = totals.sugar || 0;
+  if (sugarGrams >= 30) {
+    score += 3;
+    reasons.push('Very high sugar content (≥30g) promotes fat storage');
+  } else if (sugarGrams >= 20) {
+    score += 2;
+    reasons.push('High sugar content (≥20g) may contribute to weight gain');
+  } else if (sugarGrams >= 15) {
+    score += 1;
+    reasons.push('Moderate sugar content (≥15g)');
+  }
+
+  // Refined carbs (0-2 points)
+  if (badges.gi && badges.gi >= 70) {
+    score += 2;
+    reasons.push('High glycemic index (≥70) promotes fat storage');
+  } else if (badges.gi && badges.gi >= 55) {
+    score += 1;
+    reasons.push('Moderate glycemic index (≥55)');
+  }
+
+  // Ultra-processed foods (0-2 points)
+  if (badges.nova >= 4) {
+    score += 2;
+    reasons.push('Ultra-processed foods (NOVA 4) promote fat storage');
+  } else if (badges.nova >= 3) {
+    score += 1;
+    reasons.push('Processed foods (NOVA 3) may contribute to weight gain');
+  }
+
+  // Clamp score to 0-10 range
+  score = Math.max(0, Math.min(10, score));
+
+  return {
+    score,
+    reasons,
+    level: getFatFormingLevel(score)
   };
 }
 
@@ -237,6 +309,202 @@ function computeInflammation(totals, badges, context) {
 }
 
 /**
+ * Compute energizing effect (0-10)
+ * @param {Object} totals - Nutrient totals
+ * @param {Object} badges - Badge information
+ * @param {Object} context - Meal context
+ * @returns {Object} - Energizing score and reasons
+ */
+function computeEnergizing(totals, badges, context) {
+  let score = 5; // Start neutral
+  const reasons = [];
+
+  // Complex carbs for sustained energy (+2 points)
+  const carbsGrams = totals.carbs || 0;
+  if (carbsGrams >= 30) {
+    if (badges.gi && badges.gi < 55) {
+      score += 2;
+      reasons.push('Good complex carbs (≥30g) with low GI for sustained energy');
+    } else if (badges.gi && badges.gi < 70) {
+      score += 1;
+      reasons.push('Moderate carbs (≥30g) for energy');
+    }
+  }
+
+  // Protein for stable blood sugar (+1 point)
+  const proteinGrams = totals.protein || 0;
+  if (proteinGrams >= 15) {
+    score += 1;
+    reasons.push('Good protein (≥15g) for stable blood sugar');
+  }
+
+  // Fiber for slow digestion (+1 point)
+  const fiberGrams = totals.fiber || 0;
+  if (fiberGrams >= 5) {
+    score += 1;
+    reasons.push('Good fiber (≥5g) for slow, steady energy release');
+  }
+
+  // Anti-energizing factors (reduce score)
+  if (totals.fat >= 40) {
+    score -= 1;
+    reasons.push('High fat content (≥40g) may cause sluggishness');
+  }
+
+  if (badges.gi && badges.gi >= 70) {
+    score -= 1;
+    reasons.push('High GI foods may cause energy crashes');
+  }
+
+  if (totals.sugar >= 25) {
+    score -= 1;
+    reasons.push('High sugar (≥25g) may cause energy spikes and crashes');
+  }
+
+  // Clamp score to 0-10 range
+  score = Math.max(0, Math.min(10, score));
+
+  return {
+    score,
+    reasons,
+    level: getEnergizingLevel(score)
+  };
+}
+
+/**
+ * Compute gut-friendly effect (0-10)
+ * @param {Object} totals - Nutrient totals
+ * @param {Object} badges - Badge information
+ * @param {Object} context - Meal context
+ * @returns {Object} - Gut-friendly score and reasons
+ */
+function computeGutFriendly(totals, badges, context) {
+  let score = 5; // Start neutral
+  const reasons = [];
+
+  // Fiber for gut health (+3 points)
+  const fiberGrams = totals.fiber || 0;
+  if (fiberGrams >= 8) {
+    score += 3;
+    reasons.push('Excellent fiber content (≥8g) for gut health');
+  } else if (fiberGrams >= 5) {
+    score += 2;
+    reasons.push('Good fiber content (≥5g) for gut health');
+  } else if (fiberGrams >= 3) {
+    score += 1;
+    reasons.push('Moderate fiber content (≥3g) for gut health');
+  }
+
+  // Fermented foods bonus (+2 points)
+  if (context.fermented) {
+    score += 2;
+    reasons.push('Contains fermented foods for gut microbiome');
+  }
+
+  // Plant diversity bonus (+1 point)
+  const plantDiversity = context.plantDiversity || 0;
+  if (plantDiversity >= 5) {
+    score += 1;
+    reasons.push('High plant diversity (≥5 types) for gut health');
+  } else if (plantDiversity >= 3) {
+    score += 1;
+    reasons.push('Moderate plant diversity (≥3 types) for gut health');
+  }
+
+  // Anti-gut-friendly factors (reduce score)
+  if (totals.fat >= 45) {
+    score -= 1;
+    reasons.push('Very high fat content (≥45g) may cause digestive discomfort');
+  }
+
+  if (badges.nova >= 4) {
+    score -= 1;
+    reasons.push('Ultra-processed foods may irritate the gut');
+  }
+
+  if (totals.sugar >= 30) {
+    score -= 1;
+    reasons.push('High sugar content (≥30g) may feed harmful gut bacteria');
+  }
+
+  // Clamp score to 0-10 range
+  score = Math.max(0, Math.min(10, score));
+
+  return {
+    score,
+    reasons,
+    level: getGutFriendlyLevel(score)
+  };
+}
+
+/**
+ * Compute mood-lifting effect (0-10)
+ * @param {Object} totals - Nutrient totals
+ * @param {Object} badges - Badge information
+ * @param {Object} context - Meal context
+ * @returns {Object} - Mood-lifting score and reasons
+ */
+function computeMoodLifting(totals, badges, context) {
+  let score = 5; // Start neutral
+  const reasons = [];
+
+  // Omega-3 for brain health (+2 points)
+  const omega3Grams = totals.omega3 || 0;
+  if (omega3Grams >= 0.8) {
+    score += 2;
+    reasons.push('Excellent omega-3 content (≥0.8g) for brain health and mood');
+  } else if (omega3Grams >= 0.5) {
+    score += 1;
+    reasons.push('Good omega-3 content (≥0.5g) for mood support');
+  }
+
+  // Magnesium for relaxation (+1 point)
+  const magnesiumMg = totals.magnesium || 0;
+  if (magnesiumMg >= 100) {
+    score += 1;
+    reasons.push('Good magnesium content (≥100mg) for relaxation');
+  }
+
+  // Tryptophan for serotonin (+1 point)
+  const tryptophanMg = totals.tryptophan || 0;
+  if (tryptophanMg >= 200) {
+    score += 1;
+    reasons.push('Good tryptophan content (≥200mg) for serotonin production');
+  }
+
+  // Fermented foods for gut-brain axis (+1 point)
+  if (context.fermented) {
+    score += 1;
+    reasons.push('Fermented foods support gut-brain axis and mood');
+  }
+
+  // Anti-mood factors (reduce score)
+  if (totals.sugar >= 25) {
+    score -= 1;
+    reasons.push('High sugar (≥25g) may cause mood swings');
+  }
+
+  if (badges.nova >= 4) {
+    score -= 1;
+    reasons.push('Ultra-processed foods may negatively affect mood');
+  }
+
+  if (context.addedSugar >= 20) {
+    score -= 1;
+    reasons.push('High added sugar (≥20g) may cause mood instability');
+  }
+
+  // Clamp score to 0-10 range
+  score = Math.max(0, Math.min(10, score));
+
+  return {
+    score,
+    reasons,
+    level: getMoodLiftingLevel(score)
+  };
+}
+
+/**
  * Get strength level description
  * @param {number} score - Strength score
  * @returns {string} - Strength level
@@ -274,12 +542,70 @@ function getInflammationLabel(score) {
 }
 
 /**
+ * Get fat-forming level description
+ * @param {number} score - Fat-forming score
+ * @returns {string} - Fat-forming level
+ */
+function getFatFormingLevel(score) {
+  if (score <= 2) return 'Very Low';
+  if (score <= 4) return 'Low';
+  if (score <= 6) return 'Moderate';
+  if (score <= 8) return 'High';
+  return 'Very High';
+}
+
+/**
+ * Get energizing level description
+ * @param {number} score - Energizing score
+ * @returns {string} - Energizing level
+ */
+function getEnergizingLevel(score) {
+  if (score >= 8) return 'Very Energizing';
+  if (score >= 6) return 'Energizing';
+  if (score >= 4) return 'Neutral';
+  if (score >= 2) return 'Sluggish';
+  return 'Very Sluggish';
+}
+
+/**
+ * Get gut-friendly level description
+ * @param {number} score - Gut-friendly score
+ * @returns {string} - Gut-friendly level
+ */
+function getGutFriendlyLevel(score) {
+  if (score >= 8) return 'Very Gut-Friendly';
+  if (score >= 6) return 'Gut-Friendly';
+  if (score >= 4) return 'Neutral';
+  if (score >= 2) return 'May Cause Discomfort';
+  return 'Likely Uncomfortable';
+}
+
+/**
+ * Get mood-lifting level description
+ * @param {number} score - Mood-lifting score
+ * @returns {string} - Mood-lifting level
+ */
+function getMoodLiftingLevel(score) {
+  if (score >= 8) return 'Very Mood-Lifting';
+  if (score >= 6) return 'Mood-Lifting';
+  if (score >= 4) return 'Neutral';
+  if (score >= 2) return 'May Affect Mood';
+  return 'Likely Negative';
+}
+
+/**
  * Get effects summary for UI
  * @param {Object} effects - Computed effects
  * @returns {Object} - Effects summary
  */
 function getEffectsSummary(effects) {
   return {
+    // Core Body Effect Categories
+    fatForming: {
+      ...effects.fatForming,
+      icon: '🍔',
+      color: getEffectColor(effects.fatForming.score, false) // Lower is better for fat-forming
+    },
     strength: {
       ...effects.strength,
       icon: '💪',
@@ -287,13 +613,30 @@ function getEffectsSummary(effects) {
     },
     immunity: {
       ...effects.immunity,
-      icon: '🛡️',
+      icon: '🌿',
       color: getEffectColor(effects.immunity.score, true)
     },
     inflammation: {
       ...effects.inflammation,
       icon: '🔥',
       color: getEffectColor(effects.inflammation.score, false) // Lower is better for inflammation
+    },
+    
+    // Everyday Felt Effects
+    energizing: {
+      ...effects.energizing,
+      icon: '⚡️',
+      color: getEffectColor(effects.energizing.score, true)
+    },
+    gutFriendly: {
+      ...effects.gutFriendly,
+      icon: '🌀',
+      color: getEffectColor(effects.gutFriendly.score, true)
+    },
+    moodLifting: {
+      ...effects.moodLifting,
+      icon: '😊',
+      color: getEffectColor(effects.moodLifting.score, true)
     }
   };
 }
@@ -323,9 +666,13 @@ function getEffectColor(score, higherBetter) {
 
 module.exports = {
   computeMealEffects,
+  computeFatForming,
   computeStrength,
   computeImmunity,
   computeInflammation,
+  computeEnergizing,
+  computeGutFriendly,
+  computeMoodLifting,
   getEffectsSummary,
   getEffectColor
 };

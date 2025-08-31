@@ -119,16 +119,14 @@ const Pantry = () => {
   };
 
   const handleDeleteItem = async (id) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`/api/pantry/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        fetchData();
-      } catch (error) {
-        console.error('Error deleting inventory item:', error);
-      }
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/pantry/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting inventory item:', error);
     }
   };
 

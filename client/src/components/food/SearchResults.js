@@ -103,7 +103,7 @@ const SearchResults = ({ results }) => {
 
       <div className="grid gap-4">
         {results.map((food, index) => (
-          <Card key={food.id || food.barcode || index} variant="interactive" className="p-6 hover:shadow-lg transition-shadow duration-200">
+          <Card key={`${food.id || food.barcode || 'food'}-${index}`} variant="interactive" className="p-6 hover:shadow-lg transition-shadow duration-200">
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Food Info */}
               <div className="flex-1">

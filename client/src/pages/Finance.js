@@ -173,15 +173,6 @@ const Finance = () => {
     const goalToDelete = expenseGoals.find(goal => goal._id === goalId);
     if (!goalToDelete) return;
     
-    const confirmed = window.confirm(
-      `Are you sure you want to delete the ${goalToDelete.category} expense goal?\n\n` +
-      `Amount: ${formatCurrency(goalToDelete.amount)}\n` +
-      `Period: ${goalToDelete.period}\n\n` +
-      `This action cannot be undone.`
-    );
-    
-    if (!confirmed) return;
-    
     try {
       const token = localStorage.getItem('token');
       await axios.delete(
@@ -267,7 +258,6 @@ const Finance = () => {
   };
 
   const handleDelete = async (id, type) => {
-    if (!window.confirm('Are you sure you want to delete this record?')) return;
     
     try {
       const token = localStorage.getItem('token');
@@ -365,7 +355,8 @@ const Finance = () => {
         };
         reader.readAsDataURL(file);
       } else {
-        alert('Please select a valid image file');
+        // Invalid file type - could show a toast notification instead
+        console.log('Invalid file type selected');
       }
     }
   };
@@ -579,7 +570,6 @@ const Finance = () => {
       } else {
         const errorText = await response.text();
         console.error('Failed to update pantry:', response.status, errorText);
-        alert(`Failed to update pantry: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       console.error('Error updating pantry:', error);

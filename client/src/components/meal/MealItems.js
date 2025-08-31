@@ -60,21 +60,41 @@ const MealItems = ({ items, onRemoveFood, onUpdatePortion }) => {
     setEditValue('');
   };
 
+  // Indian portion units with their gram equivalents
+  const indianPortionUnits = [
+    { unit: 'katori', label: 'Katori', grams: 80, description: 'Small bowl' },
+    { unit: 'roti', label: 'Roti', grams: 45, description: 'Flatbread' },
+    { unit: 'idli', label: 'Idli', grams: 120, description: 'Steamed rice cake' },
+    { unit: 'cup', label: 'Cup', grams: 200, description: 'Standard cup' },
+    { unit: 'spoon', label: 'Spoon', grams: 15, description: 'Tablespoon' },
+    { unit: 'piece', label: 'Piece', grams: 50, description: 'Standard piece' },
+    { unit: 'handful', label: 'Handful', grams: 30, description: 'Handful' }
+  ];
+
   const getAvailableUnits = (item) => {
-    if (!item.food || !item.food.portionUnits) {
-      return [{ unit: 'grams', description: 'Grams' }];
+    // Always include Indian portion units
+    const units = [...indianPortionUnits];
+    
+    // Add grams as an option
+    units.push({ unit: 'grams', description: 'Grams' });
+    
+    // Add any custom portion units from the food item
+    if (item.food && item.food.portionUnits) {
+      item.food.portionUnits.forEach(unit => {
+        if (!units.find(u => u.unit === unit.unit)) {
+          units.push({
+            unit: unit.unit,
+            description: `${unit.description} (${unit.grams}g)`
+          });
+        }
+      });
     }
     
-    return item.food.portionUnits.map(unit => ({
-      unit: unit.unit,
-      description: `${unit.description} (${unit.grams}g)`
-    }));
+    return units;
   };
 
   const getDisplayPortion = (item) => {
-    if (!item.food || !item.food.portionUnits) {
-      return `${item.grams}g`;
-    }
+    const grams = item.grams;
     
     // If there's a selected unit, show it prominently
     if (item.selectedUnit) {
@@ -84,16 +104,22 @@ const MealItems = ({ items, onRemoveFood, onUpdatePortion }) => {
       }
     }
     
-    // Try to find a nice traditional unit representation
-    const units = item.food.portionUnits;
-    const grams = item.grams;
+    // Try to find a nice Indian portion unit representation
+    for (const unit of indianPortionUnits) {
+      const quantity = grams / unit.grams;
+      if (quantity >= 0.5 && quantity <= 5) {
+        return `${quantity.toFixed(quantity % 1 === 0 ? 0 : 1)} ${unit.unit} (${grams}g)`;
+      }
+    }
     
-    // Find the best traditional unit
-    for (const unit of units) {
-      if (unit.unit !== 'grams') {
-        const quantity = grams / unit.grams;
-        if (quantity >= 0.5 && quantity <= 5) {
-          return `${quantity.toFixed(quantity % 1 === 0 ? 0 : 1)} ${unit.unit} (${grams}g)`;
+    // Try to find a nice traditional unit representation from the food item
+    if (item.food && item.food.portionUnits) {
+      for (const unit of item.food.portionUnits) {
+        if (unit.unit !== 'grams') {
+          const quantity = grams / unit.grams;
+          if (quantity >= 0.5 && quantity <= 5) {
+            return `${quantity.toFixed(quantity % 1 === 0 ? 0 : 1)} ${unit.unit} (${grams}g)`;
+          }
         }
       }
     }
@@ -141,38 +167,10 @@ const MealItems = ({ items, onRemoveFood, onUpdatePortion }) => {
                   </div>
                 )}
                 
-                {/* Nutritional info */}
-                {item.food && (() => {
-                  const nutrients = getNormalizedNutrients(item.food);
-                  return nutrients ? (
-                    <div className="grid grid-cols-4 gap-2 text-sm text-[#C9D1D9]">
-                      <div>
-                        <span className="text-[#FFD200] font-medium">kcal:</span>
-                        <br />
-                        {Math.round((nutrients.kcal || 0) * item.grams / 100)}
-                      </div>
-                      <div>
-                        <span className="text-[#FFD200] font-medium">P:</span>
-                        <br />
-                        {((nutrients.protein || 0) * item.grams / 100).toFixed(1)}g
-                      </div>
-                      <div>
-                        <span className="text-[#FFD200] font-medium">C:</span>
-                        <br />
-                        {((nutrients.carbs || 0) * item.grams / 100).toFixed(1)}g
-                      </div>
-                      <div>
-                        <span className="text-[#FFD200] font-medium">F:</span>
-                        <br />
-                        {((nutrients.fat || 0) * item.grams / 100).toFixed(1)}g
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-[#6B7280] italic">
-                      Nutritional data not available
-                    </div>
-                  );
-                })()}
+                {/* Portion info - showing Indian portion units */}
+                <div className="text-sm text-[#C9D1D9] mt-2">
+                  <span className="text-[#FFD200] font-medium">Portion:</span> {getDisplayPortion(item)}
+                </div>
               </div>
               
               {/* Action buttons */}

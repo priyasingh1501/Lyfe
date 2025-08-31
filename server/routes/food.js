@@ -111,7 +111,12 @@ router.post('/search', auth, async (req, res) => {
     // Search USDA database
     if (source === 'combined' || source === 'usda') {
       try {
+        console.log('🔍 Searching USDA database for:', searchQuery);
         const usdaResults = await searchUSDADatabase(searchQuery, limit);
+        console.log('📊 USDA search returned:', usdaResults.length, 'results');
+        if (usdaResults.length > 0) {
+          console.log('USDA sample results:', usdaResults.slice(0, 2).map(r => ({ name: r.name, score: r.relevanceScore })));
+        }
         results.push(...usdaResults);
       } catch (error) {
         console.error('USDA search error:', error);
@@ -122,10 +127,15 @@ router.post('/search', auth, async (req, res) => {
     // Search Open Food Facts
     if (source === 'combined' || source === 'off') {
       try {
+        console.log('🔍 Searching OpenFoodFacts for:', searchQuery);
         const offResults = await searchOpenFoodFacts(searchQuery, limit);
+        console.log('📊 OpenFoodFacts search returned:', offResults.length, 'results');
+        if (offResults.length > 0) {
+          console.log('OpenFoodFacts sample results:', offResults.slice(0, 2).map(r => ({ name: r.name, score: r.relevanceScore })));
+        }
         results.push(...offResults);
       } catch (error) {
-        console.error('Open Food Facts search error:', error);
+        console.error('OpenFoodFacts search error:', error);
         // Continue with other sources
       }
     }
@@ -140,6 +150,15 @@ router.post('/search', auth, async (req, res) => {
     results = results
       .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
       .slice(0, limit);
+    
+    console.log('🎯 Final search results:', {
+      total: results.length,
+      bySource: results.reduce((acc, r) => {
+        acc[r.source] = (acc[r.source] || 0) + 1;
+        return acc;
+      }, {}),
+      topResults: results.slice(0, 3).map(r => ({ name: r.name, source: r.source, score: r.relevanceScore }))
+    });
 
     res.json({
       message: 'Search completed',
@@ -551,6 +570,7 @@ async function searchUSDADatabase(query, limit) {
 // Helper function to deduplicate search results
 function deduplicateResults(results) {
   const deduplicated = [];
+  const seenKeys = new Set();
   
   // Sort by source priority and relevance score first
   const sortedResults = results.sort((a, b) => {
@@ -568,18 +588,37 @@ function deduplicateResults(results) {
   });
   
   for (const result of sortedResults) {
-    // Check if this result is similar to any existing result
-    const isDuplicate = deduplicated.some(existing => 
-      areFoodsSimilar(result, existing)
-    );
+    // Generate a unique key for this result
+    const dedupKey = generateDeduplicationKey(result);
     
-    if (!isDuplicate) {
+    // Check if we've already seen this key
+    if (!seenKeys.has(dedupKey)) {
+      seenKeys.add(dedupKey);
       deduplicated.push(result);
+    } else {
+      // Check if this result is better than the existing one
+      const existingIndex = deduplicated.findIndex(item => 
+        generateDeduplicationKey(item) === dedupKey
+      );
+      
+      if (existingIndex !== -1) {
+        const existing = deduplicated[existingIndex];
+        // Replace if this result has higher relevance or better source priority
+        if (result.relevanceScore > existing.relevanceScore || 
+            getSourcePriority(result.source) < getSourcePriority(existing.source)) {
+          deduplicated[existingIndex] = result;
+        }
+      }
     }
-    // If duplicate found, skip it (we already have the higher priority one)
   }
   
   return deduplicated;
+}
+
+// Helper function to get source priority (lower number = higher priority)
+function getSourcePriority(source) {
+  const priorities = { local: 1, usda: 2, off: 3 };
+  return priorities[source] || 4;
 }
 
 // Helper function to generate deduplication key

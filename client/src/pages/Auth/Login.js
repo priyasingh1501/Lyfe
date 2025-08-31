@@ -4,7 +4,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button, Input, Header, Section } from '../../components/ui';
-import { componentStyles, animations } from '../../styles/designTokens';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -80,7 +79,7 @@ const Login = () => {
           className="mt-8 space-y-6"
           onSubmit={handleSubmit}
         >
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* Email Field */}
             <Input
               id="email"
@@ -96,38 +95,33 @@ const Login = () => {
             />
 
             {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock size={20} className="text-text-muted" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={componentStyles.input.base}
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted hover:text-text-secondary transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? (
-                    <EyeOff size={20} />
-                  ) : (
-                    <Eye size={20} />
-                  )}
-                </button>
-              </div>
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                label="Password"
+                autoComplete="current-password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                icon={<Lock size={20} className="text-text-muted" />}
+                className="pr-12"
+              />
+              {/* Password Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors z-20 pointer-events-auto"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} />
+                ) : (
+                  <Eye size={18} />
+                )}
+              </button>
             </div>
           </div>
 
@@ -138,7 +132,7 @@ const Login = () => {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 text-accent-green focus:ring-accent-green border-border-primary rounded bg-background-secondary"
+                className="h-4 w-4 text-accent-green focus:ring-accent-green border-border-primary rounded bg-background-secondary focus:ring-2 focus:ring-offset-2 focus:ring-offset-background-primary"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-text-secondary">
                 Remember me

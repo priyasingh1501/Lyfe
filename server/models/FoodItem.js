@@ -133,6 +133,16 @@ const foodItemSchema = new mongoose.Schema({
 foodItemSchema.index({ nameFold: 'text' });
 foodItemSchema.index({ name: 1, source: 1 });
 
+// Add unique constraints to prevent duplicates
+foodItemSchema.index({ nameFold: 1, source: 1 }, { unique: true });
+// Note: externalId uniqueness handled at application level for non-null values
+
+// Add compound index for better search performance
+foodItemSchema.index({ nameFold: 1, tags: 1, source: 1 });
+
+// Add index for provenance queries
+foodItemSchema.index({ 'provenance.source': 1 });
+
 // Virtual for getting the default portion unit
 foodItemSchema.virtual('defaultPortionUnit').get(function() {
   if (this.portionUnits && this.portionUnits.length > 0) {
