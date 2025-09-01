@@ -27,23 +27,43 @@ const CreateHabitPopup = ({ isOpen, onClose, onHabitCreated }) => {
     setLoading(true);
 
     try {
+      console.log('🎯 Attempting to create habit:', formData);
+      
+      // Validate required fields
+      if (!formData.habit.trim()) {
+        alert('Habit name is required');
+        return;
+      }
+      
+      if (!formData.endDate) {
+        alert('End date is required');
+        return;
+      }
+      
+      const requestBody = {
+        habit: formData.habit.trim(),
+        valueMin: parseInt(formData.valueMin) || 0,
+        notes: formData.notes.trim(),
+        endDate: formData.endDate,
+        quality: 'good'
+      };
+      
+      console.log('🎯 Request body:', requestBody);
+      
       const response = await fetch(buildApiUrl('/api/habits'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          ...formData,
-          date: new Date().toISOString(),
-          valueMin: parseInt(formData.valueMin) || 0,
-          endDate: formData.endDate || null,
-          quality: 'good' // Default quality
-        })
+        body: JSON.stringify(requestBody)
       });
+
+      console.log('🎯 Response status:', response.status);
 
       if (response.ok) {
         const newHabit = await response.json();
+        console.log('✅ Habit created successfully:', newHabit);
         onHabitCreated(newHabit);
         onClose();
         // Reset form
@@ -55,10 +75,11 @@ const CreateHabitPopup = ({ isOpen, onClose, onHabitCreated }) => {
         });
       } else {
         const error = await response.json();
+        console.error('❌ Habit creation failed:', error);
         alert(`Error creating habit: ${error.message}`);
       }
     } catch (error) {
-      console.error('Error creating habit:', error);
+      console.error('❌ Error creating habit:', error);
       alert('Error creating habit. Please try again.');
     } finally {
       setLoading(false);

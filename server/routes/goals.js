@@ -8,12 +8,14 @@ const GoalAlignedDayService = require('../services/goalAlignedDayService');
 // Get all goals for a user
 router.get('/', auth, async (req, res) => {
   try {
+    console.log('🎯 Fetching goals for user:', req.user.userId);
     const goals = await LifestyleGoal.find({ userId: req.user.userId, isActive: true })
       .sort({ priority: -1, name: 1 });
     
+    console.log(`✅ Found ${goals.length} goals for user`);
     res.json(goals);
   } catch (error) {
-    console.error('Error fetching goals:', error);
+    console.error('❌ Error fetching goals:', error);
     res.status(500).json({ message: 'Error fetching goals' });
   }
 });
@@ -21,6 +23,7 @@ router.get('/', auth, async (req, res) => {
 // Create a new goal
 router.post('/', auth, async (req, res) => {
   try {
+    console.log('🎯 Goal creation request received:', req.body);
     const { name, color, description, category, targetHours, priority } = req.body;
     
     const goal = new LifestyleGoal({
@@ -34,9 +37,10 @@ router.post('/', auth, async (req, res) => {
     });
     
     await goal.save();
+    console.log('✅ Goal created successfully:', goal.name);
     res.status(201).json(goal);
   } catch (error) {
-    console.error('Error creating goal:', error);
+    console.error('❌ Error creating goal:', error);
     res.status(500).json({ message: 'Error creating goal' });
   }
 });

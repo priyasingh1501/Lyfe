@@ -88,38 +88,61 @@ const GoalAlignedDay = () => {
   // Load user's habits
   const loadHabits = useCallback(async () => {
     try {
+      console.log('🔄 Loading habits...');
+      console.log('🔄 API URL:', buildApiUrl('/api/habits'));
+      console.log('🔄 Token present:', !!token);
+      
       const response = await fetch(buildApiUrl('/api/habits'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
+      console.log('🔄 Habits response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        console.log('Loaded habits:', data);
+        console.log('✅ Loaded habits:', data);
+        console.log('✅ Habits count:', data?.length || 0);
         // Show all habits, including completed ones
         setHabits(data || []);
+      } else {
+        console.error('❌ Habits response not ok:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Habits error response:', errorText);
       }
     } catch (error) {
-      console.error('Error loading habits:', error);
+      console.error('❌ Error loading habits:', error);
     }
   }, [token]);
 
   // Load user's goals
   const loadGoals = useCallback(async () => {
     try {
+      console.log('🔄 Loading goals...');
+      console.log('🔄 API URL:', buildApiUrl('/api/goals'));
+      console.log('🔄 Token present:', !!token);
+      
       const response = await fetch(buildApiUrl('/api/goals'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
+      console.log('🔄 Goals response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Loaded goals:', data);
+        console.log('✅ Goals count:', data?.length || 0);
         setGoals(data || []);
+      } else {
+        console.error('❌ Goals response not ok:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Goals error response:', errorText);
       }
     } catch (error) {
-      console.error('Error loading goals:', error);
+      console.error('❌ Error loading goals:', error);
     }
   }, [token]);
 
@@ -204,12 +227,22 @@ const GoalAlignedDay = () => {
 
   // Handle habit creation
   const handleHabitCreated = (newHabit) => {
-    setHabits(prev => [newHabit, ...prev]);
+    console.log('✅ New habit created, adding to state:', newHabit);
+    setHabits(prev => {
+      const updated = [newHabit, ...prev];
+      console.log('✅ Updated habits state:', updated);
+      return updated;
+    });
   };
 
   // Handle goal creation
   const handleGoalCreated = (newGoal) => {
-    setGoals(prev => [newGoal, ...prev]);
+    console.log('✅ New goal created, adding to state:', newGoal);
+    setGoals(prev => {
+      const updated = [newGoal, ...prev];
+      console.log('✅ Updated goals state:', updated);
+      return updated;
+    });
   };
 
   // Handle task creation
@@ -914,16 +947,69 @@ const GoalAlignedDay = () => {
                 </p>
               </div>
               
-              {mindfulnessCheckins.length > 0 ? (
-                <MonthGrid
-                  selectedDate={selectedDate}
-                  habits={habits}
-                  goals={goals}
-                  mindfulnessCheckins={mindfulnessCheckins}
-                  onDateSelect={handleDateSelect}
-                  onMonthChange={setSelectedDate}
-                />
-              ) : (
+              {/* Validate data before passing to MonthGrid */}
+              {(() => {
+                // Validate selectedDate
+                if (!selectedDate || !(selectedDate instanceof Date) || isNaN(selectedDate.getTime())) {
+                  console.error('GoalAlignedDay: Invalid selectedDate', selectedDate);
+                  return (
+                    <div className="text-center py-8 text-red-500">
+                      Error: Invalid selected date
+                    </div>
+                  );
+                }
+
+                // Validate mindfulnessCheckins
+                if (!Array.isArray(mindfulnessCheckins)) {
+                  console.error('GoalAlignedDay: mindfulnessCheckins is not an array', mindfulnessCheckins);
+                  return (
+                    <div className="text-center py-8 text-red-500">
+                      Error: Invalid mindfulness data
+                    </div>
+                  );
+                }
+
+                // Validate habits
+                if (!Array.isArray(habits)) {
+                  console.error('GoalAlignedDay: habits is not an array', habits);
+                  return (
+                    <div className="text-center py-8 text-red-500">
+                      Error: Invalid habits data
+                    </div>
+                  );
+                }
+
+                // Validate goals
+                if (!Array.isArray(goals)) {
+                  console.error('GoalAlignedDay: goals is not an array', goals);
+                  return (
+                    <div className="text-center py-8 text-red-500">
+                      Error: Invalid goals data
+                    </div>
+                  );
+                }
+
+                // Filter out invalid mindfulness check-ins
+                const validMindfulnessCheckins = mindfulnessCheckins.filter(checkin => {
+                  if (!checkin || !checkin.date) {
+                    console.warn('GoalAlignedDay: Invalid mindfulness checkin', checkin);
+                    return false;
+                  }
+                  return true;
+                });
+
+                console.log('GoalAlignedDay: Valid mindfulness checkins count:', validMindfulnessCheckins.length);
+
+                return mindfulnessCheckins.length > 0 ? (
+                  <MonthGrid
+                    selectedDate={selectedDate}
+                    habits={habits}
+                    goals={goals}
+                    mindfulnessCheckins={validMindfulnessCheckins}
+                    onDateSelect={handleDateSelect}
+                    onMonthChange={setSelectedDate}
+                  />
+                ) : (
                 <div className="text-center py-8">
                   <div className="text-[#94A3B8] mb-4">
                     <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -939,7 +1025,8 @@ const GoalAlignedDay = () => {
                     Start Mindfulness Check-in
                   </Button>
                 </div>
-              )}
+              );
+            })()}
             </div>
           </Card>
 
@@ -964,22 +1051,21 @@ const GoalAlignedDay = () => {
                 <tbody>
                   {habits.filter(habit => habit.isActive !== false).map((habit, index) => {
                     const currentYear = new Date().getFullYear();
-                    const habitStartDate = new Date(habit.date);
+                    const habitStartDate = new Date(habit.startDate);
                     const daysInYear = Math.min(
                       Math.ceil((new Date() - habitStartDate) / (1000 * 60 * 60 * 24)),
                       new Date(currentYear, 11, 31) - new Date(currentYear, 0, 1)
                     );
                     
                     // Count completed days in the current year
-                    const completedDays = habits.filter(h => 
-                      h._id === habit._id && 
-                      h.isCompleted && 
-                      h.completedDate && 
-                      new Date(h.completedDate).getFullYear() === currentYear
-                    ).length;
+                    const completedDays = habit.checkins ? habit.checkins.filter(checkin => 
+                      checkin.completed && 
+                      new Date(checkin.date).getFullYear() === currentYear
+                    ).length : 0;
                     
                     const completionRate = daysInYear > 0 ? Math.round((completedDays / daysInYear) * 100) : 0;
-                    const lastCompleted = habit.completedDate ? new Date(habit.completedDate).toLocaleDateString() : 'Never';
+                    const lastCompleted = habit.checkins && habit.checkins.length > 0 ? 
+                      new Date(habit.checkins[habit.checkins.length - 1].date).toLocaleDateString() : 'Never';
                     
                     return (
                       <tr key={habit._id || index} className="border-b border-[#2A313A] hover:bg-[#1A1F2E] transition-colors">

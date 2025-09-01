@@ -57,20 +57,32 @@ const CreateGoalPopup = ({ isOpen, onClose, onGoalCreated }) => {
     setLoading(true);
 
     try {
+      console.log('🎯 Attempting to create goal:', formData);
+      console.log('🎯 API URL:', buildApiUrl('/api/goals'));
+      console.log('🎯 Token present:', !!token);
+      
+      const requestBody = {
+        ...formData,
+        targetHours: parseInt(formData.targetHours) || 1
+      };
+      
+      console.log('🎯 Request body:', requestBody);
+      
       const response = await fetch(buildApiUrl('/api/goals'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          ...formData,
-          targetHours: parseInt(formData.targetHours) || 1
-        })
+        body: JSON.stringify(requestBody)
       });
+
+      console.log('🎯 Response status:', response.status);
+      console.log('🎯 Response ok:', response.ok);
 
       if (response.ok) {
         const newGoal = await response.json();
+        console.log('✅ Goal created successfully:', newGoal);
         onGoalCreated(newGoal);
         onClose();
         // Reset form
@@ -84,10 +96,12 @@ const CreateGoalPopup = ({ isOpen, onClose, onGoalCreated }) => {
         });
       } else {
         const error = await response.json();
+        console.error('❌ Goal creation failed:', error);
         alert(`Error creating goal: ${error.message}`);
       }
     } catch (error) {
-      console.error('Error creating goal:', error);
+      console.error('❌ Error creating goal:', error);
+      console.error('❌ Error details:', error.message);
       alert('Error creating goal. Please try again.');
     } finally {
       setLoading(false);
