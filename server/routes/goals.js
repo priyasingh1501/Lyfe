@@ -8,12 +8,49 @@ const GoalAlignedDayService = require('../services/goalAlignedDayService');
 // Get all goals for a user
 router.get('/', auth, async (req, res) => {
   try {
-    console.log('🎯 Fetching goals for user:', req.user.userId);
-    const goals = await LifestyleGoal.find({ userId: req.user.userId, isActive: true })
+    console.log('🔍 GET /api/goals - User ID:', req.user.userId);
+    console.log('🔍 GET /api/goals - User object:', req.user);
+    
+    // Fix: Use correct user ID field from JWT token
+    const userId = req.user.userId || req.user._id;
+    
+    if (!userId) {
+      console.error('❌ No user ID found in request');
+      return res.status(401).json({ message: 'User ID not found in token' });
+    }
+    
+    console.log('🎯 Fetching goals for user:', userId);
+    const goals = await LifestyleGoal.find({ userId, isActive: true })
       .sort({ priority: -1, name: 1 });
     
     console.log(`✅ Found ${goals.length} goals for user`);
-    res.json(goals);
+    
+    // Validate and clean the data before sending
+    const validatedGoals = goals.map(goal => {
+      const goalObj = goal.toObject();
+      
+      // Ensure name is valid
+      if (!goalObj.name || typeof goalObj.name !== 'string') {
+        console.warn('⚠️ Invalid name in goal:', goalObj._id);
+        goalObj.name = 'Untitled Goal';
+      }
+      
+      // Ensure color is valid
+      if (!goalObj.color || typeof goalObj.color !== 'string') {
+        console.warn('⚠️ Invalid color in goal:', goalObj._id);
+        goalObj.color = '#10B981';
+      }
+      
+      // Ensure targetHours is valid
+      if (typeof goalObj.targetHours !== 'number' || isNaN(goalObj.targetHours)) {
+        console.warn('⚠️ Invalid targetHours in goal:', goalObj._id);
+        goalObj.targetHours = 1;
+      }
+      
+      return goalObj;
+    });
+    
+    res.json(validatedGoals);
   } catch (error) {
     console.error('❌ Error fetching goals:', error);
     res.status(500).json({ message: 'Error fetching goals' });
@@ -23,12 +60,23 @@ router.get('/', auth, async (req, res) => {
 // Create a new goal
 router.post('/', auth, async (req, res) => {
   try {
+    const userId = req.user.userId || req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'User ID not found in token' });
+    }
+    
     console.log('🎯 Goal creation request received:', req.body);
     const { name, color, description, category, targetHours, priority } = req.body;
     
+    // Validate required fields
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return res.status(400).json({ message: 'Goal name is required' });
+    }
+    
     const goal = new LifestyleGoal({
-      userId: req.user.userId,
-      name,
+      userId,
+      name: name.trim(),
       color: color || '#10B981',
       description,
       category,
@@ -48,10 +96,16 @@ router.post('/', auth, async (req, res) => {
 // Update a goal
 router.put('/:id', auth, async (req, res) => {
   try {
+    const userId = req.user.userId || req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'User ID not found in token' });
+    }
+    
     const { name, color, description, category, targetHours, priority, isActive } = req.body;
     
     const goal = await LifestyleGoal.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.userId },
+      { _id: req.params.id, userId },
       { name, color, description, category, targetHours, priority, isActive },
       { new: true, runValidators: true }
     );
@@ -70,9 +124,15 @@ router.put('/:id', auth, async (req, res) => {
 // Delete a goal
 router.delete('/:id', auth, async (req, res) => {
   try {
+    const userId = req.user.userId || req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'User ID not found in token' });
+    }
+    
     const goal = await LifestyleGoal.findOneAndDelete({
       _id: req.params.id,
-      userId: req.user.userId
+      userId
     });
     
     if (!goal) {
@@ -89,8 +149,19 @@ router.delete('/:id', auth, async (req, res) => {
 // Get today's goal-aligned metrics
 router.get('/today', auth, async (req, res) => {
   try {
+    const userId = req.user.userId || req.user._id;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'User ID not found in token' });
+    }
+    
     const date = req.query.date ? new Date(req.query.date) : new Date();
-    const metrics = await GoalAlignedDayService.calculateDailyMetrics(req.user.userId, date);
+    
+    if (isNaN(date.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
+    
+    const metrics = await GoalAlignedDayService.calculateDailyMetrics(userId, date);
     res.json(metrics);
   } catch (error) {
     console.error('Error calculating today\'s metrics:', error);
