@@ -95,21 +95,70 @@ const MonthGrid = ({
     return totalScore;
   };
 
-  // Get color based on mindfulness score - matching day view color palette
-  const getMindfulnessColor = (score) => {
-    if (score === 0) return '#0f1419'; // Much darker color for no activity - very visible
-    if (score <= 2) return '#1e3a8a'; // Dark blue
-    if (score <= 4) return '#1d4ed8'; // Medium dark blue
-    if (score <= 6) return '#2563eb'; // Blue
-    if (score <= 8) return '#3b82f6'; // Medium blue
-    if (score <= 10) return '#60a5fa'; // Light blue
-    if (score <= 12) return '#93c5fd'; // Very light blue
-    if (score <= 14) return '#c7d2fe'; // Pale blue
-    if (score <= 16) return '#e0e7ff'; // Very pale blue
-    if (score <= 18) return '#fef3c7'; // Very pale yellow
-    if (score <= 20) return '#fde68a'; // Pale yellow
-    if (score <= 22) return '#fbbf24'; // Light yellow
-    if (score <= 24) return '#f59e0b'; // Medium yellow
+  // Get habit completion status for a specific date
+  const getHabitCompletionForDate = (date) => {
+    const dateStr = date.toLocaleDateString('en-CA');
+    let completedCount = 0;
+    let totalCount = 0;
+    
+    habits.forEach(habit => {
+      // Check if habit is active on this date (within start/end date range)
+      const checkDate = new Date(date);
+      checkDate.setHours(0, 0, 0, 0);
+      
+      const startDate = new Date(habit.startDate);
+      startDate.setHours(0, 0, 0, 0);
+      
+      const endDate = new Date(habit.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      
+      if (habit.isActive && checkDate >= startDate && checkDate <= endDate) {
+        totalCount++;
+        // Check if habit has a completed check-in for this date
+        const checkin = habit.checkins?.find(c => {
+          const checkinDate = new Date(c.date).toLocaleDateString('en-CA');
+          return checkinDate === dateStr && c.completed;
+        });
+        if (checkin) {
+          completedCount++;
+        }
+      }
+    });
+    
+    return { completedCount, totalCount };
+  };
+
+  // Get color based on mindfulness score and habit completion
+  const getDayColor = (date) => {
+    const mindfulnessScore = getMindfulnessScoreForDate(date);
+    const habitCompletion = getHabitCompletionForDate(date);
+    
+    // If we have habits and some are completed, show habit completion color
+    if (habitCompletion.totalCount > 0) {
+      const completionRate = habitCompletion.completedCount / habitCompletion.totalCount;
+      
+      if (completionRate === 0) return '#0f1419'; // No habits completed - very dark
+      if (completionRate <= 0.25) return '#dc2626'; // Red - low completion
+      if (completionRate <= 0.5) return '#ea580c'; // Orange - medium-low completion
+      if (completionRate <= 0.75) return '#ca8a04'; // Yellow - medium-high completion
+      if (completionRate <= 0.9) return '#16a34a'; // Green - high completion
+      return '#059669'; // Emerald - excellent completion
+    }
+    
+    // Fall back to mindfulness score color if no habits
+    if (mindfulnessScore === 0) return '#0f1419'; // Much darker color for no activity - very visible
+    if (mindfulnessScore <= 2) return '#1e3a8a'; // Dark blue
+    if (mindfulnessScore <= 4) return '#1d4ed8'; // Medium dark blue
+    if (mindfulnessScore <= 6) return '#2563eb'; // Blue
+    if (mindfulnessScore <= 8) return '#3b82f6'; // Medium blue
+    if (mindfulnessScore <= 10) return '#60a5fa'; // Light blue
+    if (mindfulnessScore <= 12) return '#93c5fd'; // Very light blue
+    if (mindfulnessScore <= 14) return '#c7d2fe'; // Pale blue
+    if (mindfulnessScore <= 16) return '#e0e7ff'; // Very pale blue
+    if (mindfulnessScore <= 18) return '#fef3c7'; // Very pale yellow
+    if (mindfulnessScore <= 20) return '#fde68a'; // Pale yellow
+    if (mindfulnessScore <= 22) return '#fbbf24'; // Light yellow
+    if (mindfulnessScore <= 24) return '#f59e0b'; // Medium yellow
     return '#eab308'; // Bright yellow for highest scores
   };
 
@@ -258,7 +307,7 @@ const MonthGrid = ({
               <div className="grid grid-cols-7 gap-0.5">
                 {monthData.days.map((dayData, dayIndex) => {
                   const { date, mindfulnessScore, isToday } = dayData;
-                  const backgroundColor = getMindfulnessColor(mindfulnessScore);
+                  const backgroundColor = getDayColor(date);
 
                   return (
                     <div

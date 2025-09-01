@@ -260,6 +260,20 @@ const GoalAlignedDay = () => {
     }, 0);
   };
 
+  // Check if a habit is completed today
+  const isHabitCompletedToday = (habit) => {
+    if (!habit.checkins || !Array.isArray(habit.checkins)) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return habit.checkins.some(checkin => {
+      const checkinDate = new Date(checkin.date);
+      checkinDate.setHours(0, 0, 0, 0);
+      return checkinDate.getTime() === today.getTime() && checkin.completed;
+    });
+  };
+
   // Handle date selection from month grid
   const handleDateSelect = (date) => {
     setSelectedDate(date);
@@ -269,34 +283,35 @@ const GoalAlignedDay = () => {
   // Handle marking habit as complete
   const handleMarkComplete = async (habitId) => {
     try {
-      console.log('Marking habit as complete:', habitId);
+      console.log('Marking habit as complete for today:', habitId);
       
-      const response = await fetch(buildApiUrl(`/api/habits/${habitId}`), {
-        method: 'PUT',
+      // Add a check-in for today
+      const response = await fetch(buildApiUrl(`/api/habits/${habitId}/checkin`), {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          isCompleted: true,
-          completedDate: new Date().toISOString()
+          date: new Date().toISOString(),
+          completed: true,
+          duration: 0, // Will use the habit's default duration
+          notes: 'Completed via quick mark',
+          quality: 'good'
         })
       });
 
       if (response.ok) {
-        const updatedHabit = await response.json();
-        console.log('Habit updated successfully:', updatedHabit);
+        const result = await response.json();
+        console.log('Habit check-in added successfully:', result);
         
-        // Update the habit status to completed in the list
+        // Update the habit in the list with new check-in data
         setHabits(prev => {
           const updated = prev.map(habit => 
             habit._id === habitId 
               ? { 
                   ...habit, 
-                  isCompleted: true, 
-                  completedDate: new Date().toISOString(),
-                  // Ensure the habit stays active even when completed
-                  isActive: true
+                  checkins: result.habit.checkins || []
                 }
               : habit
           );
@@ -353,7 +368,7 @@ const GoalAlignedDay = () => {
             <div className="flex items-center gap-3 mb-4">
               <div className="relative">
                 <h4 className={`text-lg font-bold tracking-wider ${
-                  habit.isCompleted ? 'text-[#3CCB7F]' : 'text-[#E8EEF2]'
+                  isHabitCompletedToday(habit) ? 'text-[#3CCB7F]' : 'text-[#E8EEF2]'
                 }`}>
                   {habit.habit}
                 </h4>
@@ -366,9 +381,9 @@ const GoalAlignedDay = () => {
                 <Badge variant="secondary" className="text-xs px-3 py-1 rounded-full border-2">
                   {habit.quality}
                 </Badge>
-                {habit.isCompleted && (
-                  <Badge variant="success" className="text-xs px-3 py-1 rounded-full border-2 animate-pulse">
-                    ✨ Completed ✨
+                {isHabitCompletedToday(habit) && (
+                  <Badge variant="success" className="text-xs px-3 px-1 rounded-full border-2 animate-pulse">
+                    ✨ Today ✓
                   </Badge>
                 )}
               </div>
@@ -387,19 +402,12 @@ const GoalAlignedDay = () => {
                 <p className="flex items-center gap-2 text-sm text-[#C9D1D9]">
                   <span className="text-[#3CCB7F] text-lg">📅</span>
                   <span className="text-[#94A3B8]">Started:</span>
-                  <span className="font-bold text-[#E8EEF2]">{new Date(habit.date).toLocaleDateString()}</span>
+                  <span className="font-bold text-[#E8EEF2]">{new Date(habit.startDate).toLocaleDateString()}</span>
                 </p>
               </div>
             </div>
             
-            {habit.completedDate && (
-              <div className="bg-[#3CCB7F]/10 p-3 rounded-lg border border-[#3CCB7F]/30 mb-3">
-                <p className="flex items-center gap-2 text-sm text-[#3CCB7F]">
-                  <span className="text-lg">🎉</span>
-                  <span>Completed on: {new Date(habit.completedDate).toLocaleDateString()}</span>
-                </p>
-              </div>
-            )}
+
             
             {habit.endDate && (
               <div className="bg-[#11151A]/50 p-3 rounded-lg border border-[#2A313A] mb-3">
@@ -420,14 +428,14 @@ const GoalAlignedDay = () => {
           
           {/* Action Button with Comic Style */}
           <div className="ml-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-            {habit.isCompleted ? (
+            {isHabitCompletedToday(habit) ? (
               <Button 
                 variant="outline" 
                 size="sm"
                 disabled
                 className="bg-[#3CCB7F]/20 border-2 border-[#3CCB7F] text-[#3CCB7F] rounded-full px-4 py-2 cursor-not-allowed shadow-lg"
               >
-                ✨ Done! ✨
+                ✨ Done Today! ✨
               </Button>
             ) : (
               <Button 
@@ -436,7 +444,7 @@ const GoalAlignedDay = () => {
                 onClick={() => handleMarkComplete(habit._id)}
                 className="bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] border-2 border-[#3CCB7F] text-white rounded-full px-4 py-2 hover:from-[#3CCB7F]/90 hover:to-[#4ECDC4]/90 hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-[0_0_20px_rgba(60,203,127,0.4)]"
               >
-                🚀 Complete!
+                🚀 Complete Today!
               </Button>
             )}
           </div>
