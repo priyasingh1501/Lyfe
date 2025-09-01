@@ -8,91 +8,199 @@ const MonthGrid = ({
   onDateSelect,
   onMonthChange
 }) => {
-  // Get the first day of the month and number of days
-  const year = selectedDate.getFullYear();
-  const month = selectedDate.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const daysInMonth = lastDay.getDate();
-  const firstDayOfWeek = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
-
+  console.log('🔍 MonthGrid rendered with props:');
+  console.log('🔍 mindfulnessCheckins:', mindfulnessCheckins);
+  console.log('🔍 mindfulnessCheckins.length:', mindfulnessCheckins.length);
+  console.log('🔍 mindfulnessCheckins type:', typeof mindfulnessCheckins);
+  console.log('🔍 Is array:', Array.isArray(mindfulnessCheckins));
+  
+  if (mindfulnessCheckins.length > 0) {
+    console.log('🔍 First checkin:', mindfulnessCheckins[0]);
+    console.log('🔍 First checkin date:', mindfulnessCheckins[0].date);
+    console.log('🔍 First checkin totalScore:', mindfulnessCheckins[0].totalScore);
+  }
+  // Get the current date and calculate the start date (12 months ago)
+  const currentDate = new Date();
+  // Fix: Calculate start date to include exactly 12 months of data
+  const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 11, 1);
+  
+  // Ensure we include the current date by setting end date to end of current day
+  const endDate = new Date(currentDate);
+  endDate.setHours(23, 59, 59, 999);
+  
+  console.log('🔍 Date calculations:');
+  console.log('🔍 currentDate:', currentDate);
+  console.log('🔍 currentDate.toISOString():', currentDate.toISOString());
+  console.log('🔍 startDate:', startDate);
+  console.log('🔍 startDate.toISOString():', startDate.toISOString());
+  console.log('🔍 endDate:', endDate);
+  console.log('🔍 endDate.toISOString():', endDate.toISOString());
+  console.log('🔍 startDate <= endDate:', startDate <= endDate);
+  
   // Get mindfulness score for a specific date
   const getMindfulnessScoreForDate = (date) => {
     const dateStr = date.toISOString().split('T')[0];
     
+    console.log(`🔍 Looking for mindfulness data for date: ${dateStr}`);
+    console.log(`🔍 Available checkins:`, mindfulnessCheckins);
+    
     const checkin = mindfulnessCheckins.find(checkin => {
-      if (!checkin.date) return false;
+      if (!checkin.date) {
+        console.log(`❌ Checkin missing date:`, checkin);
+        return false;
+      }
       const checkinDate = new Date(checkin.date).toISOString().split('T')[0];
-      return checkinDate === dateStr;
+      console.log(`🔍 Comparing ${dateStr} with ${checkinDate}`);
+      return dateStr === checkinDate;
     });
 
-    if (!checkin) return 0;
+    if (!checkin) {
+      console.log(`❌ No checkin found for ${dateStr}`);
+      return 0;
+    }
+    
+    console.log(`✅ Found checkin for ${dateStr}:`, checkin);
     
     // Calculate total score from dimensions
     const dimensions = checkin.dimensions || {};
+    console.log(`🔍 Dimensions:`, dimensions);
+    
     const totalScore = Object.values(dimensions).reduce((sum, dim) => {
-      return sum + (dim.rating || 0);
+      const rating = dim.rating || 0;
+      console.log(`🔍 Dimension rating: ${rating}`);
+      return sum + rating;
     }, 0);
     
+    console.log(`🎯 Total score for ${dateStr}: ${totalScore}`);
     return totalScore;
   };
 
-  // Get color based on mindfulness score - using GitHub-style green gradient
+  // Get color based on mindfulness score - matching day view color palette
   const getMindfulnessColor = (score) => {
-    if (score === 0) return '#ebedf0'; // Light gray for no activity
-    if (score <= 5) return '#9be9a8'; // Light green
-    if (score <= 10) return '#40c463'; // Medium green
-    if (score <= 15) return '#30a14e'; // Dark green
-    if (score <= 20) return '#216e39'; // Darker green
-    return '#0d1117'; // Darkest green for highest scores
+    if (score === 0) return '#1a2332'; // Subtle dark blue for no activity
+    if (score <= 2) return '#1e3a8a'; // Dark blue
+    if (score <= 4) return '#1d4ed8'; // Medium dark blue
+    if (score <= 6) return '#2563eb'; // Blue
+    if (score <= 8) return '#3b82f6'; // Medium blue
+    if (score <= 10) return '#60a5fa'; // Light blue
+    if (score <= 12) return '#93c5fd'; // Very light blue
+    if (score <= 14) return '#c7d2fe'; // Pale blue
+    if (score <= 16) return '#e0e7ff'; // Very pale blue
+    if (score <= 18) return '#fef3c7'; // Very pale yellow
+    if (score <= 20) return '#fde68a'; // Pale yellow
+    if (score <= 22) return '#fbbf24'; // Light yellow
+    if (score <= 24) return '#f59e0b'; // Medium yellow
+    return '#eab308'; // Bright yellow for highest scores
   };
 
-  // Generate calendar days
-  const generateCalendarDays = () => {
-    const days = [];
+  // Generate all days for the past 12 months
+  const generateAllDays = () => {
+    console.log('🔍 generateAllDays function called!');
+    const allDays = [];
+    const currentDateCopy = new Date(startDate);
     
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < firstDayOfWeek; i++) {
-      days.push({ day: null, isCurrentMonth: false });
+    console.log(`🔍 Generating days from ${startDate} to ${endDate}`);
+    console.log(`🔍 mindfulnessCheckins count: ${mindfulnessCheckins.length}`);
+    
+    let dayCount = 0;
+    while (currentDateCopy <= endDate) {
+      dayCount++;
+      console.log(`🔍 Day ${dayCount}: Processing ${currentDateCopy.toISOString().split('T')[0]}`);
+      
+      const mindfulnessScore = getMindfulnessScoreForDate(currentDateCopy);
+      allDays.push({
+        date: new Date(currentDateCopy),
+        mindfulnessScore,
+        isToday: currentDateCopy.toDateString() === new Date().toDateString()
+      });
+      
+      // Check if we've reached today's date
+      if (currentDateCopy.toDateString() === new Date().toDateString()) {
+        console.log(`🎯 Found today's date: ${currentDateCopy.toISOString().split('T')[0]}`);
+      }
+      
+      currentDateCopy.setDate(currentDateCopy.getDate() + 1);
+      
+      // Safety check to prevent infinite loops
+      if (dayCount > 400) {
+        console.error('❌ Loop limit exceeded, breaking');
+        break;
+      }
     }
     
-    // Add days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      const mindfulnessScore = getMindfulnessScoreForDate(date);
-      days.push({ 
-        day, 
-        date, 
-        isCurrentMonth: true, 
-        isToday: date.toDateString() === new Date().toDateString(),
-        mindfulnessScore 
+    console.log(`🔍 Generated ${allDays.length} days`);
+    console.log(`🔍 Sample days with scores:`, allDays.slice(0, 5).map(day => ({
+      date: day.date.toISOString().split('T')[0],
+      score: day.mindfulnessScore
+    })));
+    
+    return allDays;
+  };
+
+  // Group days by month
+  const groupDaysByMonth = (allDays) => {
+    const months = [];
+    let currentMonth = null;
+    let currentMonthDays = [];
+    
+    allDays.forEach(day => {
+      const monthKey = `${day.date.getFullYear()}-${day.date.getMonth()}`;
+      
+      if (monthKey !== currentMonth) {
+        if (currentMonthDays.length > 0) {
+          months.push({
+            month: new Date(currentMonthDays[0].date.getFullYear(), currentMonthDays[0].date.getMonth(), 1),
+            days: currentMonthDays
+          });
+        }
+        currentMonth = monthKey;
+        currentMonthDays = [day];
+      } else {
+        currentMonthDays.push(day);
+      }
+    });
+    
+    if (currentMonthDays.length > 0) {
+      months.push({
+        month: new Date(currentMonthDays[0].date.getFullYear(), currentMonthDays[0].date.getMonth(), 1),
+        days: currentMonthDays
       });
     }
     
-    return days;
+    return months;
   };
 
-  const calendarDays = generateCalendarDays();
+  const allDays = generateAllDays();
+  const months = groupDaysByMonth(allDays);
   const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  
+  // Debug logging
+  console.log('MonthGrid Debug:', {
+    startDate: startDate.toDateString(),
+    currentDate: currentDate.toDateString(),
+    allDaysCount: allDays.length,
+    monthsCount: months.length,
+    selectedDate: selectedDate.toDateString()
+  });
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      {/* Calendar Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
-          {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+    <div className="w-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-[#E8EEF2]">
+          Mindfulness Activity
         </h3>
         <div className="flex gap-2">
           <button
             onClick={() => onMonthChange && onMonthChange(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1))}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            className="p-2 hover:bg-[#2A313A] rounded-md transition-colors text-[#94A3B8] hover:text-[#E8EEF2]"
             title="Previous Month"
           >
             ←
           </button>
           <button
             onClick={() => onMonthChange && onMonthChange(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1))}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            className="p-2 hover:bg-[#2A313A] rounded-md transition-colors text-[#94A3B8] hover:text-[#E8EEF2]"
             title="Next Month"
           >
             →
@@ -100,68 +208,67 @@ const MonthGrid = ({
         </div>
       </div>
 
-      {/* GitHub-style Grid */}
-      <div className="flex gap-8">
+      {/* GitHub-style Contribution Grid */}
+      <div className="flex gap-1">
         {/* Weekday Labels */}
-        <div className="flex flex-col gap-1 pt-6">
+        <div className="flex flex-col gap-0.5 pt-4">
           {weekdays.map(day => (
-            <div key={day} className="h-3 text-xs text-gray-500 font-medium w-8 text-center">
+            <div key={day} className="h-2.5 text-xs text-[#94A3B8] font-medium w-6 text-center">
               {day === 'Sun' || day === 'Tue' || day === 'Thu' || day === 'Sat' ? '' : day}
             </div>
           ))}
         </div>
 
-        {/* Calendar Grid */}
-        <div className="flex-1">
-          {/* Month Label */}
-          <div className="text-center mb-2">
-            <span className="text-sm font-medium text-gray-700">
-              {selectedDate.toLocaleDateString('en-US', { month: 'short' })}
-            </span>
-          </div>
-          
-          {/* Grid Container */}
-          <div className="grid grid-cols-7 gap-1">
-            {calendarDays.map((dayData, index) => {
-              if (!dayData.isCurrentMonth) {
-                return (
-                  <div key={index} className="w-3 h-3">
-                    {/* Empty space for days outside current month */}
-                  </div>
-                );
-              }
+        {/* Months Grid */}
+        <div className="flex gap-1">
+          {months.map((monthData, monthIndex) => (
+            <div key={monthIndex} className="flex flex-col">
+              {/* Month Label */}
+              <div className="text-center mb-1">
+                <span className="text-xs text-[#94A3B8] font-medium">
+                  {monthData.month.toLocaleDateString('en-US', { month: 'short' })}
+                </span>
+              </div>
+              
+              {/* Days Grid for this month */}
+              <div className="grid grid-cols-7 gap-0.5">
+                {monthData.days.map((dayData, dayIndex) => {
+                  const { date, mindfulnessScore, isToday } = dayData;
+                  const backgroundColor = getMindfulnessColor(mindfulnessScore);
 
-              const { date, isToday, mindfulnessScore } = dayData;
-              const backgroundColor = getMindfulnessColor(mindfulnessScore);
-
-              return (
-                <div
-                  key={index}
-                  onClick={() => onDateSelect && onDateSelect(date)}
-                  className={`w-3 h-3 rounded-sm cursor-pointer transition-all duration-200 hover:scale-125 hover:ring-2 hover:ring-blue-400 ${
-                    isToday ? 'ring-2 ring-blue-500 ring-offset-1' : ''
-                  }`}
-                  style={{ backgroundColor }}
-                  title={`${date.toLocaleDateString()}: Mindfulness Score ${mindfulnessScore}`}
-                />
-              );
-            })}
-          </div>
+                  return (
+                    <div
+                      key={dayIndex}
+                      onClick={() => onDateSelect && onDateSelect(date)}
+                      className={`w-2.5 h-2.5 rounded-sm cursor-pointer transition-all duration-200 hover:scale-125 hover:ring-2 hover:ring-blue-400 ${
+                        isToday ? 'ring-2 ring-blue-500 ring-offset-1' : ''
+                      }`}
+                      style={{ backgroundColor }}
+                      title={`${date.toLocaleDateString()}: Mindfulness Score ${mindfulnessScore}`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Legend */}
-      <div className="mt-6 flex items-center justify-end gap-4">
-        <span className="text-xs text-gray-500">Less</span>
-        <div className="flex gap-1">
-          <div className="w-3 h-3 bg-[#ebedf0] rounded-sm"></div>
-          <div className="w-3 h-3 bg-[#9be9a8] rounded-sm"></div>
-          <div className="w-3 h-3 bg-[#40c463] rounded-sm"></div>
-          <div className="w-3 h-3 bg-[#30a14e] rounded-sm"></div>
-          <div className="w-3 h-3 bg-[#216e39] rounded-sm"></div>
-          <div className="w-3 h-3 bg-[#0d1117] rounded-sm"></div>
+      <div className="mt-4 flex items-center justify-end gap-3">
+        <span className="text-xs text-[#94A3B8]">Low</span>
+        <div className="flex gap-0.5">
+          <div className="w-2.5 h-2.5 bg-[#1a2332] rounded-sm border border-[#2A313A]"></div>
+          <div className="w-2.5 h-2.5 bg-[#1e3a8a] rounded-sm border border-[#2A313A]"></div>
+          <div className="w-2.5 h-2.5 bg-[#2563eb] rounded-sm border border-[#2A313A]"></div>
+          <div className="w-2.5 h-2.5 bg-[#60a5fa] rounded-sm border border-[#2A313A]"></div>
+          <div className="w-2.5 h-2.5 bg-[#c7d2fe] rounded-sm border border-[#2A313A]"></div>
+          <div className="w-2.5 h-2.5 bg-[#fef3c7] rounded-sm border border-[#2A313A]"></div>
+          <div className="w-2.5 h-2.5 bg-[#fde68a] rounded-sm border border-[#2A313A]"></div>
+          <div className="w-2.5 h-2.5 bg-[#fbbf24] rounded-sm border border-[#2A313A]"></div>
+          <div className="w-2.5 h-2.5 bg-[#eab308] rounded-sm border border-[#2A313A]"></div>
         </div>
-        <span className="text-xs text-gray-500">More</span>
+        <span className="text-xs text-[#94A3B8]">High</span>
       </div>
     </div>
   );

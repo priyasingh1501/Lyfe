@@ -18,8 +18,8 @@ const ConsistentPopup = ({ isOpen, onClose, title, children, maxWidth = "md", sh
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-background-overlay flex items-center justify-center z-[99999] p-4" onClick={onClose}>
-      <div className={`bg-background-card border-2 border-border-primary rounded-2xl p-6 w-full max-w-${maxWidth} max-h-[90vh] overflow-y-auto shadow-2xl relative overflow-hidden`} 
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4" onClick={onClose}>
+      <div className="bg-[#1E2330] border-2 border-[#2A313A] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl relative overflow-hidden" 
            style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }} 
            onClick={(e) => e.stopPropagation()}>
         
@@ -33,12 +33,12 @@ const ConsistentPopup = ({ isOpen, onClose, title, children, maxWidth = "md", sh
         
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className={`text-xl font-semibold text-text-primary ${typography.fontFamily.display} tracking-wide`}>
+          <h3 className="text-xl font-semibold text-[#E8EEF2] font-oswald tracking-wide">
             {title}
           </h3>
           <button
             onClick={onClose}
-            className="text-text-secondary hover:text-text-primary transition-colors"
+            className="text-[#94A3B8] hover:text-[#E8EEF2] transition-colors"
             aria-label="Close popup"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -407,4 +407,5 @@ const Layout = () => {
   );
 };
 
+export { ConsistentPopup };
 export default Layout;

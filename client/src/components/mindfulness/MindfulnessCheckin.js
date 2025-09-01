@@ -27,10 +27,9 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
 
   const [dailyNotes, setDailyNotes] = useState('');
 
-  // Auto-save state
-  const [autoSaving, setAutoSaving] = useState(false);
+  // Manual save state
+  const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
-  const autoSaveTimeoutRef = useRef(null);
 
   // Calculate total score
   const totalScore = Object.values(dimensions).reduce((sum, dim) => sum + dim.rating, 0);
@@ -40,7 +39,9 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
     const checkTodayCheckin = async () => {
       try {
         const today = new Date().toISOString().split('T')[0];
-        const response = await axios.get(`${buildApiUrl()}/api/mindfulness/date/${today}`, {
+        console.log('Checking for existing check-in on date:', today);
+        console.log('Current date object:', new Date());
+        const response = await axios.get(`${buildApiUrl('/api/mindfulness/date')}/${today}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -51,6 +52,8 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
           setDimensions(response.data.dimensions);
           setDailyNotes(response.data.dailyNotes || '');
           setDayReflection(response.data.dayReflection || '');
+          
+
         }
       } catch (error) {
         if (error.response?.status !== 404) {
@@ -62,69 +65,150 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
     checkTodayCheckin();
   }, [token]);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, []);
 
-  // Auto-save function
-  const autoSave = useCallback(async (data) => {
-    if (!data || Object.values(data.dimensions).every(dim => dim.rating === 0)) {
-      return; // Don't save if no dimensions are rated
+
+  // Manual save function
+  const saveCheckin = useCallback(async () => {
+    console.log('Manual save triggered');
+    console.log('=== VALIDATION DEBUG ===');
+    console.log('Current dimensions state:', dimensions);
+    console.log('Individual ratings:');
+    Object.entries(dimensions).forEach(([key, value]) => {
+      console.log(`  ${key}: ${value.rating} (type: ${typeof value.rating})`);
+    });
+    
+    // Check if all dimensions are rated (model requirement)
+    const unratedDimensions = Object.values(dimensions).filter(dim => dim.rating === 0);
+    console.log('Unrated dimensions count:', unratedDimensions.length);
+    console.log('Unrated dimensions:', unratedDimensions);
+    
+    if (unratedDimensions.length > 0) {
+      const unratedNames = Object.keys(dimensions).filter(key => dimensions[key].rating === 0);
+      console.log('Validation failed - unrated dimensions found:', unratedNames);
+      alert(`Please rate ALL mindfulness dimensions before saving:\n\nMissing ratings for: ${unratedNames.join(', ')}\n\nEach dimension must have a rating from 1-5.`);
+      return;
     }
+    
+    console.log('Validation passed - all dimensions rated');
+    
+    // Validate that all ratings are between 1-5
+    const invalidRatings = Object.values(dimensions).filter(dim => dim.rating < 1 || dim.rating > 5);
+    console.log('Invalid ratings:', invalidRatings);
+    
+    if (invalidRatings.length > 0) {
+      alert('All mindfulness ratings must be between 1 and 5.');
+      return;
+    }
+    
+    // Calculate total score and overall assessment (server expects these)
+    const ratings = [
+      parseInt(dimensions.presence.rating),
+      parseInt(dimensions.emotionAwareness.rating),
+      parseInt(dimensions.intentionality.rating),
+      parseInt(dimensions.attentionQuality.rating),
+      parseInt(dimensions.compassion.rating)
+    ];
+    
+    const totalScore = ratings.reduce((sum, rating) => sum + rating, 0);
+    
+    let overallAssessment;
+    if (totalScore >= 20) {
+      overallAssessment = 'master';
+    } else if (totalScore >= 17) {
+      overallAssessment = 'advanced';
+    } else if (totalScore >= 14) {
+      overallAssessment = 'intermediate';
+    } else if (totalScore >= 11) {
+      overallAssessment = 'developing';
+    } else {
+      overallAssessment = 'beginner';
+    }
+    
+    // Create validated data with all required fields
+    const validatedData = {
+      dimensions: {
+        presence: { rating: parseInt(dimensions.presence.rating) },
+        emotionAwareness: { rating: parseInt(dimensions.emotionAwareness.rating) },
+        intentionality: { rating: parseInt(dimensions.intentionality.rating) },
+        attentionQuality: { rating: parseInt(dimensions.attentionQuality.rating) },
+        compassion: { rating: parseInt(dimensions.compassion.rating) }
+      },
+      totalScore,
+      overallAssessment,
+      dailyNotes: dailyNotes || '',
+      dayReflection: dayReflection || ''
+    };
+    
+    console.log('Validated data for save:', validatedData);
+    console.log('Raw dimensions state:', dimensions);
+    console.log('Data being sent to server:', JSON.stringify(validatedData, null, 2));
+    console.log('About to make API call...');
 
-    setAutoSaving(true);
+    setSaving(true);
+    console.log('Starting save...');
+    
     try {
-      const checkinData = {
-        dimensions: data.dimensions,
-        dailyNotes: data.dailyNotes,
-        dayReflection: data.dayReflection
-      };
+      console.log('Has checked in today:', hasCheckedInToday);
+      console.log('Today checkin:', todayCheckin);
 
       if (hasCheckedInToday && todayCheckin) {
         // Update existing check-in
-        await axios.put(`${buildApiUrl()}/api/mindfulness/${todayCheckin._id}`, checkinData, {
+        console.log('Updating existing check-in:', todayCheckin._id);
+        const response = await axios.put(`${buildApiUrl('/api/mindfulness')}/${todayCheckin._id}`, validatedData, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log('Update response:', response.data);
       } else {
         // Create new check-in
-        const response = await axios.post(`${buildApiUrl()}/api/mindfulness`, checkinData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        console.log('Creating new check-in');
+        console.log('Sending data to server:', validatedData);
         
-        setHasCheckedInToday(true);
-        setTodayCheckin(response.data.checkin);
+        try {
+          const response = await axios.post(`${buildApiUrl('/api/mindfulness')}`, validatedData, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          console.log('Create response:', response.data);
+          setHasCheckedInToday(true);
+          setTodayCheckin(response.data.checkin);
+        } catch (postError) {
+          console.error('POST request failed:', postError);
+          console.error('POST error response:', postError.response?.data);
+          throw postError; // Re-throw to be caught by outer catch
+        }
       }
 
       setLastSaved(new Date());
+      console.log('Save completed successfully');
       
       if (onCheckinComplete) {
         onCheckinComplete();
       }
     } catch (error) {
-      console.error('Error auto-saving mindfulness check-in:', error);
+      console.error('Error saving mindfulness check-in:', error);
+      console.error('Error details:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Error message:', error.message);
+      
+      // Show more detailed error info for debugging
+      if (error.response?.status === 500) {
+        console.error('Server error - check server logs for details');
+      } else if (error.response?.status === 404) {
+        console.error('Endpoint not found - check API route');
+      }
+      
       // Don't show error toast for auto-save to avoid spam
     } finally {
-      setAutoSaving(false);
+      setSaving(false);
+      console.log('Save finished');
     }
-  }, [hasCheckedInToday, todayCheckin, token, onCheckinComplete]);
+  }, [hasCheckedInToday, todayCheckin, token, onCheckinComplete, dimensions, dailyNotes, dayReflection]);
 
-  // Debounced auto-save
-  const debouncedAutoSave = useCallback((data) => {
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-    
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      autoSave(data);
-    }, 1500); // 1.5 second delay
-  }, [autoSave]);
+
 
   const handleDimensionChange = (dimension, rating) => {
+    console.log('Dimension change:', dimension, 'rating:', rating);
+    
     const newDimensions = {
       ...dimensions,
       [dimension]: {
@@ -133,14 +217,8 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
       }
     };
     
+    console.log('New dimensions:', newDimensions);
     setDimensions(newDimensions);
-    
-    // Trigger auto-save with new data
-    debouncedAutoSave({
-      dimensions: newDimensions,
-      dailyNotes,
-      dayReflection
-    });
   };
 
 
@@ -148,6 +226,10 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
 
 
   const isFormComplete = Object.values(dimensions).every(dim => dim.rating > 0);
+  
+  // Get count of rated dimensions
+  const ratedDimensionsCount = Object.values(dimensions).filter(dim => dim.rating > 0).length;
+  const totalDimensions = Object.keys(dimensions).length;
 
 
 
@@ -223,13 +305,6 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
           onChange={(e) => {
             const newValue = e.target.value;
             setDayReflection(newValue);
-            
-            // Trigger auto-save with updated reflection
-            debouncedAutoSave({
-              dimensions,
-              dailyNotes,
-              dayReflection: newValue
-            });
           }}
           placeholder="Reflect on your day... What moments stood out? How did you feel? What did you learn?"
           className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-md text-[#E8EEF2] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#3CCB7F] focus:border-transparent resize-none"
@@ -240,13 +315,13 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
         </p>
       </div>
 
-      {/* Auto-save Status */}
+      {/* Save Status */}
       <div className="flex justify-center mt-6">
         <div className="flex items-center gap-3 text-sm">
-          {autoSaving ? (
+          {saving ? (
             <div className="flex items-center gap-2 text-[#3CCB7F]">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#3CCB7F]"></div>
-              <span>Auto-saving...</span>
+              <span>Saving...</span>
             </div>
           ) : lastSaved ? (
             <div className="flex items-center gap-2 text-[#6B7280]">
@@ -256,10 +331,40 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
           ) : (
             <div className="flex items-center gap-2 text-[#6B7280]">
               <Clock size={16} />
-              <span>Changes will be saved automatically</span>
+              <span>Click Save to record your mindfulness check-in</span>
             </div>
           )}
         </div>
+      </div>
+      
+
+      
+      {/* Progress Indicator */}
+      <div className="text-center mt-4 mb-2">
+        <div className="text-sm text-[#94A3B8] mb-2">
+          {ratedDimensionsCount === totalDimensions ? (
+            <span className="text-[#3CCB7F]">✅ All dimensions rated! Ready to save.</span>
+          ) : (
+            <span>📊 {ratedDimensionsCount} of {totalDimensions} dimensions rated</span>
+          )}
+        </div>
+        <div className="w-full bg-[#2A313A] rounded-full h-2 mb-4">
+          <div 
+            className="bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] h-2 rounded-full transition-all duration-300"
+            style={{ width: `${(ratedDimensionsCount / totalDimensions) * 100}%` }}
+          ></div>
+        </div>
+      </div>
+
+      {/* Manual Save Button */}
+      <div className="flex justify-center mt-4">
+        <button
+          onClick={saveCheckin}
+          disabled={saving || ratedDimensionsCount < totalDimensions}
+          className="px-6 py-3 bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] text-white rounded-lg hover:from-[#3CCB7F]/90 hover:to-[#4ECDC4]/90 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-[#6B7280] disabled:to-[#6B7280]"
+        >
+          {saving ? '💾 Saving...' : ratedDimensionsCount < totalDimensions ? '⚠️ Rate All Dimensions First' : '💾 Save Mindfulness Check-in'}
+        </button>
       </div>
 
       {/* Success Message */}

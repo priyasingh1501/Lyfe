@@ -156,6 +156,8 @@ router.post('/', auth, async (req, res) => {
   try {
     const {
       dimensions,
+      totalScore,
+      overallAssessment,
       dailyNotes,
       dayReflection
     } = req.body;
@@ -174,7 +176,50 @@ router.post('/', auth, async (req, res) => {
     });
     
     if (existingCheckin) {
-      return res.status(400).json({ message: 'Mindfulness check-in already exists for today' });
+      // Update existing check-in instead of creating new one
+      console.log('Updating existing check-in for today:', existingCheckin._id);
+      
+      const updatedCheckin = await MindfulnessCheckin.findOneAndUpdate(
+        { _id: existingCheckin._id, userId: req.user.userId },
+        { dimensions, totalScore, overallAssessment, dailyNotes, dayReflection },
+        { new: true, runValidators: true }
+      );
+      
+      // Create journal entry for day reflection if provided
+      const journalEntries = [];
+      
+      if (dayReflection && dayReflection.trim()) {
+        const reflectionEntry = await createJournalEntry(
+          req.user.userId,
+          `Daily Reflection - ${today.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}`,
+          dayReflection,
+          'reflection',
+          ['mindfulness', 'daily-reflection', 'journal'],
+          false
+        );
+        
+        journalEntries.push({
+          entryId: reflectionEntry._id,
+          type: 'day_reflection',
+          dimension: 'general'
+        });
+      }
+      
+      // Update check-in with journal entry references
+      updatedCheckin.journalEntries = journalEntries;
+      await updatedCheckin.save();
+      
+      return res.json({
+        message: 'Mindfulness check-in updated successfully',
+        checkin: updatedCheckin,
+        journalEntriesCreated: journalEntries.length,
+        wasUpdate: true
+      });
     }
     
     // Create the check-in
@@ -182,6 +227,8 @@ router.post('/', auth, async (req, res) => {
       userId: req.user.userId,
       date: today,
       dimensions,
+      totalScore,
+      overallAssessment,
       dailyNotes,
       dayReflection
     });
@@ -234,11 +281,11 @@ router.post('/', auth, async (req, res) => {
 // Update a mindfulness check-in
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { dimensions, dailyNotes, dayReflection } = req.body;
+    const { dimensions, totalScore, overallAssessment, dailyNotes, dayReflection } = req.body;
     
     const checkin = await MindfulnessCheckin.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.userId },
-      { dimensions, dailyNotes, dayReflection },
+      { dimensions, totalScore, overallAssessment, dailyNotes, dayReflection },
       { new: true, runValidators: true }
     );
     
