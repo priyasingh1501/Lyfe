@@ -137,12 +137,12 @@ const CreateGoalPopup = ({ isOpen, onClose, onGoalCreated }) => {
           <label className="block text-sm font-medium text-[#E8EEF2] mb-2">
             Description
           </label>
-          <Input
-            as="textarea"
+          <textarea
             value={formData.description}
             onChange={(e) => handleInputChange('description', e.target.value)}
             placeholder="Describe your goal..."
             rows={3}
+            className="w-full px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-primary focus:ring-2 focus:ring-accent-green focus:border-accent-green placeholder:text-text-secondary"
           />
         </div>
 
@@ -151,17 +151,17 @@ const CreateGoalPopup = ({ isOpen, onClose, onGoalCreated }) => {
           <label className="block text-sm font-medium text-[#E8EEF2] mb-2">
             Category
           </label>
-          <Input
-            as="select"
+          <select
             value={formData.category}
             onChange={(e) => handleInputChange('category', e.target.value)}
+            className="w-full px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-primary focus:ring-2 focus:ring-accent-green focus:border-accent-green"
           >
             {categoryOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </Input>
+          </select>
         </div>
 
         {/* Target Hours */}
@@ -184,17 +184,17 @@ const CreateGoalPopup = ({ isOpen, onClose, onGoalCreated }) => {
           <label className="block text-sm font-medium text-[#E8EEF2] mb-2">
             Priority
           </label>
-          <Input
-            as="select"
+          <select
             value={formData.priority}
             onChange={(e) => handleInputChange('priority', e.target.value)}
+            className="w-full px-3 py-2 bg-background-secondary border border-border-primary rounded-lg text-text-primary focus:ring-2 focus:ring-accent-green focus:border-accent-green"
           >
             {priorityOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </Input>
+          </select>
         </div>
 
         {/* Color */}
