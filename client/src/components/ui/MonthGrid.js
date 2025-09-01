@@ -57,8 +57,19 @@ const MonthGrid = ({
       console.log('🔍 First checkin date:', mindfulnessCheckins[0].date);
       console.log('🔍 First checkin totalScore:', mindfulnessCheckins[0].totalScore);
     }
+
     // Get the current date and calculate the start date (12 months ago)
     const currentDate = new Date();
+    
+    // Validate current date
+    if (isNaN(currentDate.getTime())) {
+      console.error('❌ Invalid currentDate detected');
+      return (
+        <div className="w-full p-4 text-center text-red-500">
+          Error: Invalid current date
+        </div>
+      );
+    }
     
     // Debug: Let's see exactly what we're working with
     console.log('🔍 Raw date info:');
@@ -71,9 +82,29 @@ const MonthGrid = ({
     // We want to show the last 12 months, so go back 12 months from current month
     const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 12, 1);
     
+    // Validate startDate
+    if (isNaN(startDate.getTime())) {
+      console.error('❌ Invalid startDate calculated:', startDate);
+      return (
+        <div className="w-full p-4 text-center text-red-500">
+          Error: Invalid start date calculation
+        </div>
+      );
+    }
+    
     // Ensure we include the current date by setting end date to end of current day
     const endDate = new Date(currentDate);
     endDate.setHours(23, 59, 59, 999);
+    
+    // Validate endDate
+    if (isNaN(endDate.getTime())) {
+      console.error('❌ Invalid endDate calculated:', endDate);
+      return (
+        <div className="w-full p-4 text-center text-red-500">
+          Error: Invalid end date calculation
+        </div>
+      );
+    }
     
     console.log('🔍 Date calculations:');
     console.log('🔍 currentDate:', currentDate);
@@ -228,32 +259,56 @@ const MonthGrid = ({
     const generateAllDays = () => {
       console.log('🔍 generateAllDays function called!');
       const allDays = [];
-      const currentDateCopy = new Date(startDate);
       
-      console.log(`🔍 Generating days from ${startDate} to ${endDate}`);
+      // Ensure startDate and endDate are valid Date objects
+      if (!startDate || !(startDate instanceof Date) || isNaN(startDate.getTime())) {
+        console.error('❌ Invalid startDate in generateAllDays:', startDate);
+        return [];
+      }
+      
+      if (!endDate || !(endDate instanceof Date) || isNaN(endDate.getTime())) {
+        console.error('❌ Invalid endDate in generateAllDays:', endDate);
+        return [];
+      }
+      
+      const currentDateCopy = new Date(startDate.getTime()); // Create a proper copy
+      
+      console.log(`🔍 Generating days from ${startDate.toISOString()} to ${endDate.toISOString()}`);
       console.log(`🔍 mindfulnessCheckins count: ${mindfulnessCheckins.length}`);
       
       let dayCount = 0;
       while (currentDateCopy <= endDate) {
         dayCount++;
+        
+        // Validate the current date
+        if (isNaN(currentDateCopy.getTime())) {
+          console.error('❌ Invalid currentDateCopy detected:', currentDateCopy);
+          break;
+        }
+        
         const dayDateStr = currentDateCopy.toLocaleDateString('en-CA');
         console.log(`🔍 Day ${dayCount}: Processing ${dayDateStr}`);
         
         const mindfulnessScore = getMindfulnessScoreForDate(currentDateCopy);
+        
+        // Create a new Date object for the day data
+        const dayDate = new Date(currentDateCopy.getTime());
+        
         allDays.push({
-          date: new Date(currentDateCopy),
+          date: dayDate,
           mindfulnessScore,
-          isToday: currentDateCopy.toDateString() === new Date().toDateString()
+          isToday: dayDate.toDateString() === new Date().toDateString()
         });
         
         // Check if we've reached today's date
-        if (currentDateCopy.toDateString() === new Date().toDateString()) {
+        if (dayDate.toDateString() === new Date().toDateString()) {
           console.log(`🎯 Found today's date: ${dayDateStr}`);
-          console.log(`🎯 Today's date object:`, currentDateCopy);
-          console.log(`🎯 Today's date string:`, currentDateCopy.toDateString());
+          console.log(`🎯 Today's date object:`, dayDate);
+          console.log(`🎯 Today's date string:`, dayDate.toDateString());
           console.log(`🎯 Current date string:`, new Date().toDateString());
         }
         
+        // Move to next day
         currentDateCopy.setDate(currentDateCopy.getDate() + 1);
         
         // Safety check to prevent infinite loops
