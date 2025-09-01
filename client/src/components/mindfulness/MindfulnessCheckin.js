@@ -108,17 +108,15 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
     });
     
     // Validate selected date is not in the future
-    const selectedDateObj = new Date(selectedDate);
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     
     console.log('🔍 Date validation:');
     console.log('🔍 Selected date:', selectedDate);
-    console.log('🔍 Selected date object:', selectedDateObj);
-    console.log('🔍 Today:', today);
-    console.log('🔍 Is future date?', selectedDateObj > today);
+    console.log('🔍 Today string:', todayStr);
+    console.log('🔍 Is future date?', selectedDate > todayStr);
     
-    if (selectedDateObj > today) {
+    if (selectedDate > todayStr) {
       alert('Cannot create mindfulness check-ins for future dates. Please select today or a past date.');
       return;
     }
