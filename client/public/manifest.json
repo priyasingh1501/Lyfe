@@ -1,15 +1,33 @@
 {
-  "short_name": "Alfred",
-  "name": "Alfred Lifestyle Manager",
+  "short_name": "Lyfe",
+  "name": "Lyfe - Lifestyle Management",
+  "description": "Comprehensive lifestyle management app for goals, habits, mindfulness, and productivity",
   "icons": [
     {
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable any"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "portrait",
+  "theme_color": "#1E2330",
+  "background_color": "#0F1419",
+  "scope": "/",
+  "categories": ["productivity", "lifestyle", "health"],
+  "lang": "en",
+  "dir": "ltr"
 }

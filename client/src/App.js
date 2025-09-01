@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout/Layout';
+import { PWAInstall } from './components/ui';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
 import TimeManagement from './pages/TimeManagement';
@@ -114,6 +115,9 @@ function App() {
                   <Register />
                 </PublicRoute>
               } />
+              
+              {/* PWA Install Prompt */}
+              <PWAInstall />
               
               {/* Protected Routes */}
               <Route path="/" element={

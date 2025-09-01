@@ -6,3 +6,6 @@ export { default as Header } from './Header';
 export { default as Section } from './Section';
 export { default as Banner } from './Banner';
 export { default as MonthGrid } from './MonthGrid';
+export { default as MoonPhaseSlider } from './MoonPhaseSlider';
+export { default as MindfulnessGlass } from './MindfulnessGlass';
+export { default as PWAInstall } from './PWAInstall';
