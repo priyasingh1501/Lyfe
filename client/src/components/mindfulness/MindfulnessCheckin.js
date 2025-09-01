@@ -13,6 +13,9 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
 
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const [todayCheckin, setTodayCheckin] = useState(null);
+  
+  // Date selection state
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Mindfulness dimensions state
   const [dimensions, setDimensions] = useState({
@@ -34,36 +37,63 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
   // Calculate total score
   const totalScore = Object.values(dimensions).reduce((sum, dim) => sum + dim.rating, 0);
 
+  // Check if user has already checked in on the selected date
+  const checkDateCheckin = useCallback(async (date) => {
+    try {
+      console.log('Checking for existing check-in on date:', date);
+      const response = await axios.get(`${buildApiUrl('/api/mindfulness/date')}/${date}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data) {
+        setHasCheckedInToday(true);
+        setTodayCheckin(response.data);
+        // Load existing data
+        setDimensions(response.data.dimensions);
+        setDailyNotes(response.data.dailyNotes || '');
+        setDayReflection(response.data.dayReflection || '');
+        console.log('Found existing check-in for date:', date);
+      } else {
+        setHasCheckedInToday(false);
+        setTodayCheckin(null);
+        // Reset to default values for new check-in
+        setDimensions({
+          presence: { rating: 0 },
+          emotionAwareness: { rating: 0 },
+          intentionality: { rating: 0 },
+          attentionQuality: { rating: 0 },
+          compassion: { rating: 0 }
+        });
+        setDailyNotes('');
+        setDayReflection('');
+        console.log('No existing check-in found for date:', date);
+      }
+    } catch (error) {
+      if (error.response?.status !== 404) {
+        console.error('Error checking check-in for date:', date, error);
+      } else {
+        // 404 means no check-in exists, which is fine
+        setHasCheckedInToday(false);
+        setTodayCheckin(null);
+        // Reset to default values for new check-in
+        setDimensions({
+          presence: { rating: 0 },
+          emotionAwareness: { rating: 0 },
+          intentionality: { rating: 0 },
+          attentionQuality: { rating: 0 },
+          compassion: { rating: 0 }
+        });
+        setDailyNotes('');
+        setDayReflection('');
+        console.log('No existing check-in found for date:', date);
+      }
+    }
+  }, [token]);
+
   // Check if user has already checked in today
   useEffect(() => {
-    const checkTodayCheckin = async () => {
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        console.log('Checking for existing check-in on date:', today);
-        console.log('Current date object:', new Date());
-        const response = await axios.get(`${buildApiUrl('/api/mindfulness/date')}/${today}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        if (response.data) {
-          setHasCheckedInToday(true);
-          setTodayCheckin(response.data);
-          // Load existing data
-          setDimensions(response.data.dimensions);
-          setDailyNotes(response.data.dailyNotes || '');
-          setDayReflection(response.data.dayReflection || '');
-          
-
-        }
-      } catch (error) {
-        if (error.response?.status !== 404) {
-          console.error('Error checking today\'s check-in:', error);
-        }
-      }
-    };
-    
-    checkTodayCheckin();
-  }, [token]);
+    checkDateCheckin(selectedDate);
+  }, [selectedDate, checkDateCheckin]);
 
 
 
@@ -76,6 +106,22 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
     Object.entries(dimensions).forEach(([key, value]) => {
       console.log(`  ${key}: ${value.rating} (type: ${typeof value.rating})`);
     });
+    
+    // Validate selected date is not in the future
+    const selectedDateObj = new Date(selectedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    console.log('🔍 Date validation:');
+    console.log('🔍 Selected date:', selectedDate);
+    console.log('🔍 Selected date object:', selectedDateObj);
+    console.log('🔍 Today:', today);
+    console.log('🔍 Is future date?', selectedDateObj > today);
+    
+    if (selectedDateObj > today) {
+      alert('Cannot create mindfulness check-ins for future dates. Please select today or a past date.');
+      return;
+    }
     
     // Check if all dimensions are rated (model requirement)
     const unratedDimensions = Object.values(dimensions).filter(dim => dim.rating === 0);
@@ -126,6 +172,7 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
     
     // Create validated data with all required fields
     const validatedData = {
+      date: selectedDate, // Include the selected date
       dimensions: {
         presence: { rating: parseInt(dimensions.presence.rating) },
         emotionAwareness: { rating: parseInt(dimensions.emotionAwareness.rating) },
@@ -162,6 +209,8 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
         // Create new check-in
         console.log('Creating new check-in');
         console.log('Sending data to server:', validatedData);
+        console.log('🔍 API URL:', buildApiUrl('/api/mindfulness'));
+        console.log('🔍 Token present:', !!token);
         
         try {
           const response = await axios.post(`${buildApiUrl('/api/mindfulness')}`, validatedData, {
@@ -202,7 +251,7 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
       setSaving(false);
       console.log('Save finished');
     }
-  }, [hasCheckedInToday, todayCheckin, token, onCheckinComplete, dimensions, dailyNotes, dayReflection]);
+  }, [hasCheckedInToday, todayCheckin, token, onCheckinComplete, dimensions, dailyNotes, dayReflection, selectedDate]);
 
 
 
@@ -235,12 +284,48 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
 
   return (
     <div className="space-y-4">
+      {/* Date Selector */}
+      <div className="bg-[#1A1F2E] border-2 border-[#2A313A] rounded-lg p-4 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Clock className="text-[#3CCB7F]" size={20} />
+            <div>
+              <label htmlFor="checkin-date" className="block text-sm font-medium text-[#94A3B8] mb-1">
+                Mindfulness Check-in Date
+              </label>
+              <input
+                type="date"
+                id="checkin-date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-[#11151A] border border-[#2A313A] rounded-lg px-3 py-2 text-[#E8EEF2] focus:outline-none focus:ring-2 focus:ring-[#3CCB7F] focus:border-transparent"
+                max={new Date().toISOString().split('T')[0]} // Can't select future dates
+              />
+            </div>
+          </div>
+          
+          <div className="text-right">
+            <div className="text-sm text-[#94A3B8]">Selected Date</div>
+            <div className="text-lg font-semibold text-[#E8EEF2]">
+              {new Date(selectedDate).toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Status Message */}
       {hasCheckedInToday && (
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 bg-[#3CCB7F]/20 border border-[#3CCB7F] rounded-full px-3 py-1">
             <CheckCircle className="text-[#3CCB7F]" size={14} />
-            <span className="text-[#3CCB7F] text-xs font-medium">Already checked in today</span>
+            <span className="text-[#3CCB7F] text-xs font-medium">
+              Already checked in for {new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
           </div>
         </div>
       )}

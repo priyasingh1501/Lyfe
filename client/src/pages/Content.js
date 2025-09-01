@@ -45,6 +45,8 @@ const Content = () => {
 
   const [bookTagInput, setBookTagInput] = useState('');
   const [noteTagInput, setNoteTagInput] = useState('');
+  
+
 
   const bookCategories = [
     'fiction', 'non_fiction', 'self_help', 'business', 'health', 'technology', 
@@ -92,6 +94,8 @@ const Content = () => {
       console.error('Error creating default journal:', error);
     }
   }, [token, bookDocuments]);
+
+
 
   // Move useEffect here after functions are defined
   useEffect(() => {
@@ -937,6 +941,8 @@ const Content = () => {
           )}
         </div>
       </div>
+
+
     </div>
   );
 };

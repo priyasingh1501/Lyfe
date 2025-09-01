@@ -21,8 +21,17 @@ const MonthGrid = ({
   }
   // Get the current date and calculate the start date (12 months ago)
   const currentDate = new Date();
+  
+  // Debug: Let's see exactly what we're working with
+  console.log('🔍 Raw date info:');
+  console.log('🔍 currentDate.getFullYear():', currentDate.getFullYear());
+  console.log('🔍 currentDate.getMonth():', currentDate.getMonth());
+  console.log('🔍 currentDate.getDate():', currentDate.getDate());
+  console.log('🔍 Month name:', currentDate.toLocaleDateString('en-US', { month: 'long' }));
+  
   // Fix: Calculate start date to include exactly 12 months of data
-  const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 11, 1);
+  // We want to show the last 12 months, so go back 12 months from current month
+  const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 12, 1);
   
   // Ensure we include the current date by setting end date to end of current day
   const endDate = new Date(currentDate);
@@ -37,9 +46,15 @@ const MonthGrid = ({
   console.log('🔍 endDate.toISOString():', endDate.toISOString());
   console.log('🔍 startDate <= endDate:', startDate <= endDate);
   
+  // Debug: Let's verify the month calculation
+  console.log('🔍 Month calculation debug:');
+  console.log('🔍 currentDate.getMonth() - 12 =', currentDate.getMonth() - 12);
+  console.log('🔍 Expected start month:', new Date(currentDate.getFullYear(), currentDate.getMonth() - 12, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
+  
   // Get mindfulness score for a specific date
   const getMindfulnessScoreForDate = (date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    // Use local date string to avoid timezone issues
+    const dateStr = date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
     
     console.log(`🔍 Looking for mindfulness data for date: ${dateStr}`);
     console.log(`🔍 Available checkins:`, mindfulnessCheckins);
@@ -49,8 +64,13 @@ const MonthGrid = ({
         console.log(`❌ Checkin missing date:`, checkin);
         return false;
       }
-      const checkinDate = new Date(checkin.date).toISOString().split('T')[0];
+      
+      // Convert checkin date to local date string to avoid timezone issues
+      const checkinDate = new Date(checkin.date).toLocaleDateString('en-CA');
       console.log(`🔍 Comparing ${dateStr} with ${checkinDate}`);
+      console.log(`🔍 Original checkin date:`, checkin.date);
+      console.log(`🔍 Checkin date object:`, new Date(checkin.date));
+      
       return dateStr === checkinDate;
     });
 
@@ -77,7 +97,7 @@ const MonthGrid = ({
 
   // Get color based on mindfulness score - matching day view color palette
   const getMindfulnessColor = (score) => {
-    if (score === 0) return '#1a2332'; // Subtle dark blue for no activity
+    if (score === 0) return '#0f1419'; // Much darker color for no activity - very visible
     if (score <= 2) return '#1e3a8a'; // Dark blue
     if (score <= 4) return '#1d4ed8'; // Medium dark blue
     if (score <= 6) return '#2563eb'; // Blue
@@ -105,7 +125,8 @@ const MonthGrid = ({
     let dayCount = 0;
     while (currentDateCopy <= endDate) {
       dayCount++;
-      console.log(`🔍 Day ${dayCount}: Processing ${currentDateCopy.toISOString().split('T')[0]}`);
+      const dayDateStr = currentDateCopy.toLocaleDateString('en-CA');
+      console.log(`🔍 Day ${dayCount}: Processing ${dayDateStr}`);
       
       const mindfulnessScore = getMindfulnessScoreForDate(currentDateCopy);
       allDays.push({
@@ -116,7 +137,10 @@ const MonthGrid = ({
       
       // Check if we've reached today's date
       if (currentDateCopy.toDateString() === new Date().toDateString()) {
-        console.log(`🎯 Found today's date: ${currentDateCopy.toISOString().split('T')[0]}`);
+        console.log(`🎯 Found today's date: ${dayDateStr}`);
+        console.log(`🎯 Today's date object:`, currentDateCopy);
+        console.log(`🎯 Today's date string:`, currentDateCopy.toDateString());
+        console.log(`🎯 Current date string:`, new Date().toDateString());
       }
       
       currentDateCopy.setDate(currentDateCopy.getDate() + 1);
@@ -242,7 +266,7 @@ const MonthGrid = ({
                       onClick={() => onDateSelect && onDateSelect(date)}
                       className={`w-2.5 h-2.5 rounded-sm cursor-pointer transition-all duration-200 hover:scale-125 hover:ring-2 hover:ring-blue-400 ${
                         isToday ? 'ring-2 ring-blue-500 ring-offset-1' : ''
-                      }`}
+                      } ${mindfulnessScore === 0 ? 'border border-[#2A313A]' : ''}`}
                       style={{ backgroundColor }}
                       title={`${date.toLocaleDateString()}: Mindfulness Score ${mindfulnessScore}`}
                     />
@@ -258,7 +282,7 @@ const MonthGrid = ({
       <div className="mt-4 flex items-center justify-end gap-3">
         <span className="text-xs text-[#94A3B8]">Low</span>
         <div className="flex gap-0.5">
-          <div className="w-2.5 h-2.5 bg-[#1a2332] rounded-sm border border-[#2A313A]"></div>
+          <div className="w-2.5 h-2.5 bg-[#0f1419] rounded-sm border border-[#2A313A]" title="No Entry"></div>
           <div className="w-2.5 h-2.5 bg-[#1e3a8a] rounded-sm border border-[#2A313A]"></div>
           <div className="w-2.5 h-2.5 bg-[#2563eb] rounded-sm border border-[#2A313A]"></div>
           <div className="w-2.5 h-2.5 bg-[#60a5fa] rounded-sm border border-[#2A313A]"></div>

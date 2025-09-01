@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const MindfulnessCheckin = require('../models/MindfulnessCheckin');
-const Journal = require('../models/Journal');
 
 // Get all mindfulness check-ins for a user
 router.get('/', auth, async (req, res) => {
@@ -155,6 +154,7 @@ router.get('/stats', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     const {
+      date: customDate,
       dimensions,
       totalScore,
       overallAssessment,
@@ -162,12 +162,12 @@ router.post('/', auth, async (req, res) => {
       dayReflection
     } = req.body;
     
-    // Check if check-in already exists for today
-    const today = new Date();
-    const startOfDay = new Date(today);
+    // Use custom date if provided, otherwise use today
+    const checkinDate = customDate ? new Date(customDate) : new Date();
+    const startOfDay = new Date(checkinDate);
     startOfDay.setHours(0, 0, 0, 0);
     
-    const endOfDay = new Date(today);
+    const endOfDay = new Date(checkinDate);
     endOfDay.setHours(23, 59, 59, 999);
     
     const existingCheckin = await MindfulnessCheckin.findOne({
@@ -189,25 +189,29 @@ router.post('/', auth, async (req, res) => {
       const journalEntries = [];
       
       if (dayReflection && dayReflection.trim()) {
-        const reflectionEntry = await createJournalEntry(
+        console.log('📝 Adding mindfulness reflection to journal book:', dayReflection);
+        
+        const reflectionNote = await addMindfulnessReflectionToJournal(
           req.user.userId,
-          `Daily Reflection - ${today.toLocaleDateString('en-US', { 
+          `Daily Reflection - ${checkinDate.toLocaleDateString('en-US', { 
             weekday: 'long', 
             year: 'numeric', 
             month: 'long', 
             day: 'numeric' 
           })}`,
           dayReflection,
-          'reflection',
-          ['mindfulness', 'daily-reflection', 'journal'],
-          false
+          ['mindfulness', 'daily-reflection', 'journal']
         );
         
+        console.log('📝 Reflection note added to journal book:', reflectionNote._id);
+        
         journalEntries.push({
-          entryId: reflectionEntry._id,
+          entryId: reflectionNote._id,
           type: 'day_reflection',
           dimension: 'general'
         });
+      } else {
+        console.log('📝 No day reflection provided, skipping journal entry creation');
       }
       
       // Update check-in with journal entry references
@@ -225,7 +229,7 @@ router.post('/', auth, async (req, res) => {
     // Create the check-in
     const checkin = new MindfulnessCheckin({
       userId: req.user.userId,
-      date: today,
+      date: checkinDate,
       dimensions,
       totalScore,
       overallAssessment,
@@ -238,27 +242,31 @@ router.post('/', auth, async (req, res) => {
     // Create journal entry for day reflection
     const journalEntries = [];
     
-    if (dayReflection && dayReflection.trim()) {
-      const reflectionEntry = await createJournalEntry(
-        req.user.userId,
-        `Daily Reflection - ${today.toLocaleDateString('en-US', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        })}`,
-        dayReflection,
-        'reflection',
-        ['mindfulness', 'daily-reflection', 'journal'],
-        false
-      );
-      
-      journalEntries.push({
-        entryId: reflectionEntry._id,
-        type: 'day_reflection',
-        dimension: 'general'
-      });
-    }
+          if (dayReflection && dayReflection.trim()) {
+        console.log('📝 Adding mindfulness reflection to journal book (update):', dayReflection);
+        
+        const reflectionNote = await addMindfulnessReflectionToJournal(
+          req.user.userId,
+          `Daily Reflection - ${checkinDate.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}`,
+          dayReflection,
+          ['mindfulness', 'daily-reflection', 'journal']
+        );
+        
+        console.log('📝 Reflection note added to journal book (update):', reflectionNote._id);
+        
+        journalEntries.push({
+          entryId: reflectionNote._id,
+          type: 'day_reflection',
+          dimension: 'general'
+        });
+      } else {
+        console.log('📝 No day reflection provided for update, skipping journal entry creation');
+      }
       
 
     
@@ -316,15 +324,9 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Mindfulness check-in not found' });
     }
     
-    // Delete associated journal entries
-    if (checkin.journalEntries && checkin.journalEntries.length > 0) {
-      for (const journalEntry of checkin.journalEntries) {
-        await Journal.updateMany(
-          { userId: req.user.userId },
-          { $pull: { entries: { _id: journalEntry.entryId } } }
-        );
-      }
-    }
+    // Note: Journal entries are now stored as notes in the user's journal book
+    // They will remain even if the mindfulness check-in is deleted
+    console.log('📝 Mindfulness check-in deleted. Journal notes remain in user\'s journal book.');
     
     res.json({ message: 'Mindfulness check-in deleted successfully' });
     
@@ -334,30 +336,53 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-// Helper function to create journal entries
-async function createJournalEntry(userId, title, content, type, tags, isPrivate) {
-  let journal = await Journal.findOne({ userId });
-  
-  if (!journal) {
-    journal = new Journal({
+// Helper function to add mindfulness reflection as a note to user's journal book
+async function addMindfulnessReflectionToJournal(userId, title, content, tags) {
+  try {
+    // Find the user's default journal book
+    const BookDocument = require('../models/BookDocument');
+    let journalBook = await BookDocument.findOne({
       userId,
-      entries: []
+      isDefault: true
     });
+    
+    if (!journalBook) {
+      // Create default journal if it doesn't exist
+      const User = require('../models/User');
+      const user = await User.findById(userId);
+      journalBook = new BookDocument({
+        userId,
+        title: `${user.firstName}'s Journal`,
+        description: 'Your personal reading and reflection journal',
+        category: 'memoir',
+        isDefault: true,
+        status: 'currently_reading'
+      });
+      await journalBook.save();
+    }
+    
+    // Add the reflection as a note
+    const note = {
+      content: content.trim(),
+      location: 'Mindfulness Check-in',
+      tags: tags || [],
+      isImportant: true,
+      isQuote: false
+    };
+    
+    journalBook.notes.push(note);
+    await journalBook.save();
+    
+    const newNote = journalBook.notes[journalBook.notes.length - 1];
+    
+    console.log('📝 Added mindfulness reflection to journal book:', journalBook.title);
+    console.log('📝 Note content:', content.substring(0, 100) + '...');
+    
+    return newNote;
+  } catch (error) {
+    console.error('❌ Error adding mindfulness reflection to journal book:', error);
+    throw error;
   }
-  
-  const newEntry = {
-    title,
-    content,
-    type: type || 'reflection',
-    mood: 'neutral',
-    tags: tags || [],
-    isPrivate: isPrivate !== undefined ? isPrivate : false
-  };
-  
-  journal.entries.unshift(newEntry);
-  await journal.save();
-  
-  return newEntry;
 }
 
 module.exports = router;
