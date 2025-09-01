@@ -78,7 +78,7 @@ function App() {
       <AuthProvider>
         <Router>
           <div className="App">
-            <Toaster
+                        <Toaster
               position="top-right"
               toastOptions={{
                 duration: 4000,
@@ -103,6 +103,9 @@ function App() {
               }}
             />
             
+            {/* PWA Install Prompt */}
+            <PWAInstall />
+            
             <Routes>
               {/* Public Routes */}
               <Route path="/login" element={
@@ -115,10 +118,7 @@ function App() {
                   <Register />
                 </PublicRoute>
               } />
-              
-              {/* PWA Install Prompt */}
-              <PWAInstall />
-              
+                
               {/* Protected Routes */}
               <Route path="/" element={
                 <ProtectedRoute>
