@@ -9,3 +9,5 @@ export { default as MonthGrid } from './MonthGrid';
 export { default as MoonPhaseSlider } from './MoonPhaseSlider';
 export { default as MindfulnessGlass } from './MindfulnessGlass';
 export { default as PWAInstall } from './PWAInstall';
+export { default as MobileNav } from './MobileNav';
+export { default as MobileInstallGuide } from './MobileInstallGuide';

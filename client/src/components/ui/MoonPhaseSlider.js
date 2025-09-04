@@ -31,18 +31,18 @@ const MoonPhaseSlider = ({
   };
 
   return (
-    <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 mb-4">
+    <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-3 lg:p-4 mb-4">
       {/* Question and Moon Selectors Side by Side */}
-      <div className="flex items-center justify-between gap-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6">
         {/* Question */}
-        <div className="flex-1">
-          <h3 className="text-base font-semibold text-[#E8EEF2] font-oswald tracking-wide leading-relaxed">
+        <div className="flex-1 text-center lg:text-left">
+          <h3 className="text-sm lg:text-base font-semibold text-[#E8EEF2] font-oswald tracking-wide leading-relaxed">
             {getDimensionQuestion(dimension)}
           </h3>
         </div>
 
         {/* Moon Phase Slider */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center gap-2 lg:gap-3">
           {phases.map((phase) => (
             <motion.div
               key={phase.value}
@@ -55,7 +55,7 @@ const MoonPhaseSlider = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <div className={`text-3xl mb-1 transition-all duration-300 ${
+              <div className={`text-2xl lg:text-3xl mb-1 transition-all duration-300 ${
                 value === phase.value 
                   ? 'text-[#FFD200] drop-shadow-lg' 
                   : 'text-[#C9D1D9]'

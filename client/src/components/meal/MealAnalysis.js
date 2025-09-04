@@ -504,11 +504,67 @@ const MealAnalysis = ({ mealItems, context }) => {
     
     const inflammationLabel = inflammationScore <= 3 ? 'Low' : inflammationScore <= 6 ? 'Medium' : 'High';
     
-    return {
+    // Calculate additional effects
+    
+    // Energizing effect (0-10, higher is better)
+    let energizingScore = 5; // Start neutral
+    if (totals.fiber >= 8) energizingScore += 2;
+    else if (totals.fiber >= 5) energizingScore += 1;
+    
+    if (totals.carbs >= 30 && totals.carbs <= 80) energizingScore += 2;
+    else if (totals.carbs > 0) energizingScore += 1;
+    
+    if (context.fermented) energizingScore += 1;
+    if (totals.omega3 >= 0.5) energizingScore += 1;
+    
+    energizingScore = Math.min(10, energizingScore);
+    
+    // Gut-friendly effect (0-10, higher is better)
+    let gutFriendlyScore = 5; // Start neutral
+    if (context.fermented) gutFriendlyScore += 3;
+    if (totals.fiber >= 8) gutFriendlyScore += 2;
+    else if (totals.fiber >= 5) gutFriendlyScore += 1;
+    
+    if (plantDiversity >= 5) gutFriendlyScore += 2;
+    else if (plantDiversity >= 3) gutFriendlyScore += 1;
+    
+    // Penalize high fat and processed foods
+    if (totals.fat >= 40) gutFriendlyScore -= 2;
+    else if (totals.fat >= 25) gutFriendlyScore -= 1;
+    
+    if (highestNOVA >= 4) gutFriendlyScore -= 2;
+    else if (highestNOVA >= 3) gutFriendlyScore -= 1;
+    
+    gutFriendlyScore = Math.max(0, Math.min(10, gutFriendlyScore));
+    
+    // Mood-lifting effect (0-10, higher is better)
+    let moodLiftingScore = 5; // Start neutral
+    if (totals.omega3 >= 0.5) moodLiftingScore += 2;
+    if (context.fermented) moodLiftingScore += 1;
+    if (totals.fiber >= 8) moodLiftingScore += 1;
+    
+    // Penalize high sugar and processed foods
+    if (totals.sugar >= 25) moodLiftingScore -= 2;
+    else if (totals.sugar >= 15) moodLiftingScore -= 1;
+    
+    if (highestNOVA >= 4) moodLiftingScore -= 2;
+    else if (highestNOVA >= 3) moodLiftingScore -= 1;
+    
+    moodLiftingScore = Math.max(0, Math.min(10, moodLiftingScore));
+    
+    const effectsResult = {
+      fatForming: { score: fatFormingScore, reasons: fatFormingReasons, contributors: fatFormingContributors },
       strength: { score: strengthScore, reasons: strengthReasons },
       immunity: { score: immunityScore, reasons: immunityReasons },
-      inflammation: { score: inflammationScore, label: inflammationLabel, contributors: inflammationContributors }
+      inflammation: { score: inflammationScore, label: inflammationLabel, contributors: inflammationContributors },
+      energizing: { score: energizingScore },
+      gutFriendly: { score: gutFriendlyScore },
+      moodLifting: { score: moodLiftingScore }
     };
+    
+    console.log('Calculated effects:', effectsResult);
+    
+    return effectsResult;
   }, [totals, mealItems, context]);
 
   if (!totals) {
@@ -685,7 +741,26 @@ const MealAnalysis = ({ mealItems, context }) => {
           Meal Effects
         </h2>
         
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Debug: Effects count */}
+          <div className="col-span-2 p-2 bg-red-500 text-white text-xs">
+            Debug: {Object.keys(effects).length} effects calculated
+          </div>
+          
+          {/* Fat-forming */}
+          <div className="p-3 bg-[#2A313A] rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[#C9D1D9] font-medium">🍔 Fat-forming</span>
+              <span className="text-[#F87171] font-bold">{effects.fatForming.score}/10</span>
+            </div>
+            <div className="w-full bg-[#0A0C0F] rounded-full h-2">
+              <div 
+                className="bg-[#F87171] h-2 rounded-full transition-all duration-500"
+                style={{ width: `${(effects.fatForming.score / 10) * 100}%` }}
+              />
+            </div>
+          </div>
+          
           {/* Strength */}
           <div className="p-3 bg-[#2A313A] rounded-lg">
             <div className="flex items-center justify-between mb-2">
@@ -703,7 +778,7 @@ const MealAnalysis = ({ mealItems, context }) => {
           {/* Immunity */}
           <div className="p-3 bg-[#2A313A] rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[#C9D1D9] font-medium">🛡️ Immunity</span>
+              <span className="text-[#C9D1D9] font-medium">🌿 Immunity</span>
               <span className="text-[#4ADE80] font-bold">{effects.immunity.score}/10</span>
             </div>
             <div className="w-full bg-[#0A0C0F] rounded-full h-2">
@@ -726,7 +801,7 @@ const MealAnalysis = ({ mealItems, context }) => {
                 {effects.inflammation.label}
               </span>
             </div>
-            <div className="w-full bg-[#0A0C0F] rounded-full h-2 mb-3">
+            <div className="w-full bg-[#0A0C0F] rounded-full h-2">
               <div 
                 className={`h-2 rounded-full transition-all duration-500 ${
                   effects.inflammation.label === 'Low' ? 'bg-[#4ADE80]' :
@@ -736,21 +811,75 @@ const MealAnalysis = ({ mealItems, context }) => {
                 style={{ width: `${(effects.inflammation.score / 10) * 100}%` }}
               />
             </div>
-            {/* Inflammation Contributors */}
-            {effects.inflammation.contributors && effects.inflammation.contributors.length > 0 && (
-              <div className="space-y-1">
-                <div className="text-xs text-[#6B7280] font-medium">Contributing foods:</div>
-                {effects.inflammation.contributors.map((contributor, index) => (
-                  <div key={index} className="text-xs text-[#C9D1D9] flex items-start space-x-2">
-                    <span className={`mt-0.5 ${
-                      contributor.includes('anti-inflammatory') ? 'text-[#4ADE80]' :
-                      contributor.includes('pro-inflammatory') ? 'text-[#FBBF24]' :
-                      'text-[#FBBF24]'
-                    }`}>•</span>
-                    <span>{contributor}</span>
-                  </div>
-                ))}
-              </div>
+          </div>
+          
+          {/* Energizing */}
+          <div className="p-3 bg-[#2A313A] rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[#C9D1D9] font-medium">⚡️ Energizing</span>
+              <span className="text-[#FBBF24] font-bold">{effects.energizing.score}/10</span>
+            </div>
+            <div className="w-full bg-[#0A0C0F] rounded-full h-2">
+              <div 
+                className="bg-[#FBBF24] h-2 rounded-full transition-all duration-500"
+                style={{ width: `${(effects.energizing.score / 10) * 100}%` }}
+              />
+            </div>
+          </div>
+          
+          {/* Gut-friendly */}
+          <div className="p-3 bg-[#2A313A] rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[#C9D1D9] font-medium">🌀 Gut-friendly</span>
+              <span className="text-[#A78BFA] font-bold">{effects.gutFriendly.score}/10</span>
+            </div>
+            <div className="w-full bg-[#0A0C0F] rounded-full h-2">
+              <div 
+                className="bg-[#A78BFA] h-2 rounded-full transition-all duration-500"
+                style={{ width: `${(effects.gutFriendly.score / 10) * 100}%` }}
+              />
+            </div>
+          </div>
+          
+          {/* Mood-lifting */}
+          <div className="p-3 bg-[#2A313A] rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[#C9D1D9] font-medium">😊 Mood-lifting</span>
+              <span className="text-[#FB7185] font-bold">{effects.moodLifting.score}/10</span>
+            </div>
+            <div className="w-full bg-[#0A0C0F] rounded-full h-2">
+              <div 
+                className="bg-[#FB7185] h-2 rounded-full transition-all duration-500"
+                style={{ width: `${(effects.moodLifting.score / 10) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Effects Summary */}
+        <div className="mt-4 p-3 bg-[#2A313A] rounded-lg">
+          <h3 className="text-sm font-medium text-[#C9D1D9] mb-2">Effects Summary</h3>
+          <div className="text-xs text-[#6B7280] space-y-1">
+            {effects.fatForming.score > 5 && (
+              <div>🍔 High fat-forming potential - consider lighter options</div>
+            )}
+            {effects.strength.score > 7 && (
+              <div>💪 Excellent for muscle building and recovery</div>
+            )}
+            {effects.immunity.score > 7 && (
+              <div>🌿 Great for immune system support</div>
+            )}
+            {effects.inflammation.score > 7 && (
+              <div>🔥 May trigger inflammation - consider anti-inflammatory foods</div>
+            )}
+            {effects.energizing.score > 7 && (
+              <div>⚡️ Very energizing - good for active periods</div>
+            )}
+            {effects.gutFriendly.score > 7 && (
+              <div>🌀 Excellent for gut health</div>
+            )}
+            {effects.moodLifting.score > 7 && (
+              <div>😊 Great for mood and mental well-being</div>
             )}
           </div>
         </div>

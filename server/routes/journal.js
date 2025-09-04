@@ -1,6 +1,9 @@
 const express = require('express');
 const Journal = require('../models/Journal');
+const JournalAnalysisService = require('../services/journalAnalysisService');
 const router = express.Router();
+
+const analysisService = new JournalAnalysisService();
 
 // Middleware to verify JWT token
 const authenticateToken = async (req, res, next) => {
@@ -52,7 +55,16 @@ router.get('/', authenticateToken, async (req, res) => {
 // Add new journal entry
 router.post('/entries', authenticateToken, async (req, res) => {
   try {
+    console.log('Creating journal entry for user:', req.user._id);
+    console.log('Entry data:', { title: req.body.title, content: req.body.content?.substring(0, 50) + '...' });
+    
     const { title, content, type, mood, tags, isPrivate, location, weather } = req.body;
+    
+    // Validate required fields
+    if (!title || !content) {
+      console.error('Missing required fields:', { title: !!title, content: !!content });
+      return res.status(400).json({ message: 'Title and content are required' });
+    }
     
     let journal = await Journal.findOne({ userId: req.user._id });
     
@@ -77,10 +89,52 @@ router.post('/entries', authenticateToken, async (req, res) => {
     journal.entries.unshift(newEntry); // Add to beginning
     await journal.save();
     
+    // Return success immediately, then analyze in background
     res.status(201).json({
       message: 'Journal entry created successfully',
       entry: newEntry,
       journal
+    });
+    
+    // Analyze the new entry with Alfred in background (non-blocking)
+    setImmediate(async () => {
+      try {
+        console.log('Starting Alfred analysis for entry:', newEntry.title);
+        const analysis = await analysisService.analyzeJournalEntry(newEntry.content, newEntry.title);
+        console.log('Analysis result:', JSON.stringify(analysis, null, 2));
+        
+        // Find the entry and update it with analysis
+        const updatedJournal = await Journal.findOne({ userId: req.user._id });
+        if (updatedJournal) {
+          // Find the most recent entry with the same title and content
+          // Look for entries created in the last 5 minutes to avoid timing issues
+          const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+          const entryIndex = updatedJournal.entries.findIndex(entry => 
+            entry.title === newEntry.title && 
+            entry.content === newEntry.content &&
+            new Date(entry.createdAt) > fiveMinutesAgo &&
+            (!entry.alfredAnalysis || 
+             !entry.alfredAnalysis.sentiment || 
+             !entry.alfredAnalysis.sentiment.label ||
+             entry.alfredAnalysis.insights.length === 0) // Check if analysis is incomplete
+          );
+          
+          if (entryIndex !== -1) {
+            updatedJournal.entries[entryIndex].alfredAnalysis = analysis;
+            await updatedJournal.save();
+            console.log('Alfred analysis completed for entry:', newEntry.title);
+          } else {
+            console.log('Entry not found for analysis update. Available entries:', updatedJournal.entries.map(e => ({
+              title: e.title,
+              hasAnalysis: !!e.alfredAnalysis,
+              createdAt: e.createdAt
+            })));
+          }
+        }
+      } catch (analysisError) {
+        console.error('Error analyzing journal entry:', analysisError);
+        // Analysis failure doesn't affect the user experience
+      }
     });
   } catch (error) {
     console.error('Error creating journal entry:', error);
@@ -302,6 +356,140 @@ router.get('/stats', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching journal stats:', error);
     res.status(500).json({ message: 'Error fetching journal statistics' });
+  }
+});
+
+// Analyze a specific journal entry
+router.post('/entries/:entryId/analyze', authenticateToken, async (req, res) => {
+  try {
+    const { entryId } = req.params;
+    
+    const journal = await Journal.findOne({ userId: req.user._id });
+    if (!journal) {
+      return res.status(404).json({ message: 'Journal not found' });
+    }
+    
+    const entryIndex = journal.entries.findIndex(entry => entry._id.toString() === entryId);
+    if (entryIndex === -1) {
+      return res.status(404).json({ message: 'Entry not found' });
+    }
+    
+    const entry = journal.entries[entryIndex];
+    
+    // Analyze the entry
+    const analysis = await analysisService.analyzeJournalEntry(entry.content, entry.title);
+    
+    // Update the entry with analysis
+    journal.entries[entryIndex].alfredAnalysis = analysis;
+    await journal.save();
+    
+    res.json({
+      message: 'Entry analyzed successfully',
+      analysis,
+      entry: journal.entries[entryIndex]
+    });
+  } catch (error) {
+    console.error('Error analyzing journal entry:', error);
+    res.status(500).json({ message: 'Error analyzing journal entry' });
+  }
+});
+
+// Get trend analysis for user's journal
+router.get('/trends', authenticateToken, async (req, res) => {
+  try {
+    const { limit = 10 } = req.query;
+    
+    const journal = await Journal.findOne({ userId: req.user._id });
+    if (!journal) {
+      return res.status(404).json({ message: 'Journal not found' });
+    }
+    
+    // Get recent entries with analysis
+    const recentEntries = journal.entries
+      .filter(entry => entry.alfredAnalysis)
+      .slice(0, parseInt(limit));
+    
+    if (recentEntries.length === 0) {
+      return res.json({
+        message: 'No analyzed entries found',
+        trendAnalysis: {
+          sentimentTrend: 'stable',
+          commonTopics: [],
+          evolvingBeliefs: [],
+          summary: 'No entries available for trend analysis.'
+        }
+      });
+    }
+    
+    // Generate trend analysis
+    const analyses = recentEntries.map(entry => ({
+      _id: entry._id,
+      analysis: entry.alfredAnalysis
+    }));
+    
+    const trendAnalysis = await analysisService.generateTrendAnalysis(analyses);
+    
+    res.json({
+      message: 'Trend analysis completed',
+      trendAnalysis,
+      analyzedEntries: recentEntries.length,
+      totalEntries: journal.entries.length
+    });
+  } catch (error) {
+    console.error('Error generating trend analysis:', error);
+    res.status(500).json({ message: 'Error generating trend analysis' });
+  }
+});
+
+// Analyze all entries without analysis
+router.post('/analyze-all', authenticateToken, async (req, res) => {
+  try {
+    const journal = await Journal.findOne({ userId: req.user._id });
+    if (!journal) {
+      return res.status(404).json({ message: 'Journal not found' });
+    }
+    
+    // Find entries without analysis
+    const unanalyzedEntries = journal.entries.filter(entry => !entry.alfredAnalysis);
+    
+    if (unanalyzedEntries.length === 0) {
+      return res.json({
+        message: 'All entries already analyzed',
+        analyzedCount: 0
+      });
+    }
+    
+    let analyzedCount = 0;
+    
+    // Analyze each unanalyzed entry
+    for (let i = 0; i < unanalyzedEntries.length; i++) {
+      const entry = unanalyzedEntries[i];
+      const entryIndex = journal.entries.findIndex(e => e._id.toString() === entry._id.toString());
+      
+      try {
+        const analysis = await analysisService.analyzeJournalEntry(entry.content, entry.title);
+        journal.entries[entryIndex].alfredAnalysis = analysis;
+        analyzedCount++;
+        
+        // Save periodically to avoid memory issues
+        if (i % 5 === 0) {
+          await journal.save();
+        }
+      } catch (analysisError) {
+        console.error(`Error analyzing entry ${entry._id}:`, analysisError);
+      }
+    }
+    
+    await journal.save();
+    
+    res.json({
+      message: `Analysis completed for ${analyzedCount} entries`,
+      analyzedCount,
+      totalUnanalyzed: unanalyzedEntries.length
+    });
+  } catch (error) {
+    console.error('Error analyzing all entries:', error);
+    res.status(500).json({ message: 'Error analyzing entries' });
   }
 });
 

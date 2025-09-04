@@ -356,9 +356,9 @@ const Content = () => {
 
   return (
     <div className="min-h-screen bg-[#0A0C0F]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
         {/* Header - Mission Card */}
-        <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden mb-8" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+        <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden mb-4 lg:mb-8" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
           {/* Film grain overlay */}
           <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
           
@@ -366,7 +366,7 @@ const Content = () => {
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] via-[#3CCB7F] to-[#4ECDC4]"></div>
           
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-[#E8EEF2] mb-2 font-oswald tracking-wide">BOOK DOCUMENTS</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-[#E8EEF2] mb-2 font-oswald tracking-wide">BOOK DOCUMENTS</h1>
             <p className="text-[#C9D1D9] font-inter">Track your reading journey, take notes, and collect inspiring quotes</p>
           </div>
         </div>
@@ -374,11 +374,11 @@ const Content = () => {
 
 
         {/* Action Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 lg:mb-6 gap-4">
           <div className="flex space-x-3">
             <button
               onClick={() => setShowNewBookForm(true)}
-              className="inline-flex items-center px-4 py-2 bg-[#FFD200] text-[#0A0C0F] rounded-lg hover:bg-[#FFB800] transition-colors duration-200 border border-[#FFD200] hover:shadow-lg hover:shadow-[#FFD200]/20 font-oswald tracking-wide"
+              className="inline-flex items-center px-4 py-2 bg-[#FFD200] text-[#0A0C0F] rounded-lg hover:bg-[#FFB800] transition-colors duration-200 border border-[#FFD200] hover:shadow-lg hover:shadow-[#FFD200]/20 font-oswald tracking-wide min-h-[44px]"
             >
               <Plus className="h-5 w-5 mr-2" />
               New Book

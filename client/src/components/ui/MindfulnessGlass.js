@@ -63,9 +63,9 @@ const MindfulnessGlass = ({ totalScore, maxScore = 25 }) => {
   };
 
   return (
-    <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 text-center">
+    <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-3 lg:p-4 text-center">
       {/* Header */}
-      <h3 className="text-base font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide">
+      <h3 className="text-sm lg:text-base font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide">
         Total Mindfulness Level
       </h3>
 
@@ -73,7 +73,7 @@ const MindfulnessGlass = ({ totalScore, maxScore = 25 }) => {
       <div className="relative mb-4">
         <motion.div
           animate={controls}
-          className="relative w-32 h-40 mx-auto border-2 border-[#2A313A] rounded-lg overflow-hidden bg-[#0A0C0F] shadow-lg"
+          className="relative w-24 h-32 lg:w-32 lg:h-40 mx-auto border-2 border-[#2A313A] rounded-lg overflow-hidden bg-[#0A0C0F] shadow-lg"
         >
           {/* Rectangle Fill with gradual color change */}
           <motion.div
@@ -95,10 +95,10 @@ const MindfulnessGlass = ({ totalScore, maxScore = 25 }) => {
           {/* Score Display */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <div className="text-3xl font-bold text-[#E8EEF2] font-mono">
+              <div className="text-2xl lg:text-3xl font-bold text-[#E8EEF2] font-mono">
                 {totalScore}
               </div>
-              <div className="text-sm text-[#C9D1D9] font-oswald tracking-wide">
+              <div className="text-xs lg:text-sm text-[#C9D1D9] font-oswald tracking-wide">
                 of {maxScore}
               </div>
             </div>
@@ -111,7 +111,7 @@ const MindfulnessGlass = ({ totalScore, maxScore = 25 }) => {
         <div className="text-xs text-[#C9D1D9] font-oswald tracking-wide mb-1">
           Level
         </div>
-        <div className={`text-base font-bold font-oswald tracking-wide ${
+        <div className={`text-sm lg:text-base font-bold font-oswald tracking-wide ${
           totalScore >= 20 ? 'text-[#FFD200]' :
           totalScore >= 17 ? 'text-[#3CCB7F]' :
           totalScore >= 14 ? 'text-[#3EA6FF]' :

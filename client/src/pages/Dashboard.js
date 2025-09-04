@@ -209,13 +209,13 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6 p-4 lg:p-0">
       {/* Welcome Header - Alfred Bar */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-gradient-to-r from-[#0A0C0F] to-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden"
+        className="bg-gradient-to-r from-[#0A0C0F] to-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden"
         style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
       >
         {/* Film grain overlay */}
@@ -224,13 +224,13 @@ const Dashboard = () => {
         {/* Scan line effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#FFD200]/10 to-transparent animate-pulse"></div>
         
-        <div className="flex items-center">
+        <div className="flex flex-col lg:flex-row lg:items-center">
           {/* Left side image */}
-          <div className="flex-shrink-0 mr-6 relative group">
+          <div className="flex-shrink-0 mb-4 lg:mb-0 lg:mr-6 relative group self-center lg:self-start">
             <img 
               src={welcomeImage} 
               alt="Welcome illustration" 
-              className="w-24 h-24 object-cover rounded-lg border-2 border-[#2A313A] shadow-lg cursor-pointer transition-all duration-200 group-hover:border-[#FFD200] group-hover:shadow-[#FFD200]/20"
+              className="w-20 h-20 lg:w-24 lg:h-24 object-cover rounded-lg border-2 border-[#2A313A] shadow-lg cursor-pointer transition-all duration-200 group-hover:border-[#FFD200] group-hover:shadow-[#FFD200]/20"
               onClick={() => {
                 console.log('Dashboard image clicked, setting showImageUpload to true');
                 setShowImageUpload(true);
@@ -253,8 +253,8 @@ const Dashboard = () => {
           </div>
           
           {/* Heading content */}
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold mb-2 text-[#E8EEF2] font-oswald tracking-wide">
+          <div className="flex-1 text-center lg:text-left">
+            <h1 className="text-xl lg:text-2xl font-bold mb-2 text-[#E8EEF2] font-oswald tracking-wide">
               Welcome back, {user?.firstName || 'User'}! 👋
             </h1>
             <p className="text-[#C9D1D9] font-inter">
@@ -330,7 +330,7 @@ const Dashboard = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.15 }}
-        className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden"
+        className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden"
         style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
       >
         {/* Film grain overlay */}
@@ -340,7 +340,7 @@ const Dashboard = () => {
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] via-[#3EA6FF] to-[#3CCB7F]"></div>
         
         <div className="text-center relative">
-          <div className="mb-3 flex items-center justify-center space-x-2">
+          <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
             <span className="text-xs font-medium text-[#FFD200] bg-[#0A0C0F] border border-[#2A313A] px-3 py-1 rounded font-oswald tracking-wide">
               MISSION BRIEFING
             </span>
@@ -368,7 +368,7 @@ const Dashboard = () => {
             </div>
           ) : (
             <>
-              <blockquote className="text-lg font-medium text-[#E8EEF2] mb-3 italic leading-relaxed font-inter">
+              <blockquote className="text-base lg:text-lg font-medium text-[#E8EEF2] mb-3 italic leading-relaxed font-inter">
                 "{getQuoteOfTheDay()}"
               </blockquote>
               <cite className="text-sm text-[#FFD200] font-medium font-oswald tracking-wide">
@@ -404,7 +404,7 @@ const Dashboard = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden"
+        className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden"
         style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
       >
         {/* Film grain overlay */}
@@ -413,12 +413,12 @@ const Dashboard = () => {
         {/* Reason Strip */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] via-[#3EA6FF] to-[#FFD200]"></div>
         
-        <div className="flex items-center justify-between mb-6">
-          <div>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
+          <div className="text-center lg:text-left">
             <h2 className="text-lg font-semibold text-[#E8EEF2] font-oswald tracking-wide">MISSION STATUS</h2>
             <p className="text-sm text-[#C9D1D9] font-inter">24-hour breakdown of your daily activities</p>
           </div>
-          <a href="/goal-aligned-day" className="text-sm text-[#FFD200] hover:text-[#FFD200]/80 font-medium flex items-center font-oswald tracking-wide border border-[#2A313A] px-3 py-1 rounded hover:bg-[#2A313A] transition-all duration-200">
+          <a href="/goal-aligned-day" className="text-sm text-[#FFD200] hover:text-[#FFD200]/80 font-medium flex items-center justify-center font-oswald tracking-wide border border-[#2A313A] px-3 py-2 rounded hover:bg-[#2A313A] transition-all duration-200">
             VIEW DETAILS <ArrowRight size={16} className="ml-1" />
           </a>
         </div>
@@ -430,10 +430,10 @@ const Dashboard = () => {
         ) : todayTasks.length > 0 ? (
           <div className="space-y-4">
             {/* Day Summary Stats - Chore Chips */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-6">
               <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3CCB7F] rounded-lg relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-[#3CCB7F]"></div>
-                <p className="text-lg font-bold text-[#3CCB7F] font-mono">
+                <p className="text-base lg:text-lg font-bold text-[#3CCB7F] font-mono">
                   {todayTasks.filter(task => {
                     if (!task.completedAt) return false;
                     const taskTime = new Date(task.completedAt);
@@ -445,7 +445,7 @@ const Dashboard = () => {
               </div>
               <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3EA6FF] rounded-lg relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-[#3EA6FF]"></div>
-                <p className="text-lg font-bold text-[#3EA6FF] font-mono">
+                <p className="text-base lg:text-lg font-bold text-[#3EA6FF] font-mono">
                   {todayTasks.filter(task => {
                     if (!task.completedAt) return false;
                     const taskTime = new Date(task.completedAt);
@@ -457,7 +457,7 @@ const Dashboard = () => {
               </div>
               <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#FFD200] rounded-lg relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-[#FFD200]"></div>
-                <p className="text-lg font-bold text-[#FFD200] font-mono">
+                <p className="text-base lg:text-lg font-bold text-[#FFD200] font-mono">
                   {todayTasks.filter(task => {
                     if (!task.completedAt) return false;
                     const taskTime = new Date(task.completedAt);
@@ -469,7 +469,7 @@ const Dashboard = () => {
               </div>
               <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#D64545] rounded-lg relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-[#D64545]"></div>
-                <p className="text-lg font-bold text-[#D64545] font-mono">
+                <p className="text-base lg:text-lg font-bold text-[#D64545] font-mono">
                   {todayTasks.filter(task => {
                     if (!task.completedAt) return false;
                     const taskTime = new Date(task.completedAt);
@@ -482,7 +482,7 @@ const Dashboard = () => {
             </div>
             
             {/* 24-Hour Strip - Progress Rings */}
-            <div className="flex flex-wrap justify-center gap-1 max-w-4xl mx-auto">
+            <div className="flex flex-wrap justify-center gap-1 max-w-full lg:max-w-4xl mx-auto overflow-x-auto">
               {Array.from({ length: 24 }, (_, hour) => {
                 const hourStart = new Date();
                 hourStart.setHours(hour, 0, 0, 0);
@@ -540,7 +540,7 @@ const Dashboard = () => {
                 return (
                   <div key={hour} className="flex flex-col items-center group">
                     <div 
-                      className={`w-4 h-5 sm:w-5 sm:h-6 rounded-sm ${color} border-2 ${borderColor} transition-all duration-300 hover:scale-125 cursor-pointer shadow-lg hover:shadow-[#FFD200]/20`}
+                      className={`w-3 h-4 lg:w-4 lg:h-5 xl:w-5 xl:h-6 rounded-sm ${color} border-2 ${borderColor} transition-all duration-300 hover:scale-125 cursor-pointer shadow-lg hover:shadow-[#FFD200]/20`}
                       title={`${displayHour}\n${status}`}
                     />
                     <span className="text-xs text-[#C9D1D9] mt-1 group-hover:text-[#FFD200] transition-colors font-mono">
@@ -552,26 +552,26 @@ const Dashboard = () => {
             </div>
             
             {/* Legend */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 text-sm max-w-4xl mx-auto">
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 lg:gap-3 text-sm max-w-4xl mx-auto">
               <div className="flex items-center space-x-2 justify-center">
                 <div className="w-3 h-3 rounded-sm bg-[#3CCB7F]"></div>
-                <span className="text-[#C9D1D9] text-xs sm:text-sm">Goal + Mindful</span>
+                <span className="text-[#C9D1D9] text-xs">Goal + Mindful</span>
               </div>
               <div className="flex items-center space-x-2 justify-center">
                 <div className="w-3 h-3 rounded-sm bg-[#3EA6FF]"></div>
-                <span className="text-[#C9D1D9] text-xs sm:text-sm">Goal-aligned</span>
+                <span className="text-[#C9D1D9] text-xs">Goal-aligned</span>
               </div>
               <div className="flex items-center space-x-2 justify-center">
                 <div className="w-3 h-3 rounded-sm bg-[#FFD200]"></div>
-                <span className="text-[#C9D1D9] text-xs sm:text-sm">Mindful</span>
+                <span className="text-[#C9D1D9] text-xs">Mindful</span>
               </div>
               <div className="flex items-center space-x-2 justify-center">
                 <div className="w-3 h-3 rounded-sm bg-[#D64545]"></div>
-                <span className="text-[#C9D1D9] text-xs sm:text-sm">Not Mindful, Not Goal-Oriented</span>
+                <span className="text-[#C9D1D9] text-xs">Not Mindful, Not Goal-Oriented</span>
               </div>
               <div className="flex items-center space-x-2 justify-center">
                 <div className="w-3 h-3 rounded-sm bg-[#2A313A]"></div>
-                <span className="text-[#C9D1D9] text-xs sm:text-sm">No activity</span>
+                <span className="text-[#C9D1D9] text-xs">No activity</span>
               </div>
             </div>
           </div>
@@ -584,7 +584,7 @@ const Dashboard = () => {
             <p className="text-[#C9D1D9] mb-4">Complete some tasks to see your day breakdown</p>
             <a 
               href="/goal-aligned-day" 
-              className="inline-flex items-center px-4 py-2 bg-[#FFD200] text-[#0A0C0F] rounded-lg hover:bg-[#FFD200]/90 transition-colors font-oswald tracking-wide"
+              className="inline-flex items-center px-4 py-2 bg-[#FFD200] text-[#0A0C0F] rounded-lg hover:bg-[#FFD200]/90 transition-colors font-oswald tracking-wide min-h-[44px]"
             >
               ADD YOUR FIRST TASK
             </a>

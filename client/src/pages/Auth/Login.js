@@ -95,33 +95,41 @@ const Login = () => {
             />
 
             {/* Password Field */}
-            <div className="relative">
-              <Input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                label="Password"
-                autoComplete="current-password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter your password"
-                icon={<Lock size={20} className="text-text-muted" />}
-                className="pr-12"
-              />
-              {/* Password Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors z-20 pointer-events-auto"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? (
-                  <EyeOff size={18} />
-                ) : (
-                  <Eye size={18} />
-                )}
-              </button>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock size={20} className="text-text-muted" />
+                </div>
+                <motion.input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Enter your password"
+                  className="bg-background-secondary border border-border-primary text-text-primary placeholder:text-text-muted px-4 py-3 pl-10 pr-12 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent-green/50 focus:border-accent-green hover:border-border-secondary w-full"
+                  whileFocus={{ scale: 1.01 }}
+                  transition={{ duration: 0.2 }}
+                />
+                {/* Password Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors z-20 pointer-events-auto"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} />
+                  ) : (
+                    <Eye size={18} />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 

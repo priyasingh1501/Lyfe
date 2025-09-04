@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout/Layout';
-import { PWAInstall } from './components/ui';
+import { PWAInstall, MobileNav, MobileInstallGuide } from './components/ui';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
 import TimeManagement from './pages/TimeManagement';
@@ -105,6 +105,12 @@ function App() {
             
             {/* PWA Install Prompt */}
             <PWAInstall />
+            
+            {/* Mobile Navigation */}
+            <MobileNav />
+            
+            {/* Mobile Install Guide */}
+            <MobileInstallGuide />
             
             <Routes>
               {/* Public Routes */}

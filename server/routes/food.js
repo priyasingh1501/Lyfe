@@ -468,7 +468,7 @@ async function searchLocalDatabase(query, limit) {
     
     return {
       ...food.toObject(),
-      source: 'local',
+      source: 'IFCT', // Use IFCT instead of 'local' to match frontend expectations
       relevanceScore: score,
       provenance: {
         source: food.provenance?.source || food.source || 'Local Database',
@@ -574,8 +574,8 @@ function deduplicateResults(results) {
   
   // Sort by source priority and relevance score first
   const sortedResults = results.sort((a, b) => {
-    // Priority: local > usda > off (higher priority = lower number)
-    const sourcePriority = { local: 1, usda: 2, off: 3 };
+    // Priority: IFCT > usda > off (higher priority = lower number)
+    const sourcePriority = { IFCT: 1, usda: 2, off: 3 };
     const aPriority = sourcePriority[a.source] || 4;
     const bPriority = sourcePriority[b.source] || 4;
     
@@ -617,7 +617,7 @@ function deduplicateResults(results) {
 
 // Helper function to get source priority (lower number = higher priority)
 function getSourcePriority(source) {
-  const priorities = { local: 1, usda: 2, off: 3 };
+  const priorities = { IFCT: 1, usda: 2, off: 3 };
   return priorities[source] || 4;
 }
 

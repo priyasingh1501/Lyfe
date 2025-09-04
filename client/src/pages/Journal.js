@@ -18,6 +18,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import AlfredAnalysis from '../components/journal/AlfredAnalysis';
+import JournalTrends from '../components/journal/JournalTrends';
+import { buildApiUrl } from '../config';
 
 const Journal = () => {
   const { token } = useAuth();
@@ -63,12 +66,14 @@ const Journal = () => {
 
   const fetchJournal = useCallback(async () => {
     try {
-      const response = await fetch('/api/journal', {
+      const response = await fetch(buildApiUrl('/api/journal'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       const data = await response.json();
+      console.log('Fetched journal data:', data);
+      console.log('Entries:', data.entries);
       setEntries(data.entries || []);
       setLoading(false);
     } catch (error) {
@@ -80,7 +85,7 @@ const Journal = () => {
 
   const fetchStats = useCallback(async () => {
     try {
-      const response = await fetch('/api/journal/stats', {
+      const response = await fetch(buildApiUrl('/api/journal/stats'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -108,7 +113,7 @@ const Journal = () => {
     }
 
     try {
-      const response = await fetch('/api/journal/entries', {
+      const response = await fetch(buildApiUrl('/api/journal/entries'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -132,7 +137,9 @@ const Journal = () => {
         toast.success('Journal entry created successfully!');
         fetchStats();
       } else {
-        toast.error('Failed to create entry');
+        const errorData = await response.json();
+        console.error('Failed to create entry:', errorData);
+        toast.error(errorData.message || 'Failed to create entry');
       }
     } catch (error) {
       console.error('Error creating entry:', error);
@@ -141,9 +148,8 @@ const Journal = () => {
   };
 
   const handleDeleteEntry = async (entryId) => {
-
     try {
-      const response = await fetch(`/api/journal/entries/${entryId}`, {
+      const response = await fetch(buildApiUrl(`/api/journal/entries/${entryId}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -160,6 +166,39 @@ const Journal = () => {
     } catch (error) {
       console.error('Error deleting entry:', error);
       toast.error('Failed to delete entry');
+    }
+  };
+
+  const handleAnalyzeEntry = async (entryId) => {
+    console.log('Analyzing entry with ID:', entryId);
+    if (!entryId) {
+      toast.error('Entry ID is missing');
+      return;
+    }
+    
+    try {
+      const response = await fetch(buildApiUrl(`/api/journal/entries/${entryId}/analyze`), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update the entry in the local state
+        setEntries(entries.map(entry => 
+          entry._id === entryId 
+            ? { ...entry, alfredAnalysis: data.analysis }
+            : entry
+        ));
+        toast.success('Entry analyzed successfully!');
+      } else {
+        toast.error('Failed to analyze entry');
+      }
+    } catch (error) {
+      console.error('Error analyzing entry:', error);
+      toast.error('Failed to analyze entry');
     }
   };
 
@@ -207,22 +246,27 @@ const Journal = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
         {/* Header - Mission Card */}
-        <div className="bg-gray-900 border-2 border-gray-600 rounded-lg p-6 relative overflow-hidden mb-8" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+        <div className="bg-gray-900 border-2 border-gray-600 rounded-lg p-4 lg:p-6 relative overflow-hidden mb-4 lg:mb-8" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
           {/* Film grain overlay */}
           <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
           
           {/* Reason Strip */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-blue-500 to-green-500"></div>
           
-          <h1 className="text-3xl font-bold text-white mb-2 font-oswald tracking-wide">JOURNAL MISSION</h1>
-          <p className="text-gray-300 font-inter">Capture your thoughts, memories, and reflections</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2 font-oswald tracking-wide text-center lg:text-left">JOURNAL MISSION</h1>
+          <p className="text-gray-300 font-inter text-center lg:text-left">Capture your thoughts, memories, and reflections</p>
+        </div>
+
+        {/* Alfred's Trend Analysis */}
+        <div className="mb-4 lg:mb-8">
+          <JournalTrends />
         </div>
 
         {/* Stats Overview - Mission Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-4 lg:mb-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -544,6 +588,20 @@ const Journal = () => {
                   <div className="prose max-w-none mb-4">
                     <p className="text-[#C9D1D9] whitespace-pre-wrap font-inter">{entry.content}</p>
                   </div>
+
+                  {/* Alfred Analysis */}
+                  {entry._id ? (
+                    <AlfredAnalysis 
+                      analysis={entry.alfredAnalysis} 
+                      entryId={entry._id}
+                      onAnalyze={handleAnalyzeEntry}
+                    />
+                  ) : (
+                    <div className="mt-4 p-4 bg-red-800 border border-red-600 rounded-lg">
+                      <p className="text-red-300 text-sm">Error: Entry ID is missing. Cannot analyze this entry.</p>
+                    </div>
+                  )}
+                  {console.log('Rendering AlfredAnalysis for entry:', entry._id, entry.title)}
 
                   {entry.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-4">

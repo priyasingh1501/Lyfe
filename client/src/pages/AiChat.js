@@ -226,16 +226,16 @@ const AiChat = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto h-screen flex flex-col">
+      <div className="max-w-6xl mx-auto h-screen flex flex-col p-4 lg:p-0">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg">
                 <Bot className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">AI Assistant</h1>
+                <h1 className="text-lg lg:text-xl font-bold text-gray-900">AI Assistant</h1>
                 <p className="text-sm text-gray-600">Your personal lifestyle manager</p>
               </div>
             </div>
@@ -243,14 +243,14 @@ const AiChat = () => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowSuggestions(!showSuggestions)}
-                className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200 min-h-[44px] min-w-[44px]"
                 title="Toggle suggestions"
               >
                 <Lightbulb className="h-5 w-5" />
               </button>
               <button
                 onClick={initializeChat}
-                className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200 min-h-[44px] min-w-[44px]"
                 title="Refresh chat"
               >
                 <RefreshCw className="h-5 w-5" />

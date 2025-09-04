@@ -176,19 +176,19 @@ const Pantry = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0C0F] text-[#E8EEF2] p-6">
+    <div className="min-h-screen bg-[#0A0C0F] text-[#E8EEF2] p-4 lg:p-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#FFD200] font-oswald tracking-wide mb-2">
+      <div className="mb-4 lg:mb-8">
+        <h1 className="text-2xl lg:text-3xl font-bold text-[#FFD200] font-oswald tracking-wide mb-2 text-center lg:text-left">
           PANTRY MISSION CONTROL
         </h1>
-        <p className="text-[#C9D1D9] font-inter">
+        <p className="text-[#C9D1D9] font-inter text-center lg:text-left">
           Manage your inventory, track supplies, and never run out of essentials
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-1 mb-6">
+      <div className="flex space-x-1 bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-1 mb-4 lg:mb-6">
         {['overview', 'fridge', 'essentials', 'snacks'].map((tab) => (
           <button
             key={tab}

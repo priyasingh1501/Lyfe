@@ -281,10 +281,10 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
 
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4 lg:p-0">
       {/* Date Selector */}
       <div className="bg-[#1A1F2E] border-2 border-[#2A313A] rounded-lg p-4 mb-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Clock className="text-[#3CCB7F]" size={20} />
             <div>
@@ -296,15 +296,15 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
                 id="checkin-date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-[#11151A] border border-[#2A313A] rounded-lg px-3 py-2 text-[#E8EEF2] focus:outline-none focus:ring-2 focus:ring-[#3CCB7F] focus:border-transparent"
+                className="bg-[#11151A] border border-[#2A313A] rounded-lg px-3 py-2 text-[#E8EEF2] focus:outline-none focus:ring-2 focus:ring-[#3CCB7F] focus:border-transparent min-h-[44px]"
                 max={new Date().toISOString().split('T')[0]} // Can't select future dates
               />
             </div>
           </div>
           
-          <div className="text-right">
+          <div className="text-center lg:text-right">
             <div className="text-sm text-[#94A3B8]">Selected Date</div>
-            <div className="text-lg font-semibold text-[#E8EEF2]">
+            <div className="text-base lg:text-lg font-semibold text-[#E8EEF2]">
               {new Date(selectedDate).toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -329,16 +329,16 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
       )}
 
       {/* Mindfulness Level and Dimensions Section */}
-      <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 mb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Left Column - Mindfulness Glass */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 flex justify-center lg:justify-start">
             <MindfulnessGlass totalScore={totalScore} />
           </div>
 
           {/* Right Column - Dimension Sliders */}
           <div className="lg:col-span-2">
-            <div className="space-y-4">
+            <div className="space-y-3 lg:space-y-4">
               {/* Presence */}
               <MoonPhaseSlider
                 value={dimensions.presence.rating}
@@ -379,7 +379,7 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
       </div>
 
       {/* Day Reflection Section */}
-      <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6">
+      <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6">
         <label className="block text-sm font-medium text-[#E8EEF2] mb-3 font-oswald tracking-wide">
           Day Reflection
         </label>
@@ -390,7 +390,7 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
             setDayReflection(newValue);
           }}
           placeholder="Reflect on your day... What moments stood out? How did you feel? What did you learn?"
-          className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-md text-[#E8EEF2] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#3CCB7F] focus:border-transparent resize-none"
+          className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-md text-[#E8EEF2] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#3CCB7F] focus:border-transparent resize-none min-h-[44px]"
           rows="4"
         />
         <p className="text-xs text-[#6B7280] mt-2">
@@ -444,7 +444,7 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
         <button
           onClick={saveCheckin}
           disabled={saving || ratedDimensionsCount < totalDimensions}
-          className="px-6 py-3 bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] text-white rounded-lg hover:from-[#3CCB7F]/90 hover:to-[#4ECDC4]/90 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-[#6B7280] disabled:to-[#6B7280]"
+          className="px-6 py-3 bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] text-white rounded-lg hover:from-[#3CCB7F]/90 hover:to-[#4ECDC4]/90 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-[#6B7280] disabled:to-[#6B7280] min-h-[44px] w-full lg:w-auto"
         >
           {saving ? '💾 Saving...' : ratedDimensionsCount < totalDimensions ? '⚠️ Rate All Dimensions First' : '💾 Save Mindfulness Check-in'}
         </button>

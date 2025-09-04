@@ -89,7 +89,10 @@ router.post('/', auth, async (req, res) => {
   try {
     const taskData = {
       ...req.body,
-      userId: req.user.userId
+      userId: req.user.userId,
+      // Since users only log tasks they've already completed, mark as completed immediately
+      status: 'completed',
+      completedAt: new Date()
     };
 
     const task = new Task(taskData);

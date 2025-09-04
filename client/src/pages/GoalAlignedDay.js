@@ -15,6 +15,12 @@ const GoalAlignedDay = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [habits, setHabits] = useState([]);
   const [goals, setGoals] = useState([]);
+  
+  // Debug goals state
+  useEffect(() => {
+    console.log('🎯 GoalAlignedDay - goals state updated:', goals);
+    console.log('🎯 GoalAlignedDay - goals length:', goals.length);
+  }, [goals]);
   const [tasks, setTasks] = useState([]);
   const [mindfulnessCheckins, setMindfulnessCheckins] = useState([]);
   
@@ -27,6 +33,7 @@ const GoalAlignedDay = () => {
   const [showCreateGoalPopup, setShowCreateGoalPopup] = useState(false);
   const [showCreateTaskPopup, setShowCreateTaskPopup] = useState(false);
   const [selectedGoalForTask, setSelectedGoalForTask] = useState(null);
+  const [selectedGoalForHabit, setSelectedGoalForHabit] = useState(null);
 
   const tabs = [
     { id: 'mindfulness', label: 'Mindfulness', icon: '' },
@@ -135,6 +142,7 @@ const GoalAlignedDay = () => {
         const data = await response.json();
         console.log('✅ Loaded goals:', data);
         console.log('✅ Goals count:', data?.length || 0);
+        console.log('✅ Sample goal:', data[0]);
         setGoals(data || []);
       } else {
         console.error('❌ Goals response not ok:', response.status);
@@ -149,16 +157,45 @@ const GoalAlignedDay = () => {
   // Load user's tasks
   const loadTasks = useCallback(async () => {
     try {
-      const response = await fetch(buildApiUrl('/api/tasks'), {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // Load ALL tasks by fetching all pages if needed
+      let allTasks = [];
+      let page = 1;
+      let hasMorePages = true;
       
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data.tasks || []);
+      while (hasMorePages) {
+        const response = await fetch(buildApiUrl(`/api/tasks?limit=100&page=${page}`), {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const tasksData = data.tasks || [];
+          allTasks = [...allTasks, ...tasksData];
+          
+          console.log(`📊 Loaded page ${page}:`, {
+            tasksInPage: tasksData.length,
+            totalTasks: data.totalTasks,
+            totalPages: data.totalPages,
+            currentPage: data.currentPage
+          });
+          
+          // Check if there are more pages
+          hasMorePages = page < data.totalPages;
+          page++;
+        } else {
+          console.error('Error loading tasks page:', response.status);
+          break;
+        }
       }
+      
+      console.log('📊 Total tasks loaded:', allTasks.length);
+      console.log('📊 Sample task:', allTasks[0]);
+      console.log('📊 Tasks with goalIds:', allTasks.filter(t => t.goalIds && t.goalIds.length > 0).length);
+      console.log('📊 Sample task with goalIds:', allTasks.find(t => t.goalIds && t.goalIds.length > 0));
+      
+      setTasks(allTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
     }
@@ -256,12 +293,93 @@ const GoalAlignedDay = () => {
     setShowCreateTaskPopup(true);
   };
 
+  // Handle opening habit creation popup for a specific goal
+  const handleAddHabitToGoal = (goal) => {
+    console.log('🎯 handleAddHabitToGoal called with goal:', goal);
+    console.log('🎯 Current goals state:', goals);
+    setSelectedGoalForHabit(goal);
+    setShowCreateHabitPopup(true);
+  };
+
   // Get tasks for a specific goal (both completed and pending)
   const getTasksForGoal = (goalId) => {
     return tasks.filter(task => 
       task.goalIds && 
       task.goalIds.includes(goalId)
     );
+  };
+
+  // Helper: does a habit occur today based on frequency and date range
+  const doesHabitOccurToday = (habit) => {
+    if (!habit || habit.isActive === false) return false;
+    const today = new Date();
+    const start = new Date(habit.startDate || today);
+    const end = new Date(habit.endDate || today);
+    // Normalize
+    today.setHours(0, 0, 0, 0);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+    if (today < start || today > end) return false;
+
+    const freq = habit.frequency || 'daily';
+    if (freq === 'daily') return true;
+    if (freq === 'weekly') {
+      return today.getDay() === new Date(habit.startDate || today).getDay();
+    }
+    if (freq === 'monthly') {
+      return today.getDate() === new Date(habit.startDate || today).getDate();
+    }
+    return false;
+  };
+
+  // Helper: get today's check-in for a habit
+  const getTodayHabitCheckin = (habit) => {
+    if (!habit || !Array.isArray(habit.checkins)) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return habit.checkins.find((c) => {
+      const d = new Date(c.date);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === today.getTime();
+    });
+  };
+
+  // Build a pseudo-task from a completed habit check-in
+  const mapHabitToPseudoTask = (habit, checkin) => {
+    const durationMin = (checkin && checkin.duration) || habit.valueMin || 0;
+    const completedAt = (checkin && checkin.date) || new Date().toISOString();
+    return {
+      _id: `habit-${habit._id}`,
+      title: habit.habit,
+      estimatedDuration: durationMin,
+      completedAt: typeof completedAt === 'string' ? completedAt : new Date(completedAt).toISOString(),
+      goalIds: habit.goalId ? [habit.goalId] : [],
+      isHabit: true,
+    };
+  };
+
+  // Get today's tasks for a specific goal, merging completed habits for today
+  const getTodayTasksForGoal = (goalId) => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+
+    // Completed normal tasks today
+    const completedTasksToday = tasks.filter((task) =>
+      task.goalIds &&
+      task.goalIds.includes(goalId) &&
+      task.completedAt &&
+      task.completedAt.split('T')[0] === todayStr
+    );
+
+    // Completed habits today (as pseudo tasks)
+    const completedHabitsToday = (habits || [])
+      .filter((h) => h.goalId && (h.goalId === goalId || (h.goalId?._id && h.goalId._id === goalId)))
+      .filter((h) => doesHabitOccurToday(h))
+      .map((h) => ({ habit: h, checkin: getTodayHabitCheckin(h) }))
+      .filter(({ checkin }) => checkin && checkin.completed)
+      .map(({ habit, checkin }) => mapHabitToPseudoTask(habit, checkin));
+
+    return [...completedTasksToday, ...completedHabitsToday];
   };
 
   // Get tasks for a specific goal completed on the selected date
@@ -281,6 +399,15 @@ const GoalAlignedDay = () => {
     return goalTasks.reduce((total, task) => {
       const duration = task.estimatedDuration || 0;
       return total + (duration / 60); // Convert minutes to hours
+    }, 0);
+  };
+
+  // Get today's hours logged for a goal (tasks + completed habits)
+  const getTodayHoursForGoal = (goalId) => {
+    const todayTasks = getTodayTasksForGoal(goalId);
+    return todayTasks.reduce((total, task) => {
+      const duration = task.estimatedDuration || 0;
+      return total + duration / 60;
     }, 0);
   };
 
@@ -368,6 +495,23 @@ const GoalAlignedDay = () => {
       loadMindfulnessCheckins();
     }
   }, [user, token, loadHabits, loadGoals, loadTasks, loadMindfulnessCheckins]);
+
+  // Debug summary when tasks and goals are loaded
+  useEffect(() => {
+    if (tasks.length > 0 && goals.length > 0) {
+      const totalTasks = tasks.length;
+      const tasksWithGoals = tasks.filter(t => t.goalIds && t.goalIds.length > 0).length;
+      const totalHours = tasks.reduce((sum, t) => sum + ((t.actualDuration || t.estimatedDuration || 0) / 60), 0);
+      
+      console.log('📊 ANNUAL GOAL PROGRESS SUMMARY:', {
+        totalTasks,
+        tasksWithGoals,
+        totalHours: totalHours.toFixed(1),
+        goalsCount: goals.filter(g => g.isActive !== false).length,
+        tasksPerGoal: goals.filter(g => g.isActive !== false).length > 0 ? (tasksWithGoals / goals.filter(g => g.isActive !== false).length).toFixed(1) : 0
+      });
+    }
+  }, [tasks, goals]);
 
   // Comic-themed habit card renderer
   const renderHabitCard = (habit, index) => (
@@ -568,7 +712,7 @@ const GoalAlignedDay = () => {
         ) : (
           <div className="space-y-4">
             {goals.map((goal, index) => {
-              const goalTasks = getTasksForGoal(goal._id);
+              const goalTasks = getTodayTasksForGoal(goal._id);
               return (
                 <div key={goal._id || index} className="p-4 border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-3">
@@ -582,7 +726,7 @@ const GoalAlignedDay = () => {
                   {/* Tasks for this goal */}
                   {goalTasks.length > 0 && (
                     <div className="mb-4">
-                      <h5 className="text-sm font-medium text-gray-700 mb-2">Tasks completed today:</h5>
+                      <h5 className="text-sm font-medium text-gray-700 mb-2">Tasks completed today ({goalTasks.length}):</h5>
                       <div className="space-y-2">
                         {goalTasks.map((task, taskIndex) => (
                           <div key={task._id || taskIndex} className="flex items-center justify-between p-2 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors">
@@ -592,9 +736,9 @@ const GoalAlignedDay = () => {
                                 {task.estimatedDuration} min
                               </p>
                             </div>
-                            <Badge variant={task.status === 'completed' ? 'success' : 'secondary'} className="text-xs">
-                              {task.status}
-                            </Badge>
+                            <div className="text-xs text-green-600 font-bold">
+                              ✨ Completed
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -608,6 +752,13 @@ const GoalAlignedDay = () => {
                       onClick={() => handleAddTaskToGoal(goal)}
                     >
                       Add Task
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleAddHabitToGoal(goal)}
+                    >
+                      Add Habit
                     </Button>
                     <Button variant="outline" size="sm">
                       View Details
@@ -721,7 +872,7 @@ const GoalAlignedDay = () => {
         ) : (
           <div className="space-y-3">
             {goals.map((goal, index) => {
-              const goalTasks = getTasksForGoal(goal._id);
+              const goalTasks = getTodayTasksForGoal(goal._id);
               return (
                 <div 
                   key={goal._id || index} 
@@ -785,12 +936,12 @@ const GoalAlignedDay = () => {
                               <span className="text-sm text-[#3CCB7F] font-bold text-lg">{goal.targetHours || 0} hours</span>
                             </div>
                             
-                            {/* Animated Progress Bar */}
+                            {/* Animated Progress Bar - Daily Progress */}
                             <div className="w-full bg-[#2A313A] rounded-full h-3 mb-3 overflow-hidden">
                               <div 
                                 className="bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] h-3 rounded-full transition-all duration-1000 ease-out shadow-lg"
                                 style={{ 
-                                  width: `${Math.min((getTotalHoursForGoal(goal._id) / (goal.targetHours || 1)) * 100, 100)}%` 
+                                  width: `${Math.min((getTodayHoursForGoal(goal._id) / (goal.targetHours || 1)) * 100, 100)}%` 
                                 }}
                               >
                                 {/* Progress Bar Shine Effect */}
@@ -798,16 +949,16 @@ const GoalAlignedDay = () => {
                               </div>
                             </div>
                             
-                            {/* Progress Details in Comic Panels */}
+                            {/* Progress Details in Comic Panels - Daily Progress */}
                             <div className="grid grid-cols-2 gap-3 mb-3">
                               <div className="bg-[#3CCB7F]/10 p-2 rounded-lg border border-[#3CCB7F]/30">
                                 <span className="text-xs text-[#3CCB7F] font-bold">
-                                  ✅ {Math.round(getTotalHoursForGoal(goal._id) * 10) / 10} hours
+                                  ✅ {Math.round(getTodayHoursForGoal(goal._id) * 10) / 10} hours today
                                 </span>
                               </div>
                               <div className="bg-[#11151A]/50 p-2 rounded-lg border border-[#2A313A]">
                                 <span className="text-xs text-[#94A3B8] font-bold">
-                                  ⏳ {Math.max((goal.targetHours || 0) - getTotalHoursForGoal(goal._id), 0)} hours
+                                  ⏳ {Math.max((goal.targetHours || 0) - getTodayHoursForGoal(goal._id), 0)} hours remaining
                                 </span>
                               </div>
                             </div>
@@ -828,7 +979,7 @@ const GoalAlignedDay = () => {
                             <div className="mb-4">
                               <h5 className="text-sm font-medium text-[#E8EEF2] mb-3 flex items-center gap-2">
                                 <span className="text-lg">📋</span>
-                                Tasks for this goal ({goalTasks.length}):
+                                Tasks completed today ({goalTasks.length}):
                               </h5>
                               <div className="space-y-2">
                                 {goalTasks.map((task, taskIndex) => (
@@ -841,9 +992,9 @@ const GoalAlignedDay = () => {
                                         ⏱️ {task.estimatedDuration} min
                                       </p>
                                     </div>
-                                    <Badge variant={task.status === 'completed' ? 'success' : 'secondary'} className="text-xs px-2 py-1 rounded-full border-2">
-                                      {task.status === 'completed' ? '✨ Done!' : '🔄 In Progress'}
-                                    </Badge>
+                                    <div className="text-xs text-[#3CCB7F] font-bold">
+                                      ✨ Completed
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -853,9 +1004,9 @@ const GoalAlignedDay = () => {
                           {/* Debug info for tasks */}
                           <div className="mb-4 p-3 bg-[#11151A]/30 rounded-lg border border-[#2A313A]">
                             <p className="text-xs text-[#94A3B8]">
-                              Debug: Goal ID: {goal._id}, Total tasks: {goalTasks.length}, 
-                              Total hours: {Math.round(getTotalHoursForGoal(goal._id) * 10) / 10}h, 
-                              Today: {Math.round(getHoursForGoalOnDate(goal._id) * 10) / 10}h
+                              Debug: Goal ID: {goal._id}, Today's tasks: {goalTasks.length}, 
+                              Today's hours: {Math.round(getTodayHoursForGoal(goal._id) * 10) / 10}h, 
+                              Target: {goal.targetHours || 0}h
                             </p>
                           </div>
                         </div>
@@ -870,6 +1021,14 @@ const GoalAlignedDay = () => {
                           className="bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] border-2 border-[#3CCB7F] text-white rounded-full px-4 py-2 hover:from-[#3CCB7F]/90 hover:to-[#4ECDC4]/90 hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-[0_0_20px_rgba(60,203,127,0.4)]"
                         >
                           🚀 Add Task
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleAddHabitToGoal(goal)}
+                          className="bg-gradient-to-r from-[#FFD700] to-[#FFA500] border-2 border-[#FFD700] text-white rounded-full px-4 py-2 hover:from-[#FFD700]/90 hover:to-[#FFA500]/90 hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-[0_0_20px_rgba(255,215,0,0.4)]"
+                        >
+                          🔄 Add Habit
                         </Button>
                         <Button 
                           variant="outline" 
@@ -1099,7 +1258,7 @@ const GoalAlignedDay = () => {
           <Card variant="elevated">
             <div className="mb-6">
               <h3 className="text-2xl font-semibold text-[#E8EEF2]">Annual Goals Progress</h3>
-              <p className="text-[#C9D1D9] mt-2">Track your goal progress and task completion</p>
+              <p className="text-[#C9D1D9] mt-2">Track your goal progress based on total hours invested vs annual targets</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -1107,7 +1266,8 @@ const GoalAlignedDay = () => {
                   <tr className="border-b border-[#2A313A]">
                     <th className="text-left py-3 px-4 text-[#94A3B8] font-medium">Goal</th>
                     <th className="text-left py-3 px-4 text-[#94A3B8] font-medium">Status</th>
-                    <th className="text-left py-3 px-4 text-[#94A3B8] font-medium">Tasks Completed</th>
+                    <th className="text-left py-3 px-4 text-[#94A3B8] font-medium">Daily Target</th>
+                    <th className="text-left py-3 px-4 text-[#94A3B8] font-medium">Tasks</th>
                     <th className="text-left py-3 px-4 text-[#94A3B8] font-medium">Hours Logged</th>
                     <th className="text-left py-3 px-4 text-[#94A3B8] font-medium">Progress</th>
                     <th className="text-left py-3 px-4 text-[#94A3B8] font-medium">Last Activity</th>
@@ -1117,30 +1277,90 @@ const GoalAlignedDay = () => {
                   {goals.filter(goal => goal.isActive !== false).map((goal, index) => {
                     const currentYear = new Date().getFullYear();
                     
-                    // Get tasks for this goal completed in the current year
-                    const goalTasks = tasks.filter(task => 
-                      task.goalIds && 
-                      task.goalIds.includes(goal._id) && 
-                      task.status === 'completed' &&
-                      task.completedAt &&
-                      new Date(task.completedAt).getFullYear() === currentYear
-                    );
+                    // Get ALL tasks for this goal (regardless of status or year)
+                    const allGoalTasks = tasks.filter(task => {
+                      const hasGoalIds = task.goalIds && Array.isArray(task.goalIds);
+                      const includesGoal = hasGoalIds && task.goalIds.some(id => id === goal._id || id.toString() === goal._id.toString());
+                      
+                      return includesGoal;
+                    });
                     
-                    // Calculate total hours logged
-                    const totalHours = goalTasks.reduce((sum, task) => {
-                      const duration = task.estimatedDuration || 0;
+                    // Get completed tasks for this goal in current year (for display purposes)
+                    const completedGoalTasksThisYear = allGoalTasks.filter(task => {
+                      const isCompleted = task.status === 'completed';
+                      const hasCompletedAt = task.completedAt;
+                      const isCurrentYear = hasCompletedAt && new Date(task.completedAt).getFullYear() === currentYear;
+                      
+                      return isCompleted && isCurrentYear;
+                    });
+                    
+                    // Debug logging
+                    console.log(`Goal: ${goal.name}`, {
+                      goalId: goal._id,
+                      targetHours: goal.targetHours,
+                      allGoalTasksCount: allGoalTasks.length,
+                      completedThisYearCount: completedGoalTasksThisYear.length,
+                      currentYear,
+                      totalTasksForGoal: tasks.filter(task => 
+                        task.goalIds && 
+                        task.goalIds.some(id => id === goal._id || id.toString() === goal._id.toString())
+                      ).length,
+                      completedTasksForGoal: tasks.filter(task => 
+                        task.goalIds && 
+                        task.goalIds.some(id => id === goal._id || id.toString() === goal._id.toString()) &&
+                        task.status === 'completed'
+                      ).length,
+                      sampleTasks: allGoalTasks.slice(0, 3).map(t => ({
+                        id: t._id,
+                        title: t.title,
+                        status: t.status,
+                        actualDuration: t.actualDuration,
+                        estimatedDuration: t.estimatedDuration,
+                        goalIds: t.goalIds
+                      }))
+                    });
+                    
+                    // Calculate total hours logged from ALL tasks for this goal
+                    const totalHours = allGoalTasks.reduce((sum, task) => {
+                      // Use actual duration if available, otherwise fall back to estimated duration
+                      const duration = task.actualDuration || task.estimatedDuration || 0;
                       return sum + (duration / 60); // Convert minutes to hours
                     }, 0);
                     
-                    // Get last activity date
-                    const lastActivity = goalTasks.length > 0 
-                      ? new Date(Math.max(...goalTasks.map(t => new Date(t.completedAt))))
+                    // Get last activity date from all tasks (use createdAt if completedAt is not available)
+                    const lastActivity = allGoalTasks.length > 0 
+                      ? new Date(Math.max(...allGoalTasks.map(t => {
+                          const activityDate = t.completedAt || t.createdAt || t.start;
+                          return new Date(activityDate);
+                        })))
                       : null;
                     
                     const lastActivityStr = lastActivity ? lastActivity.toLocaleDateString() : 'No activity';
                     
-                    // Calculate progress based on tasks completed vs total tasks (if available)
-                    const progress = goal.targetTasks ? Math.round((goalTasks.length / goal.targetTasks) * 100) : 0;
+                    // Calculate progress based on hours logged vs annual target hours
+                    // Assuming daily target hours * 365 days for annual target
+                    const annualTargetHours = goal.targetHours * 365;
+                    let progress = 0;
+                    
+                    if (annualTargetHours > 0) {
+                      progress = Math.min(100, Math.round((totalHours / annualTargetHours) * 100));
+                    } else if (allGoalTasks.length > 0) {
+                      // Fallback: if no target hours set but tasks exist, show some progress
+                      progress = Math.min(100, allGoalTasks.length * 10); // 10% per task as fallback
+                    }
+                    
+                    // Debug logging for progress calculation
+                    console.log(`Progress calculation for ${goal.name}:`, {
+                      totalHours,
+                      annualTargetHours,
+                      progress,
+                      targetHours: goal.targetHours,
+                      allGoalTasksCount: allGoalTasks.length,
+                      completedThisYearCount: completedGoalTasksThisYear.length,
+                      hasTargetHours: goal.targetHours > 0,
+                      tasksWithActualDuration: allGoalTasks.filter(t => t.actualDuration).length,
+                      tasksWithEstimatedDuration: allGoalTasks.filter(t => t.estimatedDuration && !t.actualDuration).length
+                    });
                     
                     return (
                       <tr key={goal._id || index} className="border-b border-[#2A313A] hover:bg-[#1A1F2E] transition-colors">
@@ -1150,7 +1370,15 @@ const GoalAlignedDay = () => {
                             {goal.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </td>
-                        <td className="py-3 px-4 text-[#C9D1D9]">{goalTasks.length}</td>
+                        <td className="py-3 px-4 text-[#C9D1D9]">
+                          {goal.targetHours > 0 ? `${goal.targetHours}h/day` : 'Not set'}
+                        </td>
+                        <td className="py-3 px-4 text-[#C9D1D9]">
+                          <div className="flex flex-col">
+                            <span className="text-sm">{completedGoalTasksThisYear.length} this year</span>
+                            <span className="text-xs text-[#94A3B8]">{allGoalTasks.length} total</span>
+                          </div>
+                        </td>
                         <td className="py-3 px-4 text-[#C9D1D9]">{totalHours.toFixed(1)}h</td>
                         <td className="py-3 px-4 text-[#C9D1D9]">
                           <div className="flex items-center gap-2">
@@ -1161,6 +1389,12 @@ const GoalAlignedDay = () => {
                                 style={{ width: `${progress}%` }}
                               ></div>
                             </div>
+                            <span className="text-xs text-[#94A3B8]">
+                              {annualTargetHours > 0 
+                                ? `${totalHours.toFixed(1)}h / ${annualTargetHours.toFixed(1)}h`
+                                : `${totalHours.toFixed(1)}h logged`
+                              }
+                            </span>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-[#C9D1D9]">{lastActivityStr}</td>
@@ -1175,10 +1409,16 @@ const GoalAlignedDay = () => {
       )}
 
       {/* Create Habit Popup */}
+      {showCreateHabitPopup && console.log('🎯 Rendering CreateHabitPopup with goals:', goals, 'selectedGoal:', selectedGoalForHabit)}
       <CreateHabitPopup
         isOpen={showCreateHabitPopup}
-        onClose={() => setShowCreateHabitPopup(false)}
+        onClose={() => {
+          setShowCreateHabitPopup(false);
+          setSelectedGoalForHabit(null);
+        }}
         onHabitCreated={handleHabitCreated}
+        goals={goals}
+        selectedGoal={selectedGoalForHabit}
       />
 
       {/* Create Goal Popup */}

@@ -81,6 +81,15 @@ const mealSchema = new mongoose.Schema({
     rationale: [String],
     tip: String,
     effects: {
+      fatForming: {
+        score: {
+          type: Number,
+          min: 0,
+          max: 10
+        },
+        why: [String],
+        level: String
+      },
       strength: {
         score: {
           type: Number,
@@ -108,6 +117,30 @@ const mealSchema = new mongoose.Schema({
           type: String,
           enum: ['Low', 'Medium', 'High']
         }
+      },
+      energizing: {
+        score: {
+          type: Number,
+          min: 0,
+          max: 10
+        },
+        why: [String]
+      },
+      gutFriendly: {
+        score: {
+          type: Number,
+          min: 0,
+          max: 10
+        },
+        why: [String]
+      },
+      moodLifting: {
+        score: {
+          type: Number,
+          min: 0,
+          max: 10
+        },
+        why: [String]
       }
     }
   }

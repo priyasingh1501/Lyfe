@@ -44,6 +44,50 @@ const journalEntrySchema = new mongoose.Schema({
     temperature: Number,
     condition: String,
     description: String
+  },
+  alfredAnalysis: {
+    sentiment: {
+      score: {
+        type: Number,
+        min: -1,
+        max: 1
+      },
+      label: {
+        type: String,
+        enum: ['very_negative', 'negative', 'neutral', 'positive', 'very_positive']
+      },
+      confidence: {
+        type: Number,
+        min: 0,
+        max: 1
+      }
+    },
+    topics: [{
+      name: String,
+      confidence: {
+        type: Number,
+        min: 0,
+        max: 1
+      }
+    }],
+    beliefs: [{
+      belief: String,
+      confidence: {
+        type: Number,
+        min: 0,
+        max: 1
+      },
+      category: {
+        type: String,
+        enum: ['personal_values', 'life_philosophy', 'relationships', 'work_ethics', 'spirituality', 'health_wellness', 'other']
+      }
+    }],
+    summary: String,
+    insights: [String],
+    analyzedAt: {
+      type: Date,
+      default: Date.now
+    }
   }
 }, {
   timestamps: true

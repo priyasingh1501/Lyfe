@@ -71,19 +71,20 @@ const MealBuilder = () => {
           // Transform results to match expected format
           const foods = results.map(result => {
             // Handle different source formats
-            if (result.source === 'local' || result.source === 'IFCT') {
+            if (result.source === 'IFCT') {
               // Local database food
               return {
                 _id: result.id || result._id,
                 name: result.name,
-                source: result.source,
+                source: 'IFCT', // Use consistent source name
                 portionGramsDefault: result.portionGramsDefault || 100,
                 nutrients: result.nutrients || result.nutriments100g,
                 tags: result.tags || [],
                 gi: result.gi,
                 fodmap: result.fodmap,
                 novaClass: result.novaClass,
-                aliases: result.aliases || []
+                aliases: result.aliases || [],
+                provenance: result.provenance || { source: 'Local Database' }
               };
             } else if (result.source === 'usda') {
               // USDA food
@@ -107,7 +108,8 @@ const MealBuilder = () => {
                 },
                 tags: [],
                 brand: result.brand,
-                relevanceScore: result.relevanceScore
+                relevanceScore: result.relevanceScore,
+                provenance: result.provenance || { source: 'USDA Database' }
               };
             } else if (result.source === 'off') {
               // OpenFoodFacts food
@@ -133,7 +135,8 @@ const MealBuilder = () => {
                 brand: result.brand,
                 barcode: result.barcode,
                 novaClass: result.novaClass,
-                relevanceScore: result.relevanceScore
+                relevanceScore: result.relevanceScore,
+                provenance: result.provenance || { source: 'Open Food Facts' }
               };
             }
             return result;
@@ -171,8 +174,15 @@ const MealBuilder = () => {
         const fallbackData = await fallbackResponse.json();
         const foods = fallbackData.foods || [];
         
+        // Transform fallback foods to ensure consistent source information
+        const transformedFoods = foods.map(food => ({
+          ...food,
+          source: 'IFCT', // Local database foods are from IFCT
+          provenance: food.provenance || { source: 'Local Database' }
+        }));
+        
         // Remove duplicates based on food ID and name
-        const uniqueFoods = foods.reduce((acc, food) => {
+        const uniqueFoods = transformedFoods.reduce((acc, food) => {
           const existingFood = acc.find(f => 
             f._id === food._id || 
             f.name.toLowerCase() === food.name.toLowerCase()

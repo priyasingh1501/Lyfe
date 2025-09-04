@@ -611,22 +611,22 @@ const Finance = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="relative w-full max-w-full overflow-x-auto"
+      className="relative w-full max-w-full overflow-x-auto p-4 lg:p-0"
     >
       {/* Header - Mission Card */}
-      <div className="bg-gray-900 border-2 border-gray-600 rounded-lg p-6 relative overflow-hidden mb-6" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+      <div className="bg-gray-900 border-2 border-gray-600 rounded-lg p-4 lg:p-6 relative overflow-hidden mb-4 lg:mb-6" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
         {/* Film grain overlay */}
         <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
         
         {/* Reason Strip */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-blue-500 to-green-500"></div>
         
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-bold text-white font-oswald tracking-wide">FINANCIAL MISSION</h1>
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+            <h1 className="text-lg font-bold text-white font-oswald tracking-wide text-center lg:text-left">FINANCIAL MISSION</h1>
             
             {/* Tabs */}
-            <div className="flex space-x-0.5 bg-gray-800 p-0.5 rounded-md w-fit border border-gray-600">
+            <div className="flex space-x-0.5 bg-gray-800 p-0.5 rounded-md w-fit border border-gray-600 mx-auto lg:mx-0">
               {['overview', 'expenses', 'subscriptions'].map((tab) => (
                 <button
                   key={tab}
@@ -643,10 +643,10 @@ const Finance = () => {
             </div>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex justify-center lg:justify-end">
             <button
               onClick={() => setShowAddForm(true)}
-              className="bg-amber-500 text-white px-3 py-1.5 rounded hover:bg-amber-400 flex items-center gap-1 font-oswald tracking-wide transition-colors text-xs border border-amber-400 hover:shadow-lg hover:shadow-amber-500/20"
+              className="bg-amber-500 text-white px-3 py-2 rounded hover:bg-amber-400 flex items-center gap-1 font-oswald tracking-wide transition-colors text-xs border border-amber-400 hover:shadow-lg hover:shadow-amber-500/20 min-h-[44px]"
             >
               <Plus size={14} />
               ADD RECORD
@@ -660,7 +660,7 @@ const Finance = () => {
         <>
 
           {/* Monthly Expense Analysis - Mission Card */}
-          <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 relative overflow-hidden mb-6" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+          <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden mb-4 lg:mb-6" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
             {/* Film grain overlay */}
             <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
             
@@ -668,7 +668,7 @@ const Finance = () => {
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] via-[#3EA6FF] to-[#3CCB7F]"></div>
             
             <h3 className="text-sm font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide">MONTHLY EXPENSE ANALYSIS</h3>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {/* Current Month */}
               <div className="text-center p-3 bg-[#0A0C0F] border border-[#2A313A] rounded-lg">
                 <p className="text-xs text-[#C9D1D9] mb-1 font-oswald tracking-wide">CURRENT MONTH</p>
