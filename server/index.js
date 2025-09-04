@@ -126,7 +126,10 @@ setTimeout(() => {
 }, 5000);
 
 // Routes
-app.use('/api/auth', authRoutes);
+// Route-scoped CORS for auth to guarantee preflight success on prod
+const authCors = cors({ origin: true, credentials: false, optionsSuccessStatus: 204 });
+app.options('/api/auth/*', authCors);
+app.use('/api/auth', authCors, authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/time', timeManagementRoutes);
 app.use('/api/health', healthRoutes);
