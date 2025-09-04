@@ -68,6 +68,22 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// Global OPTIONS short-circuit to guarantee preflight success
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    const origin = req.headers.origin || '*';
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin, Access-Control-Request-Headers');
+    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', req.header('Access-Control-Request-Headers') || 'content-type,authorization');
+    // If using cookies, uncomment:
+    // res.header('Access-Control-Allow-Credentials', 'true');
+
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 // Handle preflight requests using same options
 app.options('*', cors(corsOptions));
 
