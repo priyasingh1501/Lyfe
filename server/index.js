@@ -41,6 +41,8 @@ console.log('🔍 USDA_API_KEY exists:', !!process.env.USDA_API_KEY);
 console.log('🔍 USDA_API_KEY length:', process.env.USDA_API_KEY?.length || 0);
 console.log('🔍 PORT:', process.env.PORT);
 console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
+console.log('🔍 COMMIT (Railway):', process.env.RAILWAY_GIT_COMMIT_SHA || 'n/a');
+console.log('🔍 COMMIT (Vercel):', process.env.VERCEL_GIT_COMMIT_SHA || 'n/a');
 
 const app = express();
 const PORT = process.env.PORT || 5002;
@@ -68,6 +70,7 @@ const corsOptions = {
   credentials: false,
   optionsSuccessStatus: 204,
 };
+console.log('🔍 CORS mode: allow-all origins via callback');
 
 app.use(cors(corsOptions));
 
