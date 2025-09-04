@@ -601,3 +601,101 @@ router.get('/stats/overview', auth, async (req, res) => {
 });
 
 module.exports = router;
+ 
+/**
+ * AI analysis for a specific effect over a date range
+ * GET /api/meals/effects/ai?effect=inflammation&startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+ */
+router.get('/effects/ai', auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { effect, startDate, endDate } = req.query;
+
+    console.log('🤖 AI effect analysis request:', { effect, startDate, endDate, userId });
+
+    if (!effect) {
+      return res.status(400).json({ message: 'Missing required query param: effect' });
+    }
+
+    // Build query for date range
+    const query = { userId };
+    if (startDate || endDate) {
+      query.ts = {};
+      if (startDate) query.ts.$gte = new Date(startDate);
+      if (endDate) {
+        const endDateObj = new Date(endDate);
+        endDateObj.setHours(23, 59, 59, 999);
+        query.ts.$lte = endDateObj;
+      }
+    }
+
+    // Fetch meals in range
+    const meals = await Meal.find(query).populate('items.foodId').sort({ ts: 1 });
+
+    if (!meals.length) {
+      return res.json({
+        message: 'No meals in range',
+        effect,
+        aiInsights: 'No meals found in the selected period to analyze.',
+        analysis: null,
+      });
+    }
+
+    // Flatten items and aggregate totals for AI
+    const items = meals.flatMap(m => m.items.map(it => ({
+      customName: it.customName || (it.foodId && it.foodId.name) || 'Food',
+      grams: it.grams || 0,
+    })));
+
+    const totals = meals.reduce((acc, m) => {
+      const t = (m.computed && m.computed.totals) || {};
+      Object.keys(t).forEach(k => {
+        acc[k] = (acc[k] || 0) + (t[k] || 0);
+      });
+      return acc;
+    }, {});
+
+    // Aggregate simple context flags (true if any meal had it)
+    const context = meals.reduce((acc, m) => {
+      const c = m.context || {};
+      Object.keys(c).forEach(k => {
+        acc[k] = acc[k] || Boolean(c[k]);
+      });
+      return acc;
+    }, {});
+
+    // Build a naive rule-based aggregate as a baseline
+    const ruleBasedAggregate = meals.reduce((acc, m) => {
+      const eff = (m.computed && m.computed.effects) || {};
+      Object.entries(eff).forEach(([key, data]) => {
+        if (!acc[key]) acc[key] = { score: 0, label: data.label || 'N/A', why: [] };
+        acc[key].score += data.score || 0;
+        if (Array.isArray(data.why)) acc[key].why.push(...data.why);
+      });
+      return acc;
+    }, {});
+
+    const mealDataForAI = { items, computed: { totals }, context };
+    const userProfile = {};
+
+    // Ask AI for enhanced analysis across the period
+    console.log('🤖 Calling AI service with data:', { itemsCount: items.length, totals, context });
+    const enhanced = await aiService.analyzeMealEffects(mealDataForAI, userProfile, ruleBasedAggregate);
+    console.log('🤖 AI service response:', enhanced);
+
+    const selectedEffect = enhanced[effect] || null;
+    const aiInsights = enhanced.aiInsights || (selectedEffect && selectedEffect.aiInsights) || null;
+
+    console.log('🤖 Final response:', { effect, analysis: selectedEffect, aiInsights });
+
+    return res.json({
+      message: 'AI effect analysis generated',
+      effect,
+      analysis: selectedEffect,
+      aiInsights,
+    });
+  } catch (error) {
+    console.error('Error generating AI effect analysis:', error);
+    return res.status(500).json({ message: 'Error generating AI effect analysis', error: error.message });
+  }
+});

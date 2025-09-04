@@ -6,17 +6,31 @@ import { Calendar, RefreshCw } from 'lucide-react';
 const DailyMealKPIs = ({ refreshTrigger }) => {
   const { token } = useAuth();
   const [dailyMeals, setDailyMeals] = useState([]);
+  const [monthlyMeals, setMonthlyMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedEffect, setSelectedEffect] = useState(null);
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState('day');
 
   // Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
     const today = new Date();
     const dateStr = today.toISOString().split('T')[0];
     return dateStr;
+  };
+
+  // Get current month's date range
+  const getCurrentMonthRange = () => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    return {
+      startDate: startOfMonth.toISOString().split('T')[0],
+      endDate: endOfMonth.toISOString().split('T')[0]
+    };
   };
 
   // Fetch meals for today
@@ -61,20 +75,76 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
     }
   }, [token]);
 
+  // Fetch meals for current month
+  const fetchMonthlyMeals = useCallback(async (isRefresh = false) => {
+    if (!token) {
+      return;
+    }
+
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    
+    try {
+      const { startDate, endDate } = getCurrentMonthRange();
+      
+      const response = await fetch(
+        `${buildApiUrl('/api/meals')}?startDate=${startDate}&endDate=${endDate}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('DailyMealKPIs: Failed to fetch monthly meals:', response.status, errorData);
+        throw new Error(`Failed to fetch monthly meals: ${errorData.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      console.log('DailyMealKPIs: Fetched monthly meals:', data);
+      
+      setMonthlyMeals(data.meals || []);
+      setError(null);
+    } catch (err) {
+      console.error('DailyMealKPIs: Error fetching monthly meals:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [token]);
+
   useEffect(() => {
-    fetchTodayMeals();
-  }, [fetchTodayMeals]);
+    if (activeTab === 'day') {
+      fetchTodayMeals();
+    } else if (activeTab === 'month') {
+      fetchMonthlyMeals();
+    }
+  }, [activeTab, fetchTodayMeals, fetchMonthlyMeals]);
 
   // Respond to refresh trigger from parent component
   useEffect(() => {
     if (refreshTrigger > 0) {
-      fetchTodayMeals(true);
+      if (activeTab === 'day') {
+        fetchTodayMeals(true);
+      } else if (activeTab === 'month') {
+        fetchMonthlyMeals(true);
+      }
     }
-  }, [refreshTrigger, fetchTodayMeals]);
+  }, [refreshTrigger, activeTab, fetchTodayMeals, fetchMonthlyMeals]);
 
   // Handle manual refresh
   const handleRefresh = () => {
-    fetchTodayMeals(true);
+    if (activeTab === 'day') {
+      fetchTodayMeals(true);
+    } else if (activeTab === 'month') {
+      fetchMonthlyMeals(true);
+    }
   };
 
   // Helper function to format meal time
@@ -96,9 +166,54 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
     return { level: 'Needs Attention', color: 'text-red-600' };
   };
 
-  const handleEffectClick = (effectKey, effectData, meal) => {
+  const handleEffectClick = async (effectKey, effectData, meal) => {
+    console.log('🔍 Effect clicked:', effectKey, effectData);
     setSelectedEffect({ key: effectKey, data: effectData });
     setSelectedMeal(meal);
+
+    try {
+      // Determine date range based on active tab
+      let startDate;
+      let endDate;
+      if (activeTab === 'day') {
+        const today = getTodayDate();
+        startDate = today;
+        endDate = today;
+      } else {
+        const range = getCurrentMonthRange();
+        startDate = range.startDate;
+        endDate = range.endDate;
+      }
+
+      console.log('🔍 Fetching AI analysis for:', effectKey, 'from', startDate, 'to', endDate);
+      const url = `${buildApiUrl('/api/meals/effects/ai')}?effect=${encodeURIComponent(effectKey)}&startDate=${startDate}&endDate=${endDate}`;
+      console.log('🔍 API URL:', url);
+
+      const resp = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      console.log('🔍 Response status:', resp.status);
+      
+      if (resp.ok) {
+        const data = await resp.json();
+        console.log('🔍 AI response data:', data);
+        const aiInsights = data.aiInsights || (data.analysis && data.analysis.aiInsights) || '';
+        const merged = {
+          ...effectData,
+          ...(data.analysis || {}),
+          aiInsights: aiInsights || effectData.aiInsights || '',
+          aiEnhanced: true,
+        };
+        console.log('🔍 Merged effect data:', merged);
+        setSelectedEffect({ key: effectKey, data: merged });
+      } else {
+        const errorText = await resp.text();
+        console.warn('AI effect fetch failed', resp.status, errorText);
+      }
+    } catch (e) {
+      console.error('Failed to fetch AI effect analysis', e);
+    }
   };
 
   const closeEffectDetails = () => {
@@ -142,6 +257,18 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
     }, {});
   };
 
+  // Calculate monthly nutrition totals
+  const calculateMonthlyNutrition = () => {
+    return monthlyMeals.reduce((acc, meal) => {
+      if (meal.computed?.totals) {
+        Object.keys(meal.computed.totals).forEach(nutrient => {
+          acc[nutrient] = (acc[nutrient] || 0) + (meal.computed.totals[nutrient] || 0);
+        });
+      }
+      return acc;
+    }, {});
+  };
+
   // Calculate daily aggregated effects
   const calculateDailyEffects = () => {
     return dailyMeals.reduce((acc, meal) => {
@@ -172,8 +299,40 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
     }, {});
   };
 
-  const dailyNutrition = calculateDailyNutrition();
-  const dailyEffects = calculateDailyEffects();
+  // Calculate monthly aggregated effects
+  const calculateMonthlyEffects = () => {
+    return monthlyMeals.reduce((acc, meal) => {
+      if (meal.computed?.effects) {
+        Object.entries(meal.computed.effects).forEach(([effectKey, effectData]) => {
+          if (!acc[effectKey]) {
+            acc[effectKey] = {
+              score: 0,
+              level: 'Very Low',
+              why: []
+            };
+          }
+          
+          // Sum up scores
+          acc[effectKey].score += effectData.score || 0;
+          
+          // Combine reasons (avoid duplicates)
+          if (effectData.why && Array.isArray(effectData.why)) {
+            effectData.why.forEach(reason => {
+              if (!acc[effectKey].why.includes(reason)) {
+                acc[effectKey].why.push(reason);
+              }
+            });
+          }
+        });
+      }
+      return acc;
+    }, {});
+  };
+
+  // Get current data based on active tab
+  const currentMeals = activeTab === 'day' ? dailyMeals : monthlyMeals;
+  const currentNutrition = activeTab === 'day' ? calculateDailyNutrition() : calculateMonthlyNutrition();
+  const currentEffects = activeTab === 'day' ? calculateDailyEffects() : calculateMonthlyEffects();
   
   if (loading) {
     return (
@@ -207,12 +366,14 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
     );
   }
 
-  if (!dailyMeals.length) {
+  if (!currentMeals.length) {
     return (
       <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-6 mb-6">
         <div className="text-center">
           <Calendar className="mx-auto h-12 w-12 text-text-muted mb-4" />
-          <h3 className="text-lg font-medium text-text-primary mb-2">No meals logged today</h3>
+          <h3 className="text-lg font-medium text-text-primary mb-2">
+            No meals logged {activeTab === 'day' ? 'today' : 'this month'}
+          </h3>
           <p className="text-text-secondary">Start by building your first meal above!</p>
         </div>
       </div>
@@ -221,9 +382,35 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
 
   return (
     <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-6 mb-6">
-      {/* Header */}
+      {/* Header with Tabs */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-text-primary">Today's Meals</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-semibold text-text-primary">
+            {activeTab === 'day' ? "Today's Meals" : "This Month's Meals"}
+          </h2>
+          <div className="flex bg-background-tertiary rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab('day')}
+              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                activeTab === 'day'
+                  ? 'bg-accent-green text-text-inverse'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              Day
+            </button>
+            <button
+              onClick={() => setActiveTab('month')}
+              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                activeTab === 'month'
+                  ? 'bg-accent-green text-text-inverse'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              Month
+            </button>
+          </div>
+        </div>
         <button
           onClick={handleRefresh}
           disabled={refreshing}
@@ -234,34 +421,38 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
         </button>
       </div>
 
-      {/* Daily Nutrition Summary */}
+      {/* Nutrition Summary */}
       <div className="mb-6 p-4 bg-background-tertiary rounded-lg">
-        <h3 className="text-sm font-medium text-text-primary mb-3">Daily Nutrition Summary</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <h3 className="text-sm font-medium text-text-primary mb-3">
+          {activeTab === 'day' ? 'Daily' : 'Monthly'} Nutrition Summary
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="text-center">
-            <div className="text-2xl font-bold text-text-primary">{Math.round(dailyNutrition.kcal || 0)}</div>
+            <div className="text-2xl font-bold text-text-primary">{Math.round(currentNutrition.kcal || 0)}</div>
             <div className="text-xs text-text-secondary">Calories</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-text-primary">{Math.round(dailyNutrition.protein || 0)}g</div>
+            <div className="text-2xl font-bold text-text-primary">{Math.round(currentNutrition.protein || 0)}g</div>
             <div className="text-xs text-text-secondary">Protein</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-text-primary">{Math.round(dailyNutrition.carbs || 0)}g</div>
+            <div className="text-2xl font-bold text-text-primary">{Math.round(currentNutrition.carbs || 0)}g</div>
             <div className="text-xs text-text-secondary">Carbs</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-text-primary">{Math.round(dailyNutrition.fat || 0)}g</div>
+            <div className="text-2xl font-bold text-text-primary">{Math.round(currentNutrition.fat || 0)}g</div>
             <div className="text-xs text-text-secondary">Fat</div>
           </div>
         </div>
         
-        {/* Daily Health Effects */}
-        {Object.keys(dailyEffects).length > 0 && (
-          <div>
-            <h4 className="text-xs font-medium text-text-secondary mb-2">Daily Health Effects:</h4>
+        {/* Health Effects */}
+        {Object.keys(currentEffects).length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-xs font-medium text-text-secondary mb-2">
+              {activeTab === 'day' ? 'Daily' : 'Monthly'} Health Effects
+            </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {Object.entries(dailyEffects).map(([effectKey, effectData]) => {
+              {Object.entries(currentEffects).map(([effectKey, effectData]) => {
                 const score = effectData.score || 0;
                 const bgColor = score >= 6 ? 'bg-green-900/20 border-green-500/30' : 
                                score >= 4 ? 'bg-yellow-900/20 border-yellow-500/30' : 
@@ -280,20 +471,16 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
                           <div className="text-xs font-medium text-text-primary truncate">
                             {labels[effectKey] || effectKey}
                           </div>
-                          {effectData.aiEnhanced && (
-                            <span className="text-xs bg-blue-500/20 text-blue-300 px-1 py-0.5 rounded-full border border-blue-400/30 flex-shrink-0">
-                              AI
-                            </span>
-                          )}
+                          <span className="text-xs bg-blue-500/20 text-blue-300 px-1 py-0.5 rounded-full border border-blue-400/30 flex-shrink-0">
+                            AI
+                          </span>
                         </div>
                         <div className="text-xs text-text-secondary">
                           {score} pts
                         </div>
-                        {effectData.aiInsights && (
-                          <div className="text-xs text-blue-200 mt-1 line-clamp-1">
-                            {effectData.aiInsights.split('.')[0]}.
-                          </div>
-                        )}
+                        <div className="text-xs text-blue-200 mt-1 line-clamp-1">
+                          {(effectData.aiInsights && effectData.aiInsights.split('.')[0] + '.') || (effectData.why && effectData.why.length ? String(effectData.why[0]) : 'AI analysed contributing items')}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -305,23 +492,21 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
       </div>
 
       {/* Individual Meals List */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-text-primary mb-4">Meal Details</h3>
-        {dailyMeals.map((meal, index) => (
-          <div key={meal._id || index} className="bg-background-tertiary border border-border-primary rounded-lg p-4 shadow-sm">
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-text-primary mb-2">Meal Details</h3>
+        {currentMeals.map((meal, index) => (
+          <div key={meal._id || index} className="bg-background-tertiary/60 border border-border-primary rounded-lg p-3 shadow-sm">
             {/* Meal Header */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-text-primary">
-                  Meal {index + 1}
-                </span>
-                <span className="text-xs text-text-muted">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-text-primary">
                   {formatMealTime(meal.ts)}
                 </span>
+                <span className="text-xs text-text-muted">Meal {index + 1}</span>
               </div>
               {meal.computed?.mindfulMealScore && (
-                <div className="text-sm">
-                  <span className="text-text-muted">Score:</span>
+                <div className="text-xs text-text-secondary">
+                  <span>Score:</span>
                   <span className="ml-1 font-medium text-text-primary">
                     {meal.computed.mindfulMealScore}/10
                   </span>
@@ -330,8 +515,7 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
             </div>
 
             {/* Meal Items */}
-            <div className="mb-4">
-              <h4 className="text-xs font-medium text-text-secondary mb-2">Items:</h4>
+            <div className="mb-3">
               <div className="space-y-1">
                 {meal.items?.map((item, itemIndex) => (
                   <div key={itemIndex} className="flex justify-between text-sm">
@@ -348,24 +532,11 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
 
             {/* Nutrition Summary */}
             {meal.computed?.totals && (
-              <div className="mb-4 p-3 bg-background-primary rounded">
-                <h4 className="text-xs font-medium text-text-secondary mb-2">Nutrition:</h4>
-                <div className="grid grid-cols-2 gap-2 text-xs text-text-primary">
-                  <div>Calories: {meal.computed.totals.kcal || 0}</div>
-                  <div>Protein: {meal.computed.totals.protein || 0}g</div>
-                  <div>Carbs: {meal.computed.totals.carbs || 0}g</div>
-                  <div>Fat: {meal.computed.totals.fat || 0}g</div>
-                </div>
-              </div>
-            )}
-
-
-            {/* Meal Notes */}
-            {meal.notes && (
-              <div className="mt-3 p-2 bg-yellow-900/20 rounded border-l-4 border-yellow-500">
-                <p className="text-xs text-text-primary">
-                  <span className="font-medium">Note:</span> {meal.notes}
-                </p>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="px-2 py-1 rounded bg-background-primary border border-border-primary text-text-secondary">{meal.computed.totals.kcal || 0} kcal</span>
+                <span className="px-2 py-1 rounded bg-background-primary border border-border-primary text-text-secondary">{meal.computed.totals.protein || 0}g protein</span>
+                <span className="px-2 py-1 rounded bg-background-primary border border-border-primary text-text-secondary">{meal.computed.totals.carbs || 0}g carbs</span>
+                <span className="px-2 py-1 rounded bg-background-primary border border-border-primary text-text-secondary">{meal.computed.totals.fat || 0}g fat</span>
               </div>
             )}
           </div>
@@ -429,29 +600,25 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
               </div>
 
               {/* AI Insights */}
-              {selectedEffect.data.aiInsights && (
-                <div className="mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm">🤖</span>
-                    <h4 className="text-sm font-medium text-blue-300">AI Insights</h4>
-                  </div>
-                  <p className="text-sm text-blue-200 leading-relaxed">
-                    {selectedEffect.data.aiInsights}
-                  </p>
+              <div className="mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm">🤖</span>
+                  <h4 className="text-sm font-medium text-blue-300">AI Insights</h4>
                 </div>
-              )}
+                <p className="text-sm text-blue-200 leading-relaxed">
+                  {selectedEffect.data.aiInsights || 'AI analysed the meal to explain how items contributed to this effect.'}
+                </p>
+              </div>
 
               {/* AI Enhanced Indicator */}
-              {selectedEffect.data.aiEnhanced && (
-                <div className="mb-4 flex items-center gap-2 text-xs text-green-400">
-                  <span>✨</span>
-                  <span>Enhanced with AI analysis</span>
-                </div>
-              )}
+              <div className="mb-4 flex items-center gap-2 text-xs text-green-400">
+                <span>✨</span>
+                <span>Enhanced with AI analysis</span>
+              </div>
 
               <div className="mb-4">
                 <h4 className="text-sm font-medium text-text-primary mb-2">
-                  {selectedMeal ? 'Meal Items' : 'All Meals Today'}
+                  {selectedMeal ? 'Meal Items' : `All Meals ${activeTab === 'day' ? 'Today' : 'This Month'}`}
                 </h4>
                 <div className="space-y-2">
                   {selectedMeal ? (
@@ -462,7 +629,7 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
                       </div>
                     ))
                   ) : (
-                    dailyMeals
+                    currentMeals
                       .filter(meal => (meal.computed?.effects?.[selectedEffect.key]?.score || 0) > 0)
                       .map((meal, mealIndex) => (
                         <div key={mealIndex} className="p-2 bg-background-tertiary rounded">
