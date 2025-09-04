@@ -166,7 +166,14 @@ if (process.env.NODE_ENV === 'production') {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  const origin = req.headers.origin || '*';
+  res.header('Access-Control-Allow-Origin', origin);
+  res.header('Vary', 'Origin, Access-Control-Request-Headers');
+  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', req.header('Access-Control-Request-Headers') || 'content-type,authorization');
+  // If using cookies, uncomment the next line
+  // res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(err.status || 500).json({ message: err.message || 'Something went wrong!' });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
