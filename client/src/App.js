@@ -73,6 +73,8 @@ const PublicRoute = ({ children }) => {
 };
 
 function App() {
+  console.log('🔍 App: Component rendered');
+  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

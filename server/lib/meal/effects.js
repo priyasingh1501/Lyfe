@@ -16,6 +16,7 @@ function computeMealEffects(totals, badges, context = {}) {
     strength: computeStrength(totals, badges, context),
     immunity: computeImmunity(totals, badges, context),
     inflammation: computeInflammation(totals, badges, context),
+    antiInflammatory: computeAntiInflammatory(totals, badges, context),
     
     // Everyday Felt Effects
     energizing: computeEnergizing(totals, badges, context),
@@ -77,6 +78,28 @@ function computeFatForming(totals, badges, context) {
   } else if (badges.nova >= 3) {
     score += 1;
     reasons.push('Processed foods (NOVA 3) may contribute to weight gain');
+  }
+
+  // Context factors that increase fat formation (+1 point each)
+  if (context.lateNightEating) {
+    score += 1;
+    reasons.push('Late night eating increases fat storage');
+  }
+  if (context.sedentaryAfterMeal) {
+    score += 1;
+    reasons.push('Sedentary behavior after meal promotes fat storage');
+  }
+  if (context.stressEating) {
+    score += 1;
+    reasons.push('Stress eating increases fat formation');
+  }
+  if (context.packagedStoredLong) {
+    score += 1;
+    reasons.push('Packaged/long-stored foods promote fat storage');
+  }
+  if (context.mindlessEating) {
+    score += 1;
+    reasons.push('Mindless eating increases fat formation');
   }
 
   // Clamp score to 0-10 range
@@ -241,61 +264,72 @@ function computeImmunity(totals, badges, context) {
 }
 
 /**
- * Compute inflammation effect (0-10, lower is better)
+ * Compute inflammation effect (0-10, higher is worse - inflammatory foods)
  * @param {Object} totals - Nutrient totals
  * @param {Object} badges - Badge information
  * @param {Object} context - Meal context
  * @returns {Object} - Inflammation score, reasons, and label
  */
 function computeInflammation(totals, badges, context) {
-  let score = 5; // Start at neutral (5)
+  let score = 0; // Start at 0 (no inflammatory factors)
   const reasons = [];
 
-  // Fiber benefit (-2 points)
-  const fiberGrams = totals.fiber || 0;
-  if (fiberGrams >= 8) {
-    score -= 2;
-    reasons.push('High fiber (≥8g) reduces inflammation');
-  } else if (fiberGrams >= 5) {
-    score -= 1;
-    reasons.push('Good fiber (≥5g) helps reduce inflammation');
-  } else {
-    reasons.push('Low fiber (<5g) may contribute to inflammation');
-  }
-
-  // Omega-3 benefit (-1 point)
-  const omega3Grams = totals.omega3 || 0;
-  if (omega3Grams >= 0.5) {
-    score -= 1;
-    reasons.push('Good omega-3 content (≥0.5g) for anti-inflammatory effects');
-  } else if (omega3Grams >= 0.2) {
-    reasons.push('Moderate omega-3 content (≥0.2g)');
-  } else {
-    reasons.push('Low omega-3 content (<0.2g)');
-  }
-
-  // Ultra-processed foods risk (+2 points)
+  // Ultra-processed foods risk (+3 points)
   if (badges.nova >= 4) {
-    score += 2;
-    reasons.push('Ultra-processed foods (NOVA 4) may increase inflammation');
+    score += 3;
+    reasons.push('Ultra-processed foods (NOVA 4) increase inflammation');
   } else if (badges.nova >= 3) {
-    score += 1;
-    reasons.push('Processed foods (NOVA 3) may contribute to inflammation');
+    score += 2;
+    reasons.push('Processed foods (NOVA 3) contribute to inflammation');
   }
 
-  // Added sugar risk (+1 point)
+  // Added sugar risk (+2 points)
   const addedSugar = context.addedSugar || 0;
   if (addedSugar >= 15) {
-    score += 1;
-    reasons.push('High added sugar (≥15g) may increase inflammation');
+    score += 2;
+    reasons.push('High added sugar (≥15g) increases inflammation');
   } else if (addedSugar >= 10) {
-    reasons.push('Moderate added sugar (≥10g)');
+    score += 1;
+    reasons.push('Moderate added sugar (≥10g) may increase inflammation');
   }
 
-  // High GI risk (+1 point)
+  // High GI risk (+2 points)
   if (badges.gi && badges.gi >= 70) {
+    score += 2;
+    reasons.push('High glycemic index (≥70) increases inflammation');
+  } else if (badges.gi && badges.gi >= 55) {
     score += 1;
-    reasons.push('High glycemic index (≥70) may increase inflammation');
+    reasons.push('Moderate glycemic index (≥55) may increase inflammation');
+  }
+
+  // Trans fats risk (+2 points) - if we had this data
+  // Saturated fat risk (+1 point)
+  const saturatedFat = (totals.fat || 0) * 0.3; // Rough estimate
+  if (saturatedFat >= 10) {
+    score += 1;
+    reasons.push('High saturated fat may increase inflammation');
+  }
+
+  // Context factors that increase inflammation (+1 point each)
+  if (context.lateNightEating) {
+    score += 1;
+    reasons.push('Late night eating increases inflammation');
+  }
+  if (context.sedentaryAfterMeal) {
+    score += 1;
+    reasons.push('Sedentary behavior after meal increases inflammation');
+  }
+  if (context.stressEating) {
+    score += 1;
+    reasons.push('Stress eating increases inflammation');
+  }
+  if (context.packagedStoredLong) {
+    score += 1;
+    reasons.push('Packaged/long-stored foods increase inflammation');
+  }
+  if (context.mindlessEating) {
+    score += 1;
+    reasons.push('Mindless eating increases inflammation');
   }
 
   // Clamp score to 0-10 range
@@ -305,6 +339,79 @@ function computeInflammation(totals, badges, context) {
     score,
     reasons,
     label: getInflammationLabel(score)
+  };
+}
+
+/**
+ * Compute anti-inflammatory effect (0-10, higher is better - anti-inflammatory foods)
+ * @param {Object} totals - Nutrient totals
+ * @param {Object} badges - Badge information
+ * @param {Object} context - Meal context
+ * @returns {Object} - Anti-inflammatory score, reasons, and label
+ */
+function computeAntiInflammatory(totals, badges, context) {
+  let score = 0; // Start at 0 (no anti-inflammatory factors)
+  const reasons = [];
+
+  // Fiber benefit (+3 points)
+  const fiberGrams = totals.fiber || 0;
+  if (fiberGrams >= 8) {
+    score += 3;
+    reasons.push('High fiber (≥8g) reduces inflammation');
+  } else if (fiberGrams >= 5) {
+    score += 2;
+    reasons.push('Good fiber (≥5g) helps reduce inflammation');
+  } else if (fiberGrams >= 3) {
+    score += 1;
+    reasons.push('Moderate fiber (≥3g) has some anti-inflammatory benefits');
+  }
+
+  // Omega-3 benefit (+3 points)
+  const omega3Grams = totals.omega3 || 0;
+  if (omega3Grams >= 0.5) {
+    score += 3;
+    reasons.push('Good omega-3 content (≥0.5g) for strong anti-inflammatory effects');
+  } else if (omega3Grams >= 0.2) {
+    score += 2;
+    reasons.push('Moderate omega-3 content (≥0.2g) for anti-inflammatory effects');
+  } else if (omega3Grams >= 0.1) {
+    score += 1;
+    reasons.push('Some omega-3 content (≥0.1g) for mild anti-inflammatory effects');
+  }
+
+  // Vitamin C benefit (+2 points)
+  const vitaminCMg = totals.vitaminC || 0;
+  if (vitaminCMg >= 60) {
+    score += 2;
+    reasons.push('Excellent vitamin C (≥60mg) for antioxidant and anti-inflammatory effects');
+  } else if (vitaminCMg >= 30) {
+    score += 1;
+    reasons.push('Good vitamin C (≥30mg) for anti-inflammatory benefits');
+  }
+
+  // Plant diversity bonus (+2 points)
+  const plantDiversity = context.plantDiversity || 0;
+  if (plantDiversity >= 5) {
+    score += 2;
+    reasons.push('High plant diversity (≥5 types) provides diverse phytonutrients');
+  } else if (plantDiversity >= 3) {
+    score += 1;
+    reasons.push('Moderate plant diversity (≥3 types) for phytonutrients');
+  }
+
+  // Fermented foods bonus (+1 point)
+  if (context.fermented) {
+    score += 1;
+    reasons.push('Contains fermented foods for gut health and anti-inflammatory effects');
+  }
+
+  // Clamp score to 0-10 range
+  score = Math.max(0, Math.min(10, score));
+
+  return {
+    score,
+    why: reasons,
+    label: getAntiInflammatoryLabel(score)
   };
 }
 
@@ -542,6 +649,19 @@ function getInflammationLabel(score) {
 }
 
 /**
+ * Get anti-inflammatory level description
+ * @param {number} score - Anti-inflammatory score
+ * @returns {string} - Anti-inflammatory level
+ */
+function getAntiInflammatoryLabel(score) {
+  if (score >= 8) return 'Very High';
+  if (score >= 6) return 'High';
+  if (score >= 4) return 'Medium';
+  if (score >= 2) return 'Low';
+  return 'Very Low';
+}
+
+/**
  * Get fat-forming level description
  * @param {number} score - Fat-forming score
  * @returns {string} - Fat-forming level
@@ -670,6 +790,7 @@ module.exports = {
   computeStrength,
   computeImmunity,
   computeInflammation,
+  computeAntiInflammatory,
   computeEnergizing,
   computeGutFriendly,
   computeMoodLifting,

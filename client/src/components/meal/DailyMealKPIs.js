@@ -1,24 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { buildApiUrl } from '../../config';
-import { Calendar, TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react';
+import { Calendar, RefreshCw } from 'lucide-react';
 
-const DailyMealKPIs = () => {
+const DailyMealKPIs = ({ refreshTrigger }) => {
   const { token } = useAuth();
   const [dailyMeals, setDailyMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedEffect, setSelectedEffect] = useState(null);
+  const [selectedMeal, setSelectedMeal] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    const dateStr = today.toISOString().split('T')[0];
+    return dateStr;
   };
 
   // Fetch meals for today
-  const fetchTodayMeals = async (isRefresh = false) => {
-    if (!token) return;
+  const fetchTodayMeals = useCallback(async (isRefresh = false) => {
+    if (!token) {
+      return;
+    }
 
     if (isRefresh) {
       setRefreshing(true);
@@ -28,6 +33,7 @@ const DailyMealKPIs = () => {
     
     try {
       const today = getTodayDate();
+      
       const response = await fetch(
         `${buildApiUrl('/api/meals')}?startDate=${today}&endDate=${today}`,
         {
@@ -38,7 +44,9 @@ const DailyMealKPIs = () => {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch meals');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('DailyMealKPIs: Failed to fetch meals:', response.status, errorData);
+        throw new Error(`Failed to fetch meals: ${errorData.message || 'Unknown error'}`);
       }
 
       const data = await response.json();
@@ -51,115 +59,132 @@ const DailyMealKPIs = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     fetchTodayMeals();
-  }, [token]);
+  }, [fetchTodayMeals]);
+
+  // Respond to refresh trigger from parent component
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      fetchTodayMeals(true);
+    }
+  }, [refreshTrigger, fetchTodayMeals]);
 
   // Handle manual refresh
   const handleRefresh = () => {
     fetchTodayMeals(true);
   };
 
-  // Calculate aggregated effects from all meals
-  const calculateAggregatedEffects = () => {
-    if (!dailyMeals.length) return null;
-
-    const aggregatedEffects = {
-      strength: { score: 0, count: 0 },
-      immunity: { score: 0, count: 0 },
-      inflammation: { score: 0, count: 0 },
-      energizing: { score: 0, count: 0 },
-      gutFriendly: { score: 0, count: 0 },
-      moodLifting: { score: 0, count: 0 },
-      fatForming: { score: 0, count: 0 }
-    };
-
-    dailyMeals.forEach(meal => {
-      if (meal.computed?.effects) {
-        Object.keys(aggregatedEffects).forEach(effectKey => {
-          if (meal.computed.effects[effectKey]?.score !== undefined) {
-            aggregatedEffects[effectKey].score += meal.computed.effects[effectKey].score;
-            aggregatedEffects[effectKey].count += 1;
-          }
-        });
-      }
+  // Helper function to format meal time
+  const formatMealTime = (timestamp) => {
+    if (!timestamp) return 'Unknown time';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
     });
-
-    // Calculate averages
-    Object.keys(aggregatedEffects).forEach(effectKey => {
-      if (aggregatedEffects[effectKey].count > 0) {
-        aggregatedEffects[effectKey].average = 
-          Math.round((aggregatedEffects[effectKey].score / aggregatedEffects[effectKey].count) * 10) / 10;
-      } else {
-        aggregatedEffects[effectKey].average = 0;
-      }
-    });
-
-    return aggregatedEffects;
   };
 
-  // Calculate total nutrition for the day
+  // Helper function to get meal effect level
+  const getMealEffectLevel = (score) => {
+    if (score >= 8) return { level: 'Excellent', color: 'text-green-600' };
+    if (score >= 6) return { level: 'Good', color: 'text-blue-600' };
+    if (score >= 4) return { level: 'Medium', color: 'text-yellow-600' };
+    return { level: 'Needs Attention', color: 'text-red-600' };
+  };
+
+  const handleEffectClick = (effectKey, effectData, meal) => {
+    setSelectedEffect({ key: effectKey, data: effectData });
+    setSelectedMeal(meal);
+  };
+
+  const closeEffectDetails = () => {
+    setSelectedEffect(null);
+    setSelectedMeal(null);
+  };
+
+  // Icons and labels for effects
+  const icons = {
+    strength: '💪',
+    immunity: '🛡️',
+    inflammation: '🔥',
+    antiInflammatory: '❄️',
+    energizing: '⚡',
+    gutFriendly: '🌱',
+    moodLifting: '😊',
+    fatForming: '🍔'
+  };
+
+  const labels = {
+    strength: 'Strength',
+    immunity: 'Immunity',
+    inflammation: 'Inflammatory',
+    antiInflammatory: 'Anti-Inflammatory',
+    energizing: 'Energy',
+    gutFriendly: 'Gut Health',
+    moodLifting: 'Mood',
+    fatForming: 'Fat Formation'
+  };
+
+
+  // Calculate daily nutrition totals
   const calculateDailyNutrition = () => {
-    if (!dailyMeals.length) return null;
-
-    const totals = {
-      kcal: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      fiber: 0,
-      sugar: 0
-    };
-
-    dailyMeals.forEach(meal => {
+    return dailyMeals.reduce((acc, meal) => {
       if (meal.computed?.totals) {
-        Object.keys(totals).forEach(nutrient => {
-          if (meal.computed.totals[nutrient]) {
-            totals[nutrient] += meal.computed.totals[nutrient];
+        Object.keys(meal.computed.totals).forEach(nutrient => {
+          acc[nutrient] = (acc[nutrient] || 0) + (meal.computed.totals[nutrient] || 0);
+        });
+      }
+      return acc;
+    }, {});
+  };
+
+  // Calculate daily aggregated effects
+  const calculateDailyEffects = () => {
+    return dailyMeals.reduce((acc, meal) => {
+      if (meal.computed?.effects) {
+        Object.entries(meal.computed.effects).forEach(([effectKey, effectData]) => {
+          if (!acc[effectKey]) {
+            acc[effectKey] = {
+              score: 0,
+              level: 'Very Low',
+              why: []
+            };
+          }
+          
+          // Sum up scores
+          acc[effectKey].score += effectData.score || 0;
+          
+          // Combine reasons (avoid duplicates)
+          if (effectData.why && Array.isArray(effectData.why)) {
+            effectData.why.forEach(reason => {
+              if (!acc[effectKey].why.includes(reason)) {
+                acc[effectKey].why.push(reason);
+              }
+            });
           }
         });
       }
-    });
-
-    // Round to 1 decimal place
-    Object.keys(totals).forEach(nutrient => {
-      totals[nutrient] = Math.round(totals[nutrient] * 10) / 10;
-    });
-
-    return totals;
+      return acc;
+    }, {});
   };
 
-  // Get effect level and color
-  const getEffectLevel = (score, effectKey) => {
-    if (effectKey === 'fatForming' || effectKey === 'inflammation') {
-      // Lower is better for these effects
-      if (score <= 3) return { level: 'Excellent', color: 'text-green-600', bgColor: 'bg-green-50' };
-      if (score <= 5) return { level: 'Good', color: 'text-blue-600', bgColor: 'bg-blue-50' };
-      if (score <= 7) return { level: 'Fair', color: 'text-yellow-600', bgColor: 'bg-yellow-50' };
-      return { level: 'Needs Attention', color: 'text-red-600', bgColor: 'bg-red-50' };
-    } else {
-      // Higher is better for other effects
-      if (score >= 7) return { level: 'Excellent', color: 'text-green-600', bgColor: 'bg-green-50' };
-      if (score >= 5) return { level: 'Good', color: 'text-blue-600', bgColor: 'bg-blue-50' };
-      if (score >= 3) return { level: 'Fair', color: 'text-yellow-600', bgColor: 'bg-yellow-50' };
-      return { level: 'Needs Attention', color: 'text-red-600', bgColor: 'bg-red-50' };
-    }
-  };
-
-  const aggregatedEffects = calculateAggregatedEffects();
   const dailyNutrition = calculateDailyNutrition();
-
+  const dailyEffects = calculateDailyEffects();
+  
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+      <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-6 mb-6">
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-4 bg-background-tertiary rounded w-1/4 mb-4"></div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-20 bg-gray-200 rounded"></div>
-            ))}
+            <div className="h-16 bg-background-tertiary rounded"></div>
+            <div className="h-16 bg-background-tertiary rounded"></div>
+            <div className="h-16 bg-background-tertiary rounded"></div>
+            <div className="h-16 bg-background-tertiary rounded"></div>
           </div>
         </div>
       </div>
@@ -168,138 +193,308 @@ const DailyMealKPIs = () => {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-        <p className="text-red-600">Error loading daily meal data: {error}</p>
+      <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-6 mb-6">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">Error loading meals: {error}</p>
+          <button
+            onClick={handleRefresh}
+            className="px-4 py-2 bg-accent-green text-text-inverse rounded hover:bg-accent-green/90 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!dailyMeals.length) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-        <div className="flex items-center justify-center">
-          <Calendar className="w-5 h-5 text-blue-500 mr-2" />
-          <p className="text-blue-600">No meals logged today. Start by adding your first meal!</p>
+      <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-6 mb-6">
+        <div className="text-center">
+          <Calendar className="mx-auto h-12 w-12 text-text-muted mb-4" />
+          <h3 className="text-lg font-medium text-text-primary mb-2">No meals logged today</h3>
+          <p className="text-text-secondary">Start by building your first meal above!</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+    <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-6 mb-6">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Today's Meal Effects</h2>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center text-sm text-gray-500">
-            <Calendar className="w-4 h-4 mr-1" />
-            {getTodayDate()}
-          </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className={`p-2 rounded-lg border transition-colors ${
-              refreshing 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                : 'bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-            }`}
-            title="Refresh data"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
+        <h2 className="text-xl font-semibold text-text-primary">Today's Meals</h2>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center gap-2 px-3 py-1 text-sm text-text-secondary hover:text-text-primary disabled:opacity-50 transition-colors"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
       </div>
 
       {/* Daily Nutrition Summary */}
-      {dailyNutrition && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Daily Nutrition Summary</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">Calories:</span>
-              <span className="ml-2 font-medium">{dailyNutrition.kcal} kcal</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Protein:</span>
-              <span className="ml-2 font-medium">{dailyNutrition.protein}g</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Carbs:</span>
-              <span className="ml-2 font-medium">{dailyNutrition.carbs}g</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Fat:</span>
-              <span className="ml-2 font-medium">{dailyNutrition.fat}g</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Fiber:</span>
-              <span className="ml-2 font-medium">{dailyNutrition.fiber}g</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Sugar:</span>
-              <span className="ml-2 font-medium">{dailyNutrition.sugar}g</span>
-            </div>
+      <div className="mb-6 p-4 bg-background-tertiary rounded-lg">
+        <h3 className="text-sm font-medium text-text-primary mb-3">Daily Nutrition Summary</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-text-primary">{Math.round(dailyNutrition.kcal || 0)}</div>
+            <div className="text-xs text-text-secondary">Calories</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-text-primary">{Math.round(dailyNutrition.protein || 0)}g</div>
+            <div className="text-xs text-text-secondary">Protein</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-text-primary">{Math.round(dailyNutrition.carbs || 0)}g</div>
+            <div className="text-xs text-text-secondary">Carbs</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-text-primary">{Math.round(dailyNutrition.fat || 0)}g</div>
+            <div className="text-xs text-text-secondary">Fat</div>
           </div>
         </div>
-      )}
+        
+        {/* Daily Health Effects */}
+        {Object.keys(dailyEffects).length > 0 && (
+          <div>
+            <h4 className="text-xs font-medium text-text-secondary mb-2">Daily Health Effects:</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {Object.entries(dailyEffects).map(([effectKey, effectData]) => {
+                const score = effectData.score || 0;
+                const bgColor = score >= 6 ? 'bg-green-900/20 border-green-500/30' : 
+                               score >= 4 ? 'bg-yellow-900/20 border-yellow-500/30' : 
+                               'bg-red-900/20 border-red-500/30';
 
-      {/* Effects KPIs */}
-      {aggregatedEffects && (
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Health Effects Overview</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(aggregatedEffects).map(([effectKey, data]) => {
-              const { level, color, bgColor } = getEffectLevel(data.average, effectKey);
-              const icons = {
-                strength: '💪',
-                immunity: '🌿',
-                inflammation: '🔥',
-                energizing: '⚡️',
-                gutFriendly: '🌀',
-                moodLifting: '😊',
-                fatForming: '🍔'
-              };
-              
-              const labels = {
-                strength: 'Strength',
-                immunity: 'Immunity',
-                inflammation: 'Inflammation',
-                energizing: 'Energy',
-                gutFriendly: 'Gut Health',
-                moodLifting: 'Mood',
-                fatForming: 'Fat Formation'
-              };
+                return (
+                  <div 
+                    key={effectKey} 
+                    className={`p-2 rounded border ${bgColor} cursor-pointer hover:opacity-80 transition-opacity`}
+                    onClick={() => handleEffectClick(effectKey, effectData, null)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{icons[effectKey] || '📊'}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <div className="text-xs font-medium text-text-primary truncate">
+                            {labels[effectKey] || effectKey}
+                          </div>
+                          {effectData.aiEnhanced && (
+                            <span className="text-xs bg-blue-500/20 text-blue-300 px-1 py-0.5 rounded-full border border-blue-400/30 flex-shrink-0">
+                              AI
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-text-secondary">
+                          {score} pts
+                        </div>
+                        {effectData.aiInsights && (
+                          <div className="text-xs text-blue-200 mt-1 line-clamp-1">
+                            {effectData.aiInsights.split('.')[0]}.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
-              return (
-                <div key={effectKey} className={`p-4 rounded-lg border ${bgColor}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-2xl">{icons[effectKey]}</span>
-                    <span className={`text-xs font-medium ${color}`}>{level}</span>
-                  </div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-1">
-                    {labels[effectKey]}
-                  </h4>
-                  <div className="flex items-center">
-                    <span className="text-lg font-bold text-gray-900">
-                      {data.average}/10
-                    </span>
-                    <span className="text-xs text-gray-500 ml-1">
-                      ({data.count} meals)
-                    </span>
-                  </div>
+      {/* Individual Meals List */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-medium text-text-primary mb-4">Meal Details</h3>
+        {dailyMeals.map((meal, index) => (
+          <div key={meal._id || index} className="bg-background-tertiary border border-border-primary rounded-lg p-4 shadow-sm">
+            {/* Meal Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-text-primary">
+                  Meal {index + 1}
+                </span>
+                <span className="text-xs text-text-muted">
+                  {formatMealTime(meal.ts)}
+                </span>
+              </div>
+              {meal.computed?.mindfulMealScore && (
+                <div className="text-sm">
+                  <span className="text-text-muted">Score:</span>
+                  <span className="ml-1 font-medium text-text-primary">
+                    {meal.computed.mindfulMealScore}/10
+                  </span>
                 </div>
-              );
-            })}
+              )}
+            </div>
+
+            {/* Meal Items */}
+            <div className="mb-4">
+              <h4 className="text-xs font-medium text-text-secondary mb-2">Items:</h4>
+              <div className="space-y-1">
+                {meal.items?.map((item, itemIndex) => (
+                  <div key={itemIndex} className="flex justify-between text-sm">
+                    <span className="text-text-primary">
+                      {item.customName || item.food?.name || 'Unknown food'}
+                    </span>
+                    <span className="text-text-muted">
+                      {item.grams}g
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Nutrition Summary */}
+            {meal.computed?.totals && (
+              <div className="mb-4 p-3 bg-background-primary rounded">
+                <h4 className="text-xs font-medium text-text-secondary mb-2">Nutrition:</h4>
+                <div className="grid grid-cols-2 gap-2 text-xs text-text-primary">
+                  <div>Calories: {meal.computed.totals.kcal || 0}</div>
+                  <div>Protein: {meal.computed.totals.protein || 0}g</div>
+                  <div>Carbs: {meal.computed.totals.carbs || 0}g</div>
+                  <div>Fat: {meal.computed.totals.fat || 0}g</div>
+                </div>
+              </div>
+            )}
+
+
+            {/* Meal Notes */}
+            {meal.notes && (
+              <div className="mt-3 p-2 bg-yellow-900/20 rounded border-l-4 border-yellow-500">
+                <p className="text-xs text-text-primary">
+                  <span className="font-medium">Note:</span> {meal.notes}
+                </p>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* Meal Count Summary */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
+      <div className="mt-6 pt-4 border-t border-border-primary">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">Total meals today:</span>
-          <span className="font-medium text-gray-900">{dailyMeals.length}</span>
+          <span className="text-text-secondary">Total meals today:</span>
+          <span className="font-medium text-text-primary">{dailyMeals.length}</span>
         </div>
       </div>
+
+      {/* Effect Details Modal */}
+      {selectedEffect && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background-secondary border border-border-primary rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-text-primary">
+                  {icons[selectedEffect.key]} {labels[selectedEffect.key]} Details
+                </h3>
+                <button
+                  onClick={closeEffectDetails}
+                  className="text-text-muted hover:text-text-primary transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-text-primary">Score</span>
+                  <span className={`text-lg font-bold ${getMealEffectLevel(selectedEffect.data.score || 0).color}`}>
+                    {selectedEffect.data.score || 0}/10
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-text-primary">Level</span>
+                  <span className="text-sm text-text-secondary">
+                    {selectedEffect.data.label || selectedEffect.data.level || 'N/A'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-text-primary mb-2">Contributing Factors</h4>
+                {selectedEffect.data.why && selectedEffect.data.why.length > 0 ? (
+                  <ul className="space-y-1">
+                    {selectedEffect.data.why.map((reason, index) => (
+                      <li key={index} className="text-sm text-text-secondary flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>{reason}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-text-muted">No specific factors identified</p>
+                )}
+              </div>
+
+              {/* AI Insights */}
+              {selectedEffect.data.aiInsights && (
+                <div className="mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm">🤖</span>
+                    <h4 className="text-sm font-medium text-blue-300">AI Insights</h4>
+                  </div>
+                  <p className="text-sm text-blue-200 leading-relaxed">
+                    {selectedEffect.data.aiInsights}
+                  </p>
+                </div>
+              )}
+
+              {/* AI Enhanced Indicator */}
+              {selectedEffect.data.aiEnhanced && (
+                <div className="mb-4 flex items-center gap-2 text-xs text-green-400">
+                  <span>✨</span>
+                  <span>Enhanced with AI analysis</span>
+                </div>
+              )}
+
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-text-primary mb-2">
+                  {selectedMeal ? 'Meal Items' : 'All Meals Today'}
+                </h4>
+                <div className="space-y-2">
+                  {selectedMeal ? (
+                    selectedMeal.items.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-background-tertiary rounded">
+                        <span className="text-sm text-text-primary">{item.customName}</span>
+                        <span className="text-xs text-text-secondary">{item.grams}g</span>
+                      </div>
+                    ))
+                  ) : (
+                    dailyMeals
+                      .filter(meal => (meal.computed?.effects?.[selectedEffect.key]?.score || 0) > 0)
+                      .map((meal, mealIndex) => (
+                        <div key={mealIndex} className="p-2 bg-background-tertiary rounded">
+                          <div className="text-sm font-medium text-text-primary mb-1">
+                            Meal {mealIndex + 1} - {formatMealTime(meal.ts)}
+                          </div>
+                          <div className="space-y-1">
+                            {meal.items.map((item, itemIndex) => (
+                              <div key={itemIndex} className="flex items-center justify-between text-xs">
+                                <span className="text-text-secondary">{item.customName}</span>
+                                <span className="text-text-muted">{item.grams}g</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={closeEffectDetails}
+                  className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

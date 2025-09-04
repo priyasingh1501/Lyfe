@@ -2,8 +2,7 @@ const mongoose = require('mongoose');
 
 const mealItemSchema = new mongoose.Schema({
   foodId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'FoodItem',
+    type: mongoose.Schema.Types.Mixed, // Allow both ObjectId and String for external IDs
     required: true
   },
   customName: String,
@@ -116,6 +115,18 @@ const mealSchema = new mongoose.Schema({
         label: {
           type: String,
           enum: ['Low', 'Medium', 'High']
+        }
+      },
+      antiInflammatory: {
+        score: {
+          type: Number,
+          min: 0,
+          max: 10
+        },
+        why: [String],
+        label: {
+          type: String,
+          enum: ['Very Low', 'Low', 'Medium', 'High', 'Very High']
         }
       },
       energizing: {

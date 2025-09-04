@@ -2,29 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Edit3, Save, X } from 'lucide-react';
 
-// Helper function to normalize nutrient data from different sources
-const getNormalizedNutrients = (food) => {
-  if (!food) return null;
-  
-  // Handle local database format
-  if (food.nutrients) {
-    return food.nutrients;
-  }
-  
-  // Handle Open Food Facts format
-  if (food.nutriments100g) {
-    return {
-      kcal: food.nutriments100g.kcal || 0,
-      protein: food.nutriments100g.protein || 0,
-      fat: food.nutriments100g.fat || 0,
-      carbs: food.nutriments100g.carbs || 0,
-      fiber: food.nutriments100g.fiber || 0,
-      sugar: food.nutriments100g.sugar || 0
-    };
-  }
-  
-  return null;
-};
 
 const MealItems = ({ items, onRemoveFood, onUpdatePortion }) => {
   const [editingId, setEditingId] = useState(null);
@@ -63,11 +40,12 @@ const MealItems = ({ items, onRemoveFood, onUpdatePortion }) => {
   // Indian portion units with their gram equivalents
   const indianPortionUnits = [
     { unit: 'katori', label: 'Katori', grams: 80, description: 'Small bowl' },
+    { unit: 'bowl', label: 'Bowl', grams: 150, description: 'Medium bowl' },
+    { unit: 'piece', label: 'Piece', grams: 50, description: 'Standard piece' },
+    { unit: 'spoon', label: 'Spoon', grams: 15, description: 'Tablespoon' },
     { unit: 'roti', label: 'Roti', grams: 45, description: 'Flatbread' },
     { unit: 'idli', label: 'Idli', grams: 120, description: 'Steamed rice cake' },
     { unit: 'cup', label: 'Cup', grams: 200, description: 'Standard cup' },
-    { unit: 'spoon', label: 'Spoon', grams: 15, description: 'Tablespoon' },
-    { unit: 'piece', label: 'Piece', grams: 50, description: 'Standard piece' },
     { unit: 'handful', label: 'Handful', grams: 30, description: 'Handful' }
   ];
 

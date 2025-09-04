@@ -7,6 +7,152 @@ const { aggregateNutrients } = require('../lib/meal/aggregate');
 const { inferBadges } = require('../lib/meal/badges');
 const { mindfulMealScore } = require('../lib/meal/score');
 const { computeMealEffects } = require('../lib/meal/effects');
+const OpenAIService = require('../services/openaiService');
+const axios = require('axios');
+
+// Initialize AI service
+const aiService = new OpenAIService();
+
+/**
+ * Fetch external food data from USDA or other sources
+ */
+async function fetchExternalFoodData(externalId) {
+  try {
+    console.log('🔍 Fetching external food data for:', externalId);
+    // Handle USDA food IDs
+    if (externalId.startsWith('usda_')) {
+      const fdcId = externalId.replace('usda_', '');
+      const usdaApiKey = process.env.USDA_API_KEY;
+      
+      if (!usdaApiKey) {
+        console.error('USDA API key not configured');
+        return null;
+      }
+
+      console.log('🔍 Making USDA API call for FDC ID:', fdcId);
+      const response = await axios.get(
+        `https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${usdaApiKey}`,
+        { timeout: 10000 }
+      );
+
+      if (!response.data) {
+        console.log('🔍 No data returned from USDA API');
+        return null;
+      }
+
+      const food = response.data;
+      console.log('🔍 USDA API response received, food name:', food.description);
+      
+      // Extract nutrients
+      const nutrients = {
+        kcal: food.foodNutrients?.find(n => n.nutrient?.name === 'Energy')?.amount || 0,
+        protein: food.foodNutrients?.find(n => n.nutrient?.name === 'Protein')?.amount || 0,
+        fat: food.foodNutrients?.find(n => n.nutrient?.name === 'Total lipid (fat)')?.amount || 0,
+        carbs: food.foodNutrients?.find(n => n.nutrient?.name === 'Carbohydrate, by difference')?.amount || 0,
+        fiber: food.foodNutrients?.find(n => n.nutrient?.name === 'Fiber, total dietary')?.amount || 0,
+        sugar: food.foodNutrients?.find(n => n.nutrient?.name === 'Sugars, total including NLEA')?.amount || 0,
+        vitaminC: food.foodNutrients?.find(n => n.nutrient?.name === 'Vitamin C, total ascorbic acid')?.amount || 0,
+        zinc: food.foodNutrients?.find(n => n.nutrient?.name === 'Zinc, Zn')?.amount || 0,
+        selenium: food.foodNutrients?.find(n => n.nutrient?.name === 'Selenium, Se')?.amount || 0,
+        iron: food.foodNutrients?.find(n => n.nutrient?.name === 'Iron, Fe')?.amount || 0,
+        omega3: 0 // USDA doesn't have omega-3 data
+      };
+      
+
+      const foodData = {
+        _id: externalId,
+        name: food.description,
+        source: 'USDA',
+        externalId: fdcId,
+        nutrients: nutrients,
+        gi: null,
+        gl: null,
+        fodmap: 'Unknown',
+        novaClass: 1,
+        tags: [],
+        provenance: {
+          source: 'USDA Database',
+          measured: true,
+          confidence: 0.9,
+          lastUpdated: new Date().toISOString()
+        }
+      };
+      
+      console.log('🔍 External food data created:', JSON.stringify(foodData, null, 2));
+      return foodData;
+    }
+
+    // Handle OpenFoodFacts food IDs
+    if (externalId.startsWith('off_')) {
+      const offId = externalId.replace('off_', '');
+      console.log('🔍 Making OpenFoodFacts API call for product ID:', offId);
+      
+      try {
+        const response = await axios.get(
+          `https://world.openfoodfacts.org/api/v0/product/${offId}.json`,
+          { timeout: 10000 }
+        );
+
+        if (!response.data || response.data.status !== 1) {
+          console.log('🔍 No data returned from OpenFoodFacts API');
+          return null;
+        }
+
+        const product = response.data.product;
+        console.log('🔍 OpenFoodFacts API response received, product name:', product.product_name);
+        
+        // Extract nutrients from OpenFoodFacts format
+        const nutrients = {
+          kcal: parseFloat(product.nutriments?.['energy-kcal_100g']) || 0,
+          protein: parseFloat(product.nutriments?.['proteins_100g']) || 0,
+          fat: parseFloat(product.nutriments?.['fat_100g']) || 0,
+          carbs: parseFloat(product.nutriments?.['carbohydrates_100g']) || 0,
+          fiber: parseFloat(product.nutriments?.['fiber_100g']) || 0,
+          sugar: parseFloat(product.nutriments?.['sugars_100g']) || 0,
+          vitaminC: parseFloat(product.nutriments?.['vitamin-c_100g']) || 0,
+          zinc: parseFloat(product.nutriments?.['zinc_100g']) || 0,
+          selenium: parseFloat(product.nutriments?.['selenium_100g']) || 0,
+          iron: parseFloat(product.nutriments?.['iron_100g']) || 0,
+          omega3: parseFloat(product.nutriments?.['omega-3-fat_100g']) || 0
+        };
+
+        const foodData = {
+          _id: externalId,
+          name: product.product_name || 'Unknown Product',
+          source: 'OpenFoodFacts',
+          externalId: offId,
+          nutrients: nutrients,
+          gi: null,
+          gl: null,
+          fodmap: 'Unknown',
+          novaClass: product.nova_group || 1,
+          tags: product.categories_tags || [],
+          brand: product.brands,
+          barcode: product.code,
+          provenance: {
+            source: 'Open Food Facts',
+            measured: false,
+            confidence: 0.7,
+            lastUpdated: new Date().toISOString()
+          }
+        };
+        
+        console.log('🔍 External food data created:', JSON.stringify(foodData, null, 2));
+        return foodData;
+      } catch (offError) {
+        console.error('Error fetching OpenFoodFacts data:', offError.message);
+        return null;
+      }
+    }
+
+    // Handle other external sources if needed
+    console.log('Unsupported external food ID format:', externalId);
+    return null;
+  } catch (error) {
+    console.error('Error fetching external food data:', error.message);
+    return null;
+  }
+}
 
 /**
  * Create a new meal
@@ -14,7 +160,7 @@ const { computeMealEffects } = require('../lib/meal/effects');
  */
 router.post('/', auth, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId;
     const { ts, items, notes, context } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -32,24 +178,47 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
-    // Fetch food items
-    const foodIds = items.map(item => item.foodId);
-    const foods = await FoodItem.find({ _id: { $in: foodIds } });
+    // Separate local and external food IDs
+    const localFoodIds = items.filter(item => 
+      /^[0-9a-fA-F]{24}$/.test(item.foodId)
+    ).map(item => item.foodId);
+    
+    const externalFoodIds = items.filter(item => 
+      !/^[0-9a-fA-F]{24}$/.test(item.foodId)
+    );
 
-    if (foods.length !== items.length) {
+    // Fetch local food items
+    const localFoods = localFoodIds.length > 0 
+      ? await FoodItem.find({ _id: { $in: localFoodIds } })
+      : [];
+
+    // Create food-grams mapping for local foods
+    const foodMap = new Map();
+    localFoods.forEach(food => foodMap.set(food._id.toString(), food));
+
+    // Handle external foods by creating temporary food objects
+    const externalFoods = [];
+    for (const item of externalFoodIds) {
+      // For now, we'll need to fetch the external food data
+      // This is a simplified approach - in production, you might want to cache this
+      const externalFood = await fetchExternalFoodData(item.foodId);
+      if (externalFood) {
+        foodMap.set(item.foodId, externalFood);
+        externalFoods.push(externalFood);
+      }
+    }
+
+    // Check if all items were found
+    if (localFoods.length + externalFoods.length !== items.length) {
       return res.status(400).json({
         message: 'Some food items were not found'
       });
     }
 
-    // Create food-grams mapping
-    const foodMap = new Map();
-    foods.forEach(food => foodMap.set(food._id.toString(), food));
-
     // Prepare items with food data
     const mealItems = items.map(item => ({
       foodId: item.foodId,
-      customName: item.customName || foodMap.get(item.foodId).name,
+      customName: item.customName || foodMap.get(item.foodId)?.name || 'Unknown Food',
       grams: item.grams
     }));
 
@@ -61,14 +230,43 @@ router.post('/', auth, async (req, res) => {
 
     const totals = aggregateNutrients(itemsWithFood);
 
+    // Get all foods (local + external) for badge inference
+    const allFoods = [...localFoods, ...externalFoods];
+
     // Infer badges
-    const badges = inferBadges(totals, foods);
+    const badges = inferBadges(totals, allFoods);
 
     // Calculate mindful meal score
     const scoreResult = mindfulMealScore(totals, badges, context);
 
-    // Compute effects
-    const effects = computeMealEffects(totals, badges, context);
+    // Compute rule-based effects first
+    const ruleBasedEffects = computeMealEffects(totals, badges, context);
+
+    // Enhance with AI analysis
+    let enhancedEffects = ruleBasedEffects;
+    try {
+      // Get user profile for AI analysis (you might want to fetch this from user model)
+      const userProfile = {
+        // Add user profile data here when available
+        // age: req.user.age,
+        // activityLevel: req.user.activityLevel,
+        // healthGoals: req.user.healthGoals,
+        // medicalConditions: req.user.medicalConditions
+      };
+
+      const mealDataForAI = {
+        items: mealItems,
+        computed: { totals, badges },
+        context: context || {}
+      };
+
+      console.log('🤖 Starting AI meal analysis...');
+      enhancedEffects = await aiService.analyzeMealEffects(mealDataForAI, userProfile, ruleBasedEffects);
+      console.log('✅ AI meal analysis completed');
+    } catch (aiError) {
+      console.error('⚠️ AI analysis failed, using rule-based effects:', aiError.message);
+      // Continue with rule-based effects if AI fails
+    }
 
     // Create meal object
     const mealData = {
@@ -83,7 +281,7 @@ router.post('/', auth, async (req, res) => {
         mindfulMealScore: scoreResult.score,
         rationale: scoreResult.rationale,
         tip: scoreResult.tip,
-        effects
+        effects: enhancedEffects
       }
     };
 
@@ -100,7 +298,7 @@ router.post('/', auth, async (req, res) => {
         totals,
         badges,
         score: scoreResult,
-        effects
+        effects: enhancedEffects
       }
     });
 
@@ -119,7 +317,7 @@ router.post('/', auth, async (req, res) => {
  */
 router.get('/', auth, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId;
     const { 
       startDate, 
       endDate, 
@@ -135,7 +333,12 @@ router.get('/', auth, async (req, res) => {
     if (startDate || endDate) {
       query.ts = {};
       if (startDate) query.ts.$gte = new Date(startDate);
-      if (endDate) query.ts.$lte = new Date(endDate);
+      if (endDate) {
+        // If endDate is provided, set it to end of day to include all meals on that date
+        const endDateObj = new Date(endDate);
+        endDateObj.setHours(23, 59, 59, 999);
+        query.ts.$lte = endDateObj;
+      }
     }
 
     // Pagination
@@ -145,6 +348,8 @@ router.get('/', auth, async (req, res) => {
     const sort = {};
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
+    console.log('🔍 GET /api/meals - Query:', JSON.stringify(query, null, 2));
+    
     const meals = await Meal.find(query)
       .populate('items.foodId')
       .sort(sort)
@@ -152,6 +357,11 @@ router.get('/', auth, async (req, res) => {
       .limit(parseInt(limit));
 
     const total = await Meal.countDocuments(query);
+    
+    console.log('🔍 GET /api/meals - Found meals:', meals.length, 'Total:', total);
+    if (meals.length > 0) {
+      console.log('🔍 Sample meal:', JSON.stringify(meals[0], null, 2));
+    }
 
     res.json({
       message: 'Meals retrieved successfully',
@@ -179,7 +389,7 @@ router.get('/', auth, async (req, res) => {
  */
 router.get('/:id', auth, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId;
     const { id } = req.params;
 
     const meal = await Meal.findOne({ _id: id, userId })
@@ -211,7 +421,7 @@ router.get('/:id', auth, async (req, res) => {
  */
 router.put('/:id', auth, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId;
     const { id } = req.params;
     const { items, notes, context, presence, energy } = req.body;
 
@@ -307,7 +517,7 @@ router.put('/:id', auth, async (req, res) => {
  */
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId;
     const { id } = req.params;
 
     const meal = await Meal.findOneAndDelete({ _id: id, userId });
@@ -337,7 +547,7 @@ router.delete('/:id', auth, async (req, res) => {
  */
 router.get('/stats/overview', auth, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId;
     const { startDate, endDate } = req.query;
 
     let query = { userId };

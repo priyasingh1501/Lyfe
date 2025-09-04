@@ -1,42 +1,40 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Trash2, Save, Info } from 'lucide-react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Search, Save } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { buildApiUrl } from '../../config';
 import toast from 'react-hot-toast';
 import FoodSearch from './FoodSearch';
 import MealItems from './MealItems';
-import MealAnalysis from './MealAnalysis';
 import MealContext from './MealContext';
 
-const MealBuilder = () => {
+const MealBuilder = ({ onMealSaved }) => {
   const { token } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [mealItems, setMealItems] = useState([]);
-  const [notes, setNotes] = useState('');
   const [context, setContext] = useState({
-    postWorkout: false,
-    bodyMassKg: 70,
-    plantDiversity: 3,
-    fermented: false,
-    omega3Tag: false,
-    addedSugar: 0
+    lateNightEating: false,
+    sedentaryAfterMeal: false,
+    stressEating: false,
+    packagedStoredLong: false,
+    mindlessEating: false
   });
   const [isSaving, setIsSaving] = useState(false);
 
   // Indian portion units with their gram equivalents
-  const indianPortionUnits = [
+  const indianPortionUnits = useMemo(() => [
     { unit: 'katori', label: 'Katori', grams: 80, description: 'Small bowl' },
+    { unit: 'bowl', label: 'Bowl', grams: 150, description: 'Medium bowl' },
+    { unit: 'piece', label: 'Piece', grams: 50, description: 'Standard piece' },
+    { unit: 'spoon', label: 'Spoon', grams: 15, description: 'Tablespoon' },
     { unit: 'roti', label: 'Roti', grams: 45, description: 'Flatbread' },
     { unit: 'idli', label: 'Idli', grams: 120, description: 'Steamed rice cake' },
     { unit: 'cup', label: 'Cup', grams: 200, description: 'Standard cup' },
-    { unit: 'spoon', label: 'Spoon', grams: 15, description: 'Tablespoon' },
-    { unit: 'piece', label: 'Piece', grams: 50, description: 'Standard piece' },
     { unit: 'handful', label: 'Handful', grams: 30, description: 'Handful' }
-  ];
+  ], []);
 
   // Search for foods using multi-source search with fallback
   const searchFoods = useCallback(async (query) => {
@@ -215,18 +213,18 @@ const MealBuilder = () => {
     const foodId = food._id || food.id || food.barcode;
     const existingItem = mealItems.find(item => item.foodId === foodId);
     
-    // Determine the portion to add - default to katori if no unit specified
-    let portionToAdd = food.portionGramsDefault || 100; // Default to 100g if not specified
-    let unitDescription = '';
+    // Determine the portion to add - default to 1 katori if no unit specified
+    let portionToAdd = 80; // Default to 1 katori (80g)
+    let unitDescription = '1 katori';
     let defaultUnit = indianPortionUnits[0]; // Default to katori
     
     if (selectedUnit) {
       portionToAdd = selectedUnit.grams;
-      unitDescription = selectedUnit.description;
+      unitDescription = `1 ${selectedUnit.unit}`;
     } else {
-      // Use default Indian portion unit (katori)
+      // Use default Indian portion unit (1 katori)
       portionToAdd = defaultUnit.grams;
-      unitDescription = defaultUnit.description;
+      unitDescription = `1 ${defaultUnit.unit}`;
       selectedUnit = defaultUnit;
     }
     
@@ -260,6 +258,7 @@ const MealBuilder = () => {
     // Clear search
     setSearchQuery('');
     setSearchResults([]);
+    setHasSearched(false);
   }, [mealItems, indianPortionUnits]);
 
   // Remove food from meal
@@ -291,9 +290,11 @@ const MealBuilder = () => {
           foodId: item.foodId,
           grams: item.grams
         })),
-        notes,
         context
       };
+
+      console.log('MealBuilder: Sending meal data:', mealData);
+      console.log('MealBuilder: Token exists:', !!token);
 
       const response = await fetch(buildApiUrl('/api/meals'), {
         method: 'POST',
@@ -305,39 +306,46 @@ const MealBuilder = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        await response.json();
         toast.success('Meal saved successfully!');
         
         // Clear form
         setMealItems([]);
-        setNotes('');
         setContext({
-          postWorkout: false,
-          bodyMassKg: 70,
-          plantDiversity: 3,
-          fermented: false,
-          omega3Tag: false,
-          addedSugar: 0
+          lateNightEating: false,
+          sedentaryAfterMeal: false,
+          stressEating: false,
+          packagedStoredLong: false,
+          mindlessEating: false
         });
+
+        // Notify parent component to refresh meal data
+        if (onMealSaved) {
+          console.log('MealBuilder: Meal saved, notifying parent to refresh');
+          onMealSaved();
+        }
       } else {
-        toast.error('Failed to save meal');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to save meal:', response.status, errorData);
+        toast.error(`Failed to save meal: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error saving meal:', error);
-      toast.error('Error saving meal');
+      toast.error(`Error saving meal: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
-  }, [mealItems, notes, context, token]);
+  }, [mealItems, context, token, onMealSaved]);
 
   // Handle search input - only update state, don't search
   const handleSearchInput = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
     
-    // Clear results when input is empty
+    // Clear results and reset search state when input is empty
     if (!query.trim()) {
       setSearchResults([]);
+      setHasSearched(false);
     }
   };
 
@@ -370,14 +378,13 @@ const MealBuilder = () => {
             MEAL BUILDER
           </h1>
           <p className="text-[#C9D1D9] font-inter text-lg">
-            Build your meal, see nutritional insights, and track your eating habits
+            Search for foods, adjust portions, and build your meal
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Food Search & Meal Items */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Food Search */}
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column - Food Search */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -395,7 +402,7 @@ const MealBuilder = () => {
                       type="text"
                       value={searchQuery}
                       onChange={handleSearchInput}
-                      placeholder="Search for foods (e.g., idli, roti, paneer)..."
+                      placeholder="Search foods..."
                       className="w-full pl-10 pr-4 py-3 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none placeholder-[#6B7280]"
                     />
                   </div>
@@ -427,7 +434,7 @@ const MealBuilder = () => {
               />
             </motion.div>
 
-            {/* Meal Items */}
+            {/* Right Column - Meal Items */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -444,8 +451,11 @@ const MealBuilder = () => {
                 onUpdatePortion={updateFoodPortion}
               />
             </motion.div>
+          </div>
 
-            {/* Notes & Context */}
+          {/* Full-width sections below */}
+          <div className="mt-6 space-y-6">
+            {/* Meal Context */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -453,14 +463,12 @@ const MealBuilder = () => {
               className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6"
             >
               <h2 className="text-xl font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
-                Meal Context & Notes
+                Meal Context
               </h2>
               
               <MealContext
                 context={context}
                 setContext={setContext}
-                notes={notes}
-                setNotes={setNotes}
               />
             </motion.div>
 
@@ -493,19 +501,6 @@ const MealBuilder = () => {
               </p>
             </motion.div>
           </div>
-
-          {/* Right Column - Live Analysis */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            className="lg:col-span-1"
-          >
-            <MealAnalysis
-              mealItems={mealItems}
-              context={context}
-            />
-          </motion.div>
         </div>
       </div>
     </div>
