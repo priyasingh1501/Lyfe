@@ -43,6 +43,7 @@ console.log('🔍 PORT:', process.env.PORT);
 console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
 console.log('🔍 COMMIT (Railway):', process.env.RAILWAY_GIT_COMMIT_SHA || 'n/a');
 console.log('🔍 COMMIT (Vercel):', process.env.VERCEL_GIT_COMMIT_SHA || 'n/a');
+console.log('🔍 DEPLOY TRIGGER:', new Date().toISOString());
 
 const app = express();
 const PORT = process.env.PORT || 5002;
