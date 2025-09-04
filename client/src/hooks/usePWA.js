@@ -9,7 +9,8 @@ export const usePWA = () => {
 
   // Register service worker
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    const isProd = process.env.NODE_ENV === 'production';
+    if (!isProd && 'serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
         .then((reg) => {

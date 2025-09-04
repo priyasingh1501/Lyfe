@@ -47,40 +47,41 @@ const PORT = process.env.PORT || 5002;
 
 // Middleware
 // Configure CORS to allow Vercel frontend and local development
+const envOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
-  process.env.CORS_ORIGIN,
+  ...envOrigins,
   'https://lyfe-six.vercel.app',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
 ];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Allow local development origins
-    if (allowedOrigins.filter(Boolean).includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // Allow file:// protocol for local testing
-    if (origin.startsWith('file://')) {
-      return callback(null, true);
-    }
-    
-    // Allow localhost variations
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      return callback(null, true);
-    }
-    
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-}));
+// Relaxed CORS: reflect request origin and succeed on preflight
+const corsOptions = {
+  origin: true,
+  credentials: false,
+  optionsSuccessStatus: 204,
+};
 
-// Handle preflight requests
-app.options('*', cors());
+app.use(cors(corsOptions));
+
+// Handle preflight requests using same options
+app.options('*', cors(corsOptions));
+
+// Explicit preflight for login to guarantee headers
+app.options('/api/auth/login', (req, res) => {
+  const reqOrigin = req.headers.origin;
+  if (reqOrigin) {
+    res.header('Access-Control-Allow-Origin', reqOrigin);
+    res.header('Vary', 'Origin');
+  }
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', req.header('Access-Control-Request-Headers') || 'content-type,authorization');
+  return res.sendStatus(204);
+});
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
