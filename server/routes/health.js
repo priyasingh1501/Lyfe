@@ -5,14 +5,26 @@ const router = express.Router();
 // Basic health check endpoint for Railway deployment
 router.get('/', (req, res) => {
   try {
-    // Basic health check - just ensure the server is running
+    const uptime = process.uptime();
+    
+    // If server just started (less than 10 seconds), return 503 to indicate not ready
+    if (uptime < 10) {
+      return res.status(503).json({
+        status: 'starting',
+        timestamp: new Date().toISOString(),
+        uptime: uptime,
+        message: 'Server is starting up, please wait...'
+      });
+    }
+    
+    // Basic health check - ensure the server is running
     const healthStatus = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
+      uptime: uptime,
       environment: process.env.NODE_ENV || 'development',
       port: process.env.PORT || 5002,
-      message: 'Server is running'
+      message: 'Server is running and ready'
     };
     
     res.status(200).json(healthStatus);
@@ -24,6 +36,14 @@ router.get('/', (req, res) => {
       error: error.message
     });
   }
+});
+
+// Simple health check endpoint (always returns 200)
+router.get('/simple', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Detailed health check endpoint

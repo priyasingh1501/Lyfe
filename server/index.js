@@ -101,11 +101,27 @@ const connectDB = async () => {
 // Connect to database
 connectDB();
 
+// Add a startup delay to ensure everything is ready
+let serverReady = false;
+setTimeout(() => {
+  serverReady = true;
+  console.log('✅ Server is fully ready for health checks');
+}, 5000);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/time', timeManagementRoutes);
 app.use('/api/health', healthRoutes);
+
+// Root health check endpoint for Railway
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
 app.use('/api/finance', financeRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/relationships', relationshipRoutes);
