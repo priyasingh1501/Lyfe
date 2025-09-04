@@ -61,7 +61,10 @@ const allowedOrigins = [
 
 // Relaxed CORS: reflect request origin and succeed on preflight
 const corsOptions = {
-  origin: true,
+  origin: (origin, callback) => {
+    // Allow all origins for now to fix CORS issues
+    callback(null, true);
+  },
   credentials: false,
   optionsSuccessStatus: 204,
 };
