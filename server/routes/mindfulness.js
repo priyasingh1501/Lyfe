@@ -3,51 +3,45 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const MindfulnessCheckin = require('../models/MindfulnessCheckin');
 
-// Helper function to add mindfulness reflection as a note to user's journal book
+// Helper function to add mindfulness reflection as a journal entry
 async function addMindfulnessReflectionToJournal(userId, title, content, tags) {
   try {
-    // Find the user's default journal book
-    const BookDocument = require('../models/BookDocument');
-    let journalBook = await BookDocument.findOne({
-      userId,
-      isDefault: true
-    });
+    // Find or create the user's journal
+    const Journal = require('../models/Journal');
+    let journal = await Journal.findOne({ userId });
     
-    if (!journalBook) {
-      // Create default journal if it doesn't exist
-      const User = require('../models/User');
-      const user = await User.findById(userId);
-      journalBook = new BookDocument({
+    if (!journal) {
+      journal = new Journal({
         userId,
-        title: `${user.firstName}'s Journal`,
-        description: 'Your personal reading and reflection journal',
-        category: 'memoir',
-        isDefault: true,
-        status: 'currently_reading'
+        entries: []
       });
-      await journalBook.save();
+      await journal.save();
     }
     
-    // Add the reflection as a note
-    const note = {
+    // Create the journal entry
+    const newEntry = {
+      title: title.trim(),
       content: content.trim(),
-      location: 'Mindfulness Check-in',
-      tags: tags || [],
-      isImportant: true,
-      isQuote: false
+      type: 'reflection',
+      mood: 'neutral',
+      tags: tags || ['mindfulness', 'daily-reflection'],
+      isPrivate: true
     };
     
-    journalBook.notes.push(note);
-    await journalBook.save();
+    // Add entry to the beginning of the journal
+    journal.entries.unshift(newEntry);
+    await journal.save();
     
-    const newNote = journalBook.notes[journalBook.notes.length - 1];
+    // Get the newly created entry (it will be at index 0)
+    const createdEntry = journal.entries[0];
     
-    console.log('📝 Added mindfulness reflection to journal book:', journalBook.title);
-    console.log('📝 Note content:', content.substring(0, 100) + '...');
+    console.log('📝 Added mindfulness reflection to journal:', journal._id);
+    console.log('📝 Entry title:', title);
+    console.log('📝 Entry content preview:', content.substring(0, 100) + '...');
     
-    return newNote;
+    return createdEntry;
   } catch (error) {
-    console.error('❌ Error adding mindfulness reflection to journal book:', error);
+    console.error('❌ Error adding mindfulness reflection to journal:', error);
     throw error;
   }
 }
@@ -344,7 +338,7 @@ router.post('/', auth, async (req, res) => {
       const journalEntries = [];
       
       if (dayReflection && dayReflection.trim()) {
-        console.log('📝 Adding mindfulness reflection to journal book:', dayReflection);
+        console.log('📝 Adding mindfulness reflection to journal:', dayReflection);
         
         const reflectionNote = await addMindfulnessReflectionToJournal(
           userId,
@@ -358,7 +352,7 @@ router.post('/', auth, async (req, res) => {
           ['mindfulness', 'daily-reflection', 'journal']
         );
         
-        console.log('📝 Reflection note added to journal book:', reflectionNote._id);
+        console.log('📝 Reflection entry added to journal:', reflectionNote._id);
         
         journalEntries.push({
           entryId: reflectionNote._id,
@@ -398,7 +392,7 @@ router.post('/', auth, async (req, res) => {
     const journalEntries = [];
     
     if (dayReflection && dayReflection.trim()) {
-      console.log('📝 Adding mindfulness reflection to journal book (create):', dayReflection);
+      console.log('📝 Adding mindfulness reflection to journal (create):', dayReflection);
       
       const reflectionNote = await addMindfulnessReflectionToJournal(
         userId,
@@ -412,7 +406,7 @@ router.post('/', auth, async (req, res) => {
         ['mindfulness', 'daily-reflection', 'journal']
       );
       
-      console.log('📝 Reflection note added to journal book (create):', reflectionNote._id);
+      console.log('📝 Reflection entry added to journal (create):', reflectionNote._id);
       
       journalEntries.push({
         entryId: reflectionNote._id,

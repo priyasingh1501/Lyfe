@@ -26,25 +26,12 @@ const Food = () => {
   return (
     <Section>
       <Header level={1}>Food & Nutrition</Header>
-      <p className="text-text-secondary mb-6">
-        Search for foods, analyze nutrition, and build balanced meals with comprehensive analysis.
-      </p>
       
-      {/* Step 1: Meal Builder */}
       <div className="mb-8">
-        <h2 className="text-lg font-semibold text-text-primary mb-4">Step 1: Build Your Meal</h2>
-        <p className="text-sm text-text-secondary mb-4">
-          Search for food items, adjust portions, and save your meal.
-        </p>
         <MealBuilder onMealSaved={triggerMealRefresh} />
       </div>
       
-      {/* Step 2: Today's Meals */}
       <div>
-        <h2 className="text-lg font-semibold text-text-primary mb-4">Step 2: Today's Meals</h2>
-        <p className="text-sm text-text-secondary mb-4">
-          View your logged meals with detailed nutrient analysis and health effects.
-        </p>
         <DailyMealKPIs refreshTrigger={refreshTrigger} />
       </div>
     </Section>

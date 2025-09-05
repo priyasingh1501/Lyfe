@@ -15,6 +15,7 @@ import JournalTrends from '../components/journal/JournalTrends';
 import {
   FinancialOverview,
   QuickActions,
+  GoalProgress,
   MindfulnessScore,
   RecentActivity,
   UpcomingReminders
@@ -34,6 +35,8 @@ const Dashboard = () => {
   useEffect(() => {
     console.log('Dashboard showImageUpload changed to:', showImageUpload);
   }, [showImageUpload]);
+
+
 
   useEffect(() => {
     fetchData();
@@ -404,231 +407,221 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
-      {/* New Dashboard Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-        {/* Mission Status - Left Column */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden"
-          style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
-        >
-          {/* Film grain overlay */}
-          <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-          
-          {/* Reason Strip */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] via-[#3EA6FF] to-[#FFD200]"></div>
-          
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
-            <div className="text-center lg:text-left">
-              <h2 className="text-lg font-semibold text-[#E8EEF2] font-oswald tracking-wide">MISSION STATUS</h2>
-              <p className="text-sm text-[#C9D1D9] font-inter">24-hour breakdown of your daily activities</p>
-            </div>
-            <a href="/goal-aligned-day" className="text-sm text-[#FFD200] hover:text-[#FFD200]/80 font-medium flex items-center justify-center font-oswald tracking-wide border border-[#2A313A] px-3 py-2 rounded hover:bg-[#2A313A] transition-all duration-200">
-              VIEW DETAILS <ArrowRight size={16} className="ml-1" />
-            </a>
+
+
+      {/* Day at a Glance - Mission Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden"
+        style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
+      >
+        {/* Film grain overlay */}
+        <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+        
+        {/* Reason Strip */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] via-[#3EA6FF] to-[#FFD200]"></div>
+        
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
+          <div className="text-center lg:text-left">
+            <h2 className="text-lg font-semibold text-[#E8EEF2] font-oswald tracking-wide">MISSION STATUS</h2>
+            <p className="text-sm text-[#C9D1D9] font-inter">24-hour breakdown of your daily activities</p>
           </div>
-          
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-            </div>
-          ) : todayTasks.length > 0 ? (
-            <div className="space-y-4">
-              {/* Day Summary Stats - Chore Chips */}
-              <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-6">
-                <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3CCB7F] rounded-lg relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-[#3CCB7F]"></div>
-                  <p className="text-base lg:text-lg font-bold text-[#3CCB7F] font-mono">
-                    {todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      const hour = taskTime.getHours();
-                      return hour >= 0 && hour < 24;
-                    }).filter(task => task.goalIds && task.goalIds.length > 0 && task.mindfulRating >= 4).length}
-                  </p>
-                  <p className="text-xs text-[#3CCB7F]/80 font-oswald tracking-wide">GOAL + MINDFUL</p>
-                </div>
-                <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3EA6FF] rounded-lg relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-[#3EA6FF]"></div>
-                  <p className="text-base lg:text-lg font-bold text-[#3EA6FF] font-mono">
-                    {todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      const hour = taskTime.getHours();
-                      return hour >= 0 && hour < 24;
-                    }).filter(task => task.goalIds && task.goalIds.length > 0 && task.mindfulRating < 4).length}
-                  </p>
-                  <p className="text-xs text-[#3EA6FF]/80 font-oswald tracking-wide">GOAL-ALIGNED</p>
-                </div>
-                <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#FFD200] rounded-lg relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-[#FFD200]"></div>
-                  <p className="text-base lg:text-lg font-bold text-[#FFD200] font-mono">
-                    {todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      const hour = taskTime.getHours();
-                      return hour >= 0 && hour < 24;
-                    }).filter(task => (!task.goalIds || task.goalIds.length === 0) && task.mindfulRating >= 4).length}
-                  </p>
-                  <p className="text-xs text-[#FFD200]/80 font-oswald tracking-wide">MINDFUL</p>
-                </div>
-                <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#D64545] rounded-lg relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-[#D64545]"></div>
-                  <p className="text-base lg:text-lg font-bold text-[#D64545] font-mono">
-                    {todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      const hour = taskTime.getHours();
-                      return hour >= 0 && hour < 24;
-                    }).filter(task => (!task.goalIds || task.goalIds.length === 0) && task.mindfulRating < 4).length}
-                  </p>
-                  <p className="text-xs text-[#D64545]/80 font-oswald tracking-wide">NOT MINDFUL, NOT GOAL-ORIENTED</p>
-                </div>
-              </div>
-              
-              {/* 24-Hour Strip - Progress Rings */}
-              <div className="flex flex-wrap justify-center gap-1 max-w-full lg:max-w-4xl mx-auto overflow-x-auto">
-                {Array.from({ length: 24 }, (_, hour) => {
-                  const hourStart = new Date();
-                  hourStart.setHours(hour, 0, 0, 0);
-                  const hourEnd = new Date(hourStart);
-                  hourEnd.setHours(hour + 1, 0, 0, 0);
-                  
-                  // Check if this hour has any activity
-                  const hasActivity = todayTasks.some(task => {
+          <a href="/goal-aligned-day" className="text-sm text-[#FFD200] hover:text-[#FFD200]/80 font-medium flex items-center justify-center font-oswald tracking-wide border border-[#2A313A] px-3 py-2 rounded hover:bg-[#2A313A] transition-all duration-200">
+            VIEW DETAILS <ArrowRight size={16} className="ml-1" />
+          </a>
+        </div>
+        
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          </div>
+        ) : todayTasks.length > 0 ? (
+          <div className="space-y-4">
+            {/* Day Summary Stats - Chore Chips */}
+            <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-6">
+              <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3CCB7F] rounded-lg relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-[#3CCB7F]"></div>
+                <p className="text-base lg:text-lg font-bold text-[#3CCB7F] font-mono">
+                  {todayTasks.filter(task => {
                     if (!task.completedAt) return false;
                     const taskTime = new Date(task.completedAt);
-                    return taskTime >= hourStart && taskTime < hourEnd;
-                  });
-                  
-                  // Check if this hour has goal-aligned activity
-                  const hasGoalAligned = todayTasks.some(task => {
-                    if (!task.completedAt || !task.goalIds || task.goalIds.length === 0) return false;
+                    const hour = taskTime.getHours();
+                    return hour >= 0 && hour < 24;
+                  }).filter(task => task.goalIds && task.goalIds.length > 0 && task.mindfulRating >= 4).length}
+                </p>
+                <p className="text-xs text-[#3CCB7F]/80 font-oswald tracking-wide">GOAL + MINDFUL</p>
+              </div>
+              <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3EA6FF] rounded-lg relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-[#3EA6FF]"></div>
+                <p className="text-base lg:text-lg font-bold text-[#3EA6FF] font-mono">
+                  {todayTasks.filter(task => {
+                    if (!task.completedAt) return false;
                     const taskTime = new Date(task.completedAt);
-                    return taskTime >= hourStart && taskTime < hourEnd;
-                  });
-                  
-                  // Check if this hour has mindful activity
-                  const hasMindful = todayTasks.some(task => {
-                    if (!task.completedAt || !task.mindfulRating || task.mindfulRating < 4) return false;
+                    const hour = taskTime.getHours();
+                    return hour >= 0 && hour < 24;
+                  }).filter(task => task.goalIds && task.goalIds.length > 0 && task.mindfulRating < 4).length}
+                </p>
+                <p className="text-xs text-[#3EA6FF]/80 font-oswald tracking-wide">GOAL-ALIGNED</p>
+              </div>
+              <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#FFD200] rounded-lg relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-[#FFD200]"></div>
+                <p className="text-base lg:text-lg font-bold text-[#FFD200] font-mono">
+                  {todayTasks.filter(task => {
+                    if (!task.completedAt) return false;
                     const taskTime = new Date(task.completedAt);
-                    return taskTime >= hourStart && taskTime < hourEnd;
-                  });
-                  
-                  let color = 'bg-[#2A313A]'; // No activity
-                  let borderColor = 'border-[#2A313A]';
-                  let status = 'No activity';
-                  
-                  if (hasActivity) {
-                    if (hasGoalAligned && hasMindful) {
-                      color = 'bg-[#3CCB7F]'; // Goal-aligned + Mindful
-                      borderColor = 'border-[#3CCB7F]';
-                      status = 'Goal-aligned + Mindful';
-                    } else if (hasGoalAligned) {
-                      color = 'bg-[#3EA6FF]'; // Only Goal-aligned
-                      borderColor = 'border-[#3EA6FF]';
-                      status = 'Goal-aligned';
-                    } else if (hasMindful) {
-                      color = 'bg-[#FFD200]'; // Only Mindful
-                      borderColor = 'border-[#FFD200]';
-                      status = 'Mindful';
-                    } else {
-                      color = 'bg-[#D64545]'; // Not mindful, not goal-oriented
-                      borderColor = 'border-[#D64545]';
-                      status = 'Not Mindful, Not Goal-Oriented';
-                    }
+                    const hour = taskTime.getHours();
+                    return hour >= 0 && hour < 24;
+                  }).filter(task => (!task.goalIds || task.goalIds.length === 0) && task.mindfulRating >= 4).length}
+                </p>
+                <p className="text-xs text-[#FFD200]/80 font-oswald tracking-wide">MINDFUL</p>
+              </div>
+              <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#D64545] rounded-lg relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-[#D64545]"></div>
+                <p className="text-base lg:text-lg font-bold text-[#D64545] font-mono">
+                  {todayTasks.filter(task => {
+                    if (!task.completedAt) return false;
+                    const taskTime = new Date(task.completedAt);
+                    const hour = taskTime.getHours();
+                    return hour >= 0 && hour < 24;
+                  }).filter(task => (!task.goalIds || task.goalIds.length === 0) && task.mindfulRating < 4).length}
+                </p>
+                <p className="text-xs text-[#D64545]/80 font-oswald tracking-wide">NOT MINDFUL, NOT GOAL-ORIENTED</p>
+              </div>
+            </div>
+            
+            {/* 24-Hour Strip - Progress Rings */}
+            <div className="flex flex-wrap justify-center gap-1 max-w-full lg:max-w-4xl mx-auto overflow-x-auto">
+              {Array.from({ length: 24 }, (_, hour) => {
+                const hourStart = new Date();
+                hourStart.setHours(hour, 0, 0, 0);
+                const hourEnd = new Date(hourStart);
+                hourEnd.setHours(hour + 1, 0, 0, 0);
+                
+                // Check if this hour has any activity
+                const hasActivity = todayTasks.some(task => {
+                  if (!task.completedAt) return false;
+                  const taskTime = new Date(task.completedAt);
+                  return taskTime >= hourStart && taskTime < hourEnd;
+                });
+                
+                // Check if this hour has goal-aligned activity
+                const hasGoalAligned = todayTasks.some(task => {
+                  if (!task.completedAt || !task.goalIds || task.goalIds.length === 0) return false;
+                  const taskTime = new Date(task.completedAt);
+                  return taskTime >= hourStart && taskTime < hourEnd;
+                });
+                
+                // Check if this hour has mindful activity
+                const hasMindful = todayTasks.some(task => {
+                  if (!task.completedAt || !task.mindfulRating || task.mindfulRating < 4) return false;
+                  const taskTime = new Date(task.completedAt);
+                  return taskTime >= hourStart && taskTime < hourEnd;
+                });
+                
+                let color = 'bg-[#2A313A]'; // No activity
+                let borderColor = 'border-[#2A313A]';
+                let status = 'No activity';
+                
+                if (hasActivity) {
+                  if (hasGoalAligned && hasMindful) {
+                    color = 'bg-[#3CCB7F]'; // Goal-aligned + Mindful
+                    borderColor = 'border-[#3CCB7F]';
+                    status = 'Goal-aligned + Mindful';
+                  } else if (hasGoalAligned) {
+                    color = 'bg-[#3EA6FF]'; // Only Goal-aligned
+                    borderColor = 'border-[#3EA6FF]';
+                    status = 'Goal-aligned';
+                  } else if (hasMindful) {
+                    color = 'bg-[#FFD200]'; // Only Mindful
+                    borderColor = 'border-[#FFD200]';
+                    status = 'Mindful';
+                  } else {
+                    color = 'bg-[#D64545]'; // Not mindful, not goal-oriented
+                    borderColor = 'border-[#D64545]';
+                    status = 'Not Mindful, Not Goal-Oriented';
                   }
-                  
-                  // Format hour for display
-                  const displayHour = hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
-                  
-                  return (
-                    <div key={hour} className="flex flex-col items-center group">
-                      <div 
-                        className={`w-3 h-4 lg:w-4 lg:h-5 xl:w-5 xl:h-6 rounded-sm ${color} border-2 ${borderColor} transition-all duration-300 hover:scale-125 cursor-pointer shadow-lg hover:shadow-[#FFD200]/20`}
-                        title={`${displayHour}\n${status}`}
-                      />
-                      <span className="text-xs text-[#C9D1D9] mt-1 group-hover:text-[#FFD200] transition-colors font-mono">
-                        {hour === 0 ? '12' : hour > 12 ? hour - 12 : hour}
-                      </span>
-                    </div>
-                  );
-                })}
+                }
+                
+                // Format hour for display
+                const displayHour = hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
+                
+                return (
+                  <div key={hour} className="flex flex-col items-center group">
+                    <div 
+                      className={`w-3 h-4 lg:w-4 lg:h-5 xl:w-5 xl:h-6 rounded-sm ${color} border-2 ${borderColor} transition-all duration-300 hover:scale-125 cursor-pointer shadow-lg hover:shadow-[#FFD200]/20`}
+                      title={`${displayHour}\n${status}`}
+                    />
+                    <span className="text-xs text-[#C9D1D9] mt-1 group-hover:text-[#FFD200] transition-colors font-mono">
+                      {hour === 0 ? '12' : hour > 12 ? hour - 12 : hour}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Legend */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 lg:gap-3 text-sm max-w-4xl mx-auto">
+              <div className="flex items-center space-x-2 justify-center">
+                <div className="w-3 h-3 rounded-sm bg-[#3CCB7F]"></div>
+                <span className="text-[#C9D1D9] text-xs">Goal + Mindful</span>
               </div>
-              
-              {/* Legend */}
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 lg:gap-3 text-sm max-w-4xl mx-auto">
-                <div className="flex items-center space-x-2 justify-center">
-                  <div className="w-3 h-3 rounded-sm bg-[#3CCB7F]"></div>
-                  <span className="text-[#C9D1D9] text-xs">Goal + Mindful</span>
-                </div>
-                <div className="flex items-center space-x-2 justify-center">
-                  <div className="w-3 h-3 rounded-sm bg-[#3EA6FF]"></div>
-                  <span className="text-[#C9D1D9] text-xs">Goal-aligned</span>
-                </div>
-                <div className="flex items-center space-x-2 justify-center">
-                  <div className="w-3 h-3 rounded-sm bg-[#FFD200]"></div>
-                  <span className="text-[#C9D1D9] text-xs">Mindful</span>
-                </div>
-                <div className="flex items-center space-x-2 justify-center">
-                  <div className="w-3 h-3 rounded-sm bg-[#D64545]"></div>
-                  <span className="text-[#C9D1D9] text-xs">Not Mindful, Not Goal-Oriented</span>
-                </div>
-                <div className="flex items-center space-x-2 justify-center">
-                  <div className="w-3 h-3 rounded-sm bg-[#2A313A]"></div>
-                  <span className="text-[#C9D1D9] text-xs">No activity</span>
-                </div>
+              <div className="flex items-center space-x-2 justify-center">
+                <div className="w-3 h-3 rounded-sm bg-[#3EA6FF]"></div>
+                <span className="text-[#C9D1D9] text-xs">Goal-aligned</span>
+              </div>
+              <div className="flex items-center space-x-2 justify-center">
+                <div className="w-3 h-3 rounded-sm bg-[#FFD200]"></div>
+                <span className="text-[#C9D1D9] text-xs">Mindful</span>
+              </div>
+              <div className="flex items-center space-x-2 justify-center">
+                <div className="w-3 h-3 rounded-sm bg-[#D64545]"></div>
+                <span className="text-[#C9D1D9] text-xs">Not Mindful, Not Goal-Oriented</span>
+              </div>
+              <div className="flex items-center space-x-2 justify-center">
+                <div className="w-3 h-3 rounded-sm bg-[#2A313A]"></div>
+                <span className="text-[#C9D1D9] text-xs">No activity</span>
               </div>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-[#2A313A] rounded-full mx-auto mb-4 flex items-center justify-center">
-                <Clock className="text-[#C9D1D9]" size={24} />
-              </div>
-              <h3 className="text-lg font-semibold text-[#E8EEF2] mb-2">No Tasks Today</h3>
-              <p className="text-[#C9D1D9] mb-4">Complete some tasks to see your day breakdown</p>
-              <a 
-                href="/goal-aligned-day" 
-                className="inline-flex items-center px-4 py-2 bg-[#FFD200] text-[#0A0C0F] rounded-lg hover:bg-[#FFD200]/90 transition-colors font-oswald tracking-wide min-h-[44px]"
-              >
-                ADD YOUR FIRST TASK
-              </a>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-[#2A313A] rounded-full mx-auto mb-4 flex items-center justify-center">
+              <Clock className="text-[#C9D1D9]" size={24} />
             </div>
-          )}
-        </motion.div>
+            <h3 className="text-lg font-semibold text-[#E8EEF2] mb-2">No Tasks Today</h3>
+            <p className="text-[#C9D1D9] mb-4">Complete some tasks to see your day breakdown</p>
+            <a 
+              href="/goal-aligned-day" 
+              className="inline-flex items-center px-4 py-2 bg-[#FFD200] text-[#0A0C0F] rounded-lg hover:bg-[#FFD200]/90 transition-colors font-oswald tracking-wide min-h-[44px]"
+            >
+              ADD YOUR FIRST TASK
+            </a>
+          </div>
+        )}
+      </motion.div>
 
-        {/* Financial Overview - Right Column */}
-        <FinancialOverview />
-      </div>
 
-      {/* Second Row - Three Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        {/* Daily Meal KPIs */}
-        <DailyMealKPIs />
+
+
+
         
-        {/* Journal Trends */}
-        <JournalTrends />
-        
-        {/* Quick Actions */}
-        <QuickActions />
-      </div>
 
-      {/* Third Row - Single Column */}
-      <div className="grid grid-cols-1 gap-4 lg:gap-6">
-        {/* Mindfulness Score */}
-        <MindfulnessScore />
-      </div>
 
-      {/* Fourth Row - Full Width */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-        {/* Recent Activity */}
-        <RecentActivity />
-        
-        {/* Upcoming & Reminders */}
-        <UpcomingReminders />
-      </div>
+
+
+          {/* Financial Goals */}
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-900 mb-2">92%</div>
+            <div className="text-sm text-gray-600 mb-3">Budget Adherence</div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-finance-600 h-2 rounded-full" style={{ width: '92%' }}></div>
+            </div>
+          </div>
+
+
+
     </div>
   );
 };

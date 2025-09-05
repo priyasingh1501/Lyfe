@@ -368,19 +368,6 @@ const MealBuilder = ({ onMealSaved }) => {
   return (
     <div className="min-h-screen bg-[#0A0C0F] p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <h1 className="text-4xl font-bold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
-            MEAL BUILDER
-          </h1>
-          <p className="text-[#C9D1D9] font-inter text-lg">
-            Search for foods, adjust portions, and build your meal
-          </p>
-        </motion.div>
 
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

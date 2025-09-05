@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { buildApiUrl } from '../../config';
-import { Calendar, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 const DailyMealKPIs = ({ refreshTrigger }) => {
   const { token } = useAuth();
@@ -368,13 +368,9 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
 
   if (!currentMeals.length) {
     return (
-      <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-6 mb-6">
-        <div className="text-center">
-          <Calendar className="mx-auto h-12 w-12 text-text-muted mb-4" />
-          <h3 className="text-lg font-medium text-text-primary mb-2">
-            No meals logged {activeTab === 'day' ? 'today' : 'this month'}
-          </h3>
-          <p className="text-text-secondary">Start by building your first meal above!</p>
+      <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-4 mb-6">
+        <div className="text-center text-text-secondary">
+          No meals {activeTab === 'day' ? 'today' : 'this month'}
         </div>
       </div>
     );
@@ -382,16 +378,16 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
 
   return (
     <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-6 mb-6">
-      {/* Header with Tabs */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-semibold text-text-primary">
-            {activeTab === 'day' ? "Today's Meals" : "This Month's Meals"}
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-text-primary">
+            {activeTab === 'day' ? 'Today' : 'This Month'}
           </h2>
-          <div className="flex bg-background-tertiary rounded-lg p-1">
+          <div className="flex bg-background-tertiary rounded p-1">
             <button
               onClick={() => setActiveTab('day')}
-              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+              className={`px-2 py-1 text-xs rounded transition-colors ${
                 activeTab === 'day'
                   ? 'bg-accent-green text-text-inverse'
                   : 'text-text-secondary hover:text-text-primary'
@@ -401,7 +397,7 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
             </button>
             <button
               onClick={() => setActiveTab('month')}
-              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+              className={`px-2 py-1 text-xs rounded transition-colors ${
                 activeTab === 'month'
                   ? 'bg-accent-green text-text-inverse'
                   : 'text-text-secondary hover:text-text-primary'
@@ -414,142 +410,142 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center gap-2 px-3 py-1 text-sm text-text-secondary hover:text-text-primary disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-xs text-text-secondary hover:text-text-primary disabled:opacity-50 transition-colors"
         >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh
         </button>
       </div>
 
       {/* Nutrition Summary */}
-      <div className="mb-6 p-4 bg-background-tertiary rounded-lg">
-        <h3 className="text-sm font-medium text-text-primary mb-3">
-          {activeTab === 'day' ? 'Daily' : 'Monthly'} Nutrition Summary
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="mb-4 p-3 bg-background-tertiary rounded-lg">
+        <div className="grid grid-cols-4 gap-3">
           <div className="text-center">
-            <div className="text-2xl font-bold text-text-primary">{Math.round(currentNutrition.kcal || 0)}</div>
-            <div className="text-xs text-text-secondary">Calories</div>
+            <div className="text-lg font-bold text-text-primary">{Math.round(currentNutrition.kcal || 0)}</div>
+            <div className="text-xs text-text-secondary">kcal</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-text-primary">{Math.round(currentNutrition.protein || 0)}g</div>
-            <div className="text-xs text-text-secondary">Protein</div>
+            <div className="text-lg font-bold text-text-primary">{Math.round(currentNutrition.protein || 0)}g</div>
+            <div className="text-xs text-text-secondary">protein</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-text-primary">{Math.round(currentNutrition.carbs || 0)}g</div>
-            <div className="text-xs text-text-secondary">Carbs</div>
+            <div className="text-lg font-bold text-text-primary">{Math.round(currentNutrition.carbs || 0)}g</div>
+            <div className="text-xs text-text-secondary">carbs</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-text-primary">{Math.round(currentNutrition.fat || 0)}g</div>
-            <div className="text-xs text-text-secondary">Fat</div>
+            <div className="text-lg font-bold text-text-primary">{Math.round(currentNutrition.fat || 0)}g</div>
+            <div className="text-xs text-text-secondary">fat</div>
           </div>
         </div>
         
-        {/* Health Effects */}
+        {/* Health Effects Summary */}
         {Object.keys(currentEffects).length > 0 && (
-          <div className="mt-4">
-            <h4 className="text-xs font-medium text-text-secondary mb-2">
-              {activeTab === 'day' ? 'Daily' : 'Monthly'} Health Effects
-            </h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {Object.entries(currentEffects).map(([effectKey, effectData]) => {
-                const score = effectData.score || 0;
-                const bgColor = score >= 6 ? 'bg-green-900/20 border-green-500/30' : 
-                               score >= 4 ? 'bg-yellow-900/20 border-yellow-500/30' : 
-                               'bg-red-900/20 border-red-500/30';
+          <div className="mt-3">
+            <details className="group">
+              <summary className="cursor-pointer text-xs text-text-secondary hover:text-text-primary transition-colors">
+                Effects ({Object.keys(currentEffects).length})
+              </summary>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {Object.entries(currentEffects).map(([effectKey, effectData]) => {
+                  const score = effectData.score || 0;
+                  const bgColor = score >= 6 ? 'bg-green-900/20 border-green-500/30' : 
+                                 score >= 4 ? 'bg-yellow-900/20 border-yellow-500/30' : 
+                                 'bg-red-900/20 border-red-500/30';
 
-                return (
-                  <div 
-                    key={effectKey} 
-                    className={`p-2 rounded border ${bgColor} cursor-pointer hover:opacity-80 transition-opacity`}
-                    onClick={() => handleEffectClick(effectKey, effectData, null)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">{icons[effectKey] || '📊'}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <div className="text-xs font-medium text-text-primary truncate">
-                            {labels[effectKey] || effectKey}
-                          </div>
-                          <span className="text-xs bg-blue-500/20 text-blue-300 px-1 py-0.5 rounded-full border border-blue-400/30 flex-shrink-0">
-                            AI
-                          </span>
-                        </div>
-                        <div className="text-xs text-text-secondary">
-                          {score} pts
-                        </div>
-                        <div className="text-xs text-blue-200 mt-1 line-clamp-1">
-                          {(effectData.aiInsights && effectData.aiInsights.split('.')[0] + '.') || (effectData.why && effectData.why.length ? String(effectData.why[0]) : 'AI analysed contributing items')}
-                        </div>
-                      </div>
+                  return (
+                    <div 
+                      key={effectKey} 
+                      className={`px-2 py-1 rounded border text-xs cursor-pointer hover:opacity-80 transition-opacity ${bgColor}`}
+                      onClick={() => handleEffectClick(effectKey, effectData, null)}
+                    >
+                      <span className="text-xs">{icons[effectKey] || '📊'}</span>
+                      <span className="ml-1 font-medium">{labels[effectKey] || effectKey}</span>
+                      <span className="ml-1 text-text-secondary">({score})</span>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </details>
           </div>
         )}
       </div>
 
       {/* Individual Meals List */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium text-text-primary mb-2">Meal Details</h3>
+      <div className="space-y-2">
         {currentMeals.map((meal, index) => (
-          <div key={meal._id || index} className="bg-background-tertiary/60 border border-border-primary rounded-lg p-3 shadow-sm">
+          <div key={meal._id || index} className="bg-background-tertiary/60 border border-border-primary rounded-lg p-3">
             {/* Meal Header */}
             <div className="flex items-center justify-between mb-2">
-              <div className="flex flex-col">
+              <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-text-primary">
                   {formatMealTime(meal.ts)}
                 </span>
-                <span className="text-xs text-text-muted">Meal {index + 1}</span>
-              </div>
-              {meal.computed?.mindfulMealScore && (
-                <div className="text-xs text-text-secondary">
-                  <span>Score:</span>
-                  <span className="ml-1 font-medium text-text-primary">
+                {meal.computed?.mindfulMealScore && (
+                  <span className="text-xs bg-blue-900/20 text-blue-300 px-2 py-1 rounded">
                     {meal.computed.mindfulMealScore}/10
                   </span>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Meal Items */}
-            <div className="mb-3">
-              <div className="space-y-1">
+            <div className="mb-2">
+              <div className="flex flex-wrap gap-2">
                 {meal.items?.map((item, itemIndex) => (
-                  <div key={itemIndex} className="flex justify-between text-sm">
-                    <span className="text-text-primary">
-                      {item.customName || item.food?.name || 'Unknown food'}
-                    </span>
-                    <span className="text-text-muted">
-                      {item.grams}g
-                    </span>
-                  </div>
+                  <span key={itemIndex} className="text-xs bg-background-primary px-2 py-1 rounded">
+                    {item.customName || item.food?.name || 'Unknown food'} ({item.grams}g)
+                  </span>
                 ))}
               </div>
             </div>
 
             {/* Nutrition Summary */}
             {meal.computed?.totals && (
-              <div className="flex flex-wrap gap-2 text-xs">
-                <span className="px-2 py-1 rounded bg-background-primary border border-border-primary text-text-secondary">{meal.computed.totals.kcal || 0} kcal</span>
-                <span className="px-2 py-1 rounded bg-background-primary border border-border-primary text-text-secondary">{meal.computed.totals.protein || 0}g protein</span>
-                <span className="px-2 py-1 rounded bg-background-primary border border-border-primary text-text-secondary">{meal.computed.totals.carbs || 0}g carbs</span>
-                <span className="px-2 py-1 rounded bg-background-primary border border-border-primary text-text-secondary">{meal.computed.totals.fat || 0}g fat</span>
+              <div className="flex flex-wrap gap-1 text-xs mb-2">
+                <span className="px-2 py-1 rounded bg-background-primary text-text-secondary">{meal.computed.totals.kcal || 0} kcal</span>
+                <span className="px-2 py-1 rounded bg-background-primary text-text-secondary">{meal.computed.totals.protein || 0}g protein</span>
+                <span className="px-2 py-1 rounded bg-background-primary text-text-secondary">{meal.computed.totals.carbs || 0}g carbs</span>
+                <span className="px-2 py-1 rounded bg-background-primary text-text-secondary">{meal.computed.totals.fat || 0}g fat</span>
               </div>
             )}
+
+            {/* AI Analysis for this meal */}
+            {meal.computed?.effects && Object.keys(meal.computed.effects).length > 0 ? (
+              <div className="mt-2 pt-2 border-t border-border-primary bg-blue-900/10 rounded p-2">
+                <div className="flex flex-wrap gap-1">
+                  {Object.entries(meal.computed.effects).map(([effectKey, effectData]) => {
+                    const score = effectData.score || 0;
+                    const bgColor = score >= 6 ? 'bg-green-900/20 border-green-500/30' : 
+                                   score >= 4 ? 'bg-yellow-900/20 border-yellow-500/30' : 
+                                   'bg-red-900/20 border-red-500/30';
+
+                    return (
+                      <div 
+                        key={effectKey} 
+                        className={`px-2 py-1 rounded border text-xs cursor-pointer hover:opacity-80 transition-opacity ${bgColor}`}
+                        onClick={() => handleEffectClick(effectKey, effectData, meal)}
+                      >
+                        <span className="text-xs">{icons[effectKey] || '📊'}</span>
+                        <span className="ml-1 font-medium">{labels[effectKey] || effectKey}</span>
+                        <span className="ml-1 text-text-secondary">({score})</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
         ))}
       </div>
 
       {/* Meal Count Summary */}
-      <div className="mt-6 pt-4 border-t border-border-primary">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-text-secondary">Total meals today:</span>
-          <span className="font-medium text-text-primary">{dailyMeals.length}</span>
+      {currentMeals.length > 0 && (
+        <div className="mt-3 text-center">
+          <div className="text-xs text-text-secondary">
+            {currentMeals.length} meal{currentMeals.length !== 1 ? 's' : ''} {activeTab === 'day' ? 'today' : 'this month'}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Effect Details Modal */}
       {selectedEffect && (

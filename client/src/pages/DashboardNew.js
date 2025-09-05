@@ -15,6 +15,7 @@ import JournalTrends from '../components/journal/JournalTrends';
 import {
   FinancialOverview,
   QuickActions,
+  GoalProgress,
   MindfulnessScore,
   RecentActivity,
   UpcomingReminders
@@ -615,8 +616,11 @@ const Dashboard = () => {
         <QuickActions />
       </div>
 
-      {/* Third Row - Single Column */}
-      <div className="grid grid-cols-1 gap-4 lg:gap-6">
+      {/* Third Row - Two Columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+        {/* Goal Progress */}
+        <GoalProgress />
+        
         {/* Mindfulness Score */}
         <MindfulnessScore />
       </div>
