@@ -12,13 +12,7 @@ const mongoose = require('mongoose');
 
 // Import routes
 const authRoutes = require('./routes/auth');
-const taskRoutes = require('./routes/tasks');
-const timeManagementRoutes = require('./routes/timeManagement');
-const healthRoutes = require('./routes/health');
 const financeRoutes = require('./routes/finance');
-const documentRoutes = require('./routes/documents');
-const relationshipRoutes = require('./routes/relationships');
-const communicationRoutes = require('./routes/communication');
 const journalRoutes = require('./routes/journal');
 const contentRoutes = require('./routes/content');
 const bookDocumentRoutes = require('./routes/bookDocuments');
@@ -28,7 +22,6 @@ const habitRoutes = require('./routes/habits');
 const mindfulnessRoutes = require('./routes/mindfulness');
 const foodRoutes = require('./routes/food');
 const mealsRoutes = require('./routes/meals');
-const pantryRoutes = require('./routes/pantry');
 const devRoutes = require('./routes/dev');
 
 // Debug environment variable loading
@@ -138,9 +131,6 @@ setTimeout(() => {
 const authCors = cors({ origin: true, credentials: false, optionsSuccessStatus: 204 });
 app.options('/api/auth/*', authCors);
 app.use('/api/auth', authCors, authRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/time', timeManagementRoutes);
-app.use('/api/health', healthRoutes);
 
 // Root health check endpoint for Railway
 app.get('/health', (req, res) => {
@@ -151,9 +141,6 @@ app.get('/health', (req, res) => {
   });
 });
 app.use('/api/finance', financeRoutes);
-app.use('/api/documents', documentRoutes);
-app.use('/api/relationships', relationshipRoutes);
-app.use('/api/communication', communicationRoutes);
 app.use('/api/journal', journalRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/book-documents', bookDocumentRoutes);
@@ -163,7 +150,6 @@ app.use('/api/habits', habitRoutes);
 app.use('/api/mindfulness', mindfulnessRoutes);
 app.use('/api/food', foodRoutes);
 app.use('/api/meals', mealsRoutes);
-app.use('/api/pantry', pantryRoutes);
 app.use('/api/dev', devRoutes);
 
 // Serve static files in production

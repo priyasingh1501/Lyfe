@@ -12,32 +12,37 @@
    - `OPENAI_API_KEY` (your OpenAI API key)
    - `NODE_ENV=production`
 5. **Deploy** - Render will automatically build and deploy both services
-6. **Note**: Render now uses a starter plan ($7/month) instead of free tier
+6. **Cost**: $7/month starter plan
 
-### Option 2: Railway
+### Option 2: Vercel + Railway (Cost Effective)
+- **Frontend**: Vercel (free tier)
+- **Backend**: Railway ($5/month)
+- **Total Cost**: $5/month
+
+#### Deploy Frontend to Vercel:
+1. Go to [vercel.com](https://vercel.com) and sign up
+2. Import your GitHub repository
+3. Configure build settings:
+   - Root Directory: `./`
+   - Build Command: `cd client && npm install && npm run build`
+   - Output Directory: `client/build`
+4. Set environment variable: `REACT_APP_API_URL=https://your-railway-backend-url.railway.app`
+
+#### Deploy Backend to Railway:
+1. Go to [railway.app](https://railway.app) and sign up
+2. Connect GitHub and select your repository
+3. Set environment variables:
+   - `NODE_ENV=production`
+   - `MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/untangle`
+   - `JWT_SECRET=your_jwt_secret_here`
+   - `OPENAI_API_KEY=sk-your_openai_key_here`
+
+### Option 3: Railway (All-in-One)
 1. **Sign up** at [railway.app](https://railway.app)
 2. **Connect** your GitHub repository
 3. **Deploy** - Railway will auto-detect and deploy
 4. **Set environment variables** in Railway dashboard
-
-### Option 3: Heroku
-1. **Install Heroku CLI**: `npm install -g heroku`
-2. **Login**: `heroku login`
-3. **Create app**: `heroku create your-untangle-app`
-4. **Set environment variables**:
-   ```bash
-   heroku config:set NODE_ENV=production
-   heroku config:set MONGODB_URI=your_mongodb_uri
-   heroku config:set JWT_SECRET=your_jwt_secret
-   heroku config:set OPENAI_API_KEY=your_openai_key
-   ```
-5. **Deploy**: `git push heroku main`
-
-### Option 4: Vercel (Frontend Only)
-1. **Sign up** at [vercel.com](https://vercel.com)
-2. **Import** your repository
-3. **Configure** build settings to point to `client` folder
-4. **Deploy**
+5. **Cost**: $5/month minimum
 
 ## Environment Variables Required
 

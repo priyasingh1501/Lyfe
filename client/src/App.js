@@ -6,22 +6,14 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout/Layout';
 import { PWAInstall, MobileNav, MobileInstallGuide } from './components/ui';
 import Dashboard from './pages/Dashboard';
-import Tasks from './pages/Tasks';
-import TimeManagement from './pages/TimeManagement';
-import Health from './pages/Health';
 import Finance from './pages/Finance';
-import Documents from './pages/Documents';
-import Relationships from './pages/Relationships';
-import Communication from './pages/Communication';
 import Journal from './pages/Journal';
 import Content from './pages/Content';
 import GoalAlignedDay from './pages/GoalAlignedDay';
 import Food from './pages/Food';
-import Pantry from './pages/Pantry';
 import AiChat from './pages/AiChat';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
-import Profile from './pages/Profile';
 import './index.css';
 
 // Create a client
@@ -135,20 +127,12 @@ function App() {
               }>
                 <Route index element={<Navigate to="/overview" replace />} />
                 <Route path="overview" element={<Dashboard />} />
-                <Route path="tasks" element={<Tasks />} />
-                <Route path="time-management" element={<TimeManagement />} />
-                <Route path="health" element={<Health />} />
                 <Route path="finance" element={<Finance />} />
-                <Route path="documents" element={<Documents />} />
-                <Route path="relationships" element={<Relationships />} />
-                <Route path="communication" element={<Communication />} />
                 <Route path="journal" element={<Journal />} />
                 <Route path="content" element={<Content />} />
                 <Route path="goal-aligned-day" element={<GoalAlignedDay />} />
                 <Route path="food" element={<Food />} />
-                <Route path="pantry" element={<Pantry />} />
                 <Route path="ai-chat" element={<AiChat />} />
-                <Route path="profile" element={<Profile />} />
               </Route>
               
               {/* Catch all route */}

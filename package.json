@@ -9,7 +9,11 @@
     "seed:all": "node scripts/seedUpgrader.js",
     "seed:qa": "node scripts/seedUpgrader.js --qa-only",
     "seed:ifct": "node scripts/seedFoodData.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:watch": "vitest --watch",
+    "test:run": "vitest run"
   },
   "keywords": [
     "lifestyle",
@@ -32,6 +36,12 @@
     "openai": "^4.20.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "@vitejs/plugin-react": "^5.0.2",
+    "@vitest/coverage-v8": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "mongodb-memory-server": "^10.2.0",
+    "nodemon": "^3.0.1",
+    "supertest": "^6.3.3",
+    "vitest": "^1.0.0"
   }
 }

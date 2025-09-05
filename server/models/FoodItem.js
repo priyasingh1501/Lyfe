@@ -223,4 +223,4 @@ foodItemSchema.methods.getNutrientPerGram = function(nutrient) {
   return 0;
 };
 
-module.exports = mongoose.model('FoodItem', foodItemSchema);
+module.exports = mongoose.models.FoodItem || mongoose.model('FoodItem', foodItemSchema);

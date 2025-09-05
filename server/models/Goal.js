@@ -51,4 +51,4 @@ goalSchema.virtual('targetMinutes').get(function() {
   return this.targetHours * 60;
 });
 
-module.exports = mongoose.model('LifestyleGoal', goalSchema);
+module.exports = mongoose.models.LifestyleGoal || mongoose.model('LifestyleGoal', goalSchema);

@@ -44,16 +44,9 @@ html {
 }
 
 body {
-  height: 100%;
-}
-
-#root {
-  height: 100%;
-}
-
-body {
   margin: 0;
   padding: 0;
+  height: 100%;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -65,8 +58,7 @@ body {
   overflow-x: hidden;
 }
 
-html {
-  scroll-behavior: smooth;
+#root {
   height: 100%;
 }
 
@@ -123,11 +115,6 @@ code {
   input, select, textarea {
     min-height: 44px;
     font-size: 16px; /* Prevents zoom on iOS */
-  }
-  
-  /* Smooth scrolling */
-  html {
-    scroll-behavior: smooth;
   }
   
   /* Prevent horizontal scroll */

@@ -174,4 +174,4 @@ foodTrackingSchema.methods.calculateNutritionAnalysis = function() {
   return this;
 };
 
-module.exports = mongoose.model('FoodTracking', foodTrackingSchema);
+module.exports = mongoose.models.FoodTracking || mongoose.model('FoodTracking', foodTrackingSchema);

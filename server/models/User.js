@@ -99,4 +99,4 @@ userSchema.methods.getProfile = function() {
   return userObject;
 };
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);
