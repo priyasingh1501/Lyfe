@@ -114,7 +114,7 @@ const aiChatSchema = new mongoose.Schema({
   assistantConfig: {
     name: {
       type: String,
-      default: 'Lyfe'
+      default: 'Untangle'
     },
     personality: {
       type: String,

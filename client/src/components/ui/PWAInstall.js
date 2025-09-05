@@ -14,7 +14,7 @@ const PWAInstall = () => {
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <h3 className="text-[#E8EEF2] font-semibold text-sm">
-            📱 Install Lyfe App
+            📱 Install Untangle App
           </h3>
           <p className="text-[#C9D1D9] text-xs mt-1">
             Get quick access and work offline

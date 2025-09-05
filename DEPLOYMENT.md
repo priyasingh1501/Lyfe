@@ -1,4 +1,4 @@
-# 🚀 Lyfe Application Deployment Guide
+# 🚀 Untangle Application Deployment Guide
 
 ## Quick Deploy Options
 
@@ -23,7 +23,7 @@
 ### Option 3: Heroku
 1. **Install Heroku CLI**: `npm install -g heroku`
 2. **Login**: `heroku login`
-3. **Create app**: `heroku create your-lyfe-app`
+3. **Create app**: `heroku create your-untangle-app`
 4. **Set environment variables**:
    ```bash
    heroku config:set NODE_ENV=production
@@ -47,7 +47,7 @@ NODE_ENV=production
 PORT=10000 (or your preferred port)
 
 # Database
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/lyfe
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/untangle
 
 # Security
 JWT_SECRET=your_super_secret_jwt_key_here

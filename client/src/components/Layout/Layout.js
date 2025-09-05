@@ -257,7 +257,7 @@ const Layout = () => {
                 "text-xl font-bold tracking-wide transition-all duration-300",
                 isMobile ? 'opacity-100' : sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
               )}>
-                Lyfe
+                Untangle
               </span>
               {isMobile && (
                 <button
@@ -372,7 +372,7 @@ const Layout = () => {
                 "text-xl font-semibold tracking-wide",
                 isMobile ? 'text-lg' : 'text-xl'
               )}>
-                Lyfe
+                Untangle
               </h1>
             </div>
             

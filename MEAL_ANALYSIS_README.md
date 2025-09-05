@@ -1,6 +1,6 @@
 # 🍽️ Meal Analysis System
 
-A comprehensive meal tracking and nutritional analysis system built for the Lyfe app, specifically designed for Indian users with intelligent food recommendations and health insights.
+A comprehensive meal tracking and nutritional analysis system built for the Untangle app, specifically designed for Indian users with intelligent food recommendations and health insights.
 
 ## ✨ Features
 
@@ -280,4 +280,4 @@ DEBUG=meal-analysis:*
 
 ---
 
-**Built with ❤️ for the Lyfe community**
+**Built with ❤️ for the Untangle community**

@@ -68,7 +68,7 @@ const AiChat = () => {
           setMessages([{
             id: 'welcome',
             role: 'assistant',
-            content: `Hi ${data.userProfile?.goals?.length > 0 ? 'there' : '! I\'m Lyfe, your AI lifestyle assistant'}! I'm here to work on today?`,
+            content: `Hi ${data.userProfile?.goals?.length > 0 ? 'there' : '! I\'m Untangle, your AI lifestyle assistant'}! I'm here to work on today?`,
             timestamp: new Date(),
             metadata: {}
           }]);

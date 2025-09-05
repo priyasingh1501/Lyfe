@@ -82,7 +82,25 @@ For each effect, provide:
 - why: Array of specific reasons explaining the score
 - aiInsights: Additional AI-generated insights about the meal
 
-Be precise, evidence-based, and consider the user's individual context.`
+Be precise, evidence-based, and consider the user's individual context.
+
+IMPORTANT: Return your response as valid JSON in this exact format:
+{
+  "fatForming": {
+    "score": 0-10,
+    "label": "Very Low/Low/Medium/High/Very High",
+    "why": ["reason1", "reason2"],
+    "aiInsights": "AI insight about this effect"
+  },
+  "strength": {
+    "score": 0-10,
+    "label": "Very Low/Low/Medium/High/Very High", 
+    "why": ["reason1", "reason2"],
+    "aiInsights": "AI insight about this effect"
+  },
+  // ... repeat for all effects
+  "aiInsights": "Overall AI insights about this meal"
+}`
           },
           {
             role: 'user',
@@ -165,9 +183,28 @@ Be precise, evidence-based, and consider the user's individual context.`
       const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
+        
+        // Merge with rule-based effects, preserving individual effect structures
+        const enhancedEffects = { ...ruleBasedEffects };
+        
+        // Update each effect with AI data if available
+        Object.keys(ruleBasedEffects).forEach(effectKey => {
+          if (parsed[effectKey]) {
+            enhancedEffects[effectKey] = {
+              ...ruleBasedEffects[effectKey],
+              ...parsed[effectKey],
+              aiEnhanced: true
+            };
+          }
+        });
+        
+        // Add general AI insights if available
+        if (parsed.aiInsights) {
+          enhancedEffects.aiInsights = parsed.aiInsights;
+        }
+        
         return {
-          ...ruleBasedEffects,
-          ...parsed,
+          ...enhancedEffects,
           aiEnhanced: true,
           aiResponse: aiResponse
         };

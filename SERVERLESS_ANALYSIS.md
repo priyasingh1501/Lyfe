@@ -1,4 +1,4 @@
-# 🔄 Serverless vs Traditional Deployment Analysis for Lyfe App
+# 🔄 Serverless vs Traditional Deployment Analysis for Untangle App
 
 ## 📊 **Functionality Impact Assessment**
 

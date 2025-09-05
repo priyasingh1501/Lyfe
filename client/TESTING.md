@@ -1,4 +1,4 @@
-# Testing Guide for Lyfe Frontend
+# Testing Guide for Untangle Frontend
 
 This document provides comprehensive information about testing the React frontend application.
 

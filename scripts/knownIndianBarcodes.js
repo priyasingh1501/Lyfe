@@ -6,7 +6,7 @@ const axios = require('axios');
 async function testKnownBarcodes() {
   console.log('🇮🇳 Testing known Indian food product barcodes...\n');
   
-  const UA = "LyfeApp/1.0 (support@lyfe.example)";
+  const UA = "UntangleApp/1.0 (support@untangle.example)";
   const BASE = "https://world.openfoodfacts.org/api/v2";
   
   // Known Indian food product barcodes (these are examples - you should verify with real products)

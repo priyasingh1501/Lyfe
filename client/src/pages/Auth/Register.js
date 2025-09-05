@@ -108,7 +108,7 @@ const Register = () => {
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             className="mx-auto w-20 h-20 bg-gradient-to-r from-[#FFD200] via-[#3CCB7F] to-[#4ECDC4] rounded-2xl flex items-center justify-center shadow-lg"
           >
-            <span className="text-[#0A0C0F] font-bold text-3xl">L</span>
+            <span className="text-[#0A0C0F] font-bold text-3xl">U</span>
           </motion.div>
           <motion.h2
             initial={{ opacity: 0, y: 10 }}
@@ -124,7 +124,7 @@ const Register = () => {
             transition={{ delay: 0.4 }}
             className="mt-2 text-sm text-[#C9D1D9]"
           >
-            Start managing your lifestyle with Alfred
+            Start managing your lifestyle with Untangle
           </motion.p>
         </div>
 

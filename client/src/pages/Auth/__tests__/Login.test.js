@@ -38,7 +38,7 @@ describe('Login Component', () => {
     renderWithProviders(<Login />);
     
     // Check for main elements
-    expect(screen.getByText('Welcome back to Alfred')).toBeInTheDocument();
+    expect(screen.getByText('Welcome back to Untangle')).toBeInTheDocument();
     expect(screen.getByText('Sign in to manage your lifestyle')).toBeInTheDocument();
     
     // Check for form fields

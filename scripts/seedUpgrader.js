@@ -55,7 +55,7 @@ class SeedUpgrader {
 
   async connectDB() {
     try {
-      await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/lyfe', {
+      await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/untangle', {
         useNewUrlParser: true,
         useUnifiedTopology: true,
       });
@@ -348,7 +348,7 @@ class SeedUpgrader {
   }
 
   async fetchOffProduct(barcode) {
-    const UA = "LyfeApp/1.0 (support@lyfe.example)";
+    const UA = "UntangleApp/1.0 (support@untangle.example)";
     const BASE = "https://world.openfoodfacts.org/api/v2";
     
     const fields = [

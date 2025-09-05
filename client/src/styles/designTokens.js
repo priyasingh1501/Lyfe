@@ -1,4 +1,4 @@
-// Design Tokens for Lyfe App
+// Design Tokens for Untangle App
 // This file contains all design constants to ensure visual consistency
 
 export const colors = {

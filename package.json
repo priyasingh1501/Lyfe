@@ -1,5 +1,5 @@
 {
-  "name": "lyfe",
+  "name": "untangle",
   "version": "1.0.0",
   "description": "Lifestyle management platform",
   "main": "server/index.js",

@@ -79,6 +79,7 @@ const mealSchema = new mongoose.Schema({
     },
     rationale: [String],
     tip: String,
+    aiInsights: String,
     effects: {
       fatForming: {
         score: {
@@ -87,7 +88,12 @@ const mealSchema = new mongoose.Schema({
           max: 10
         },
         why: [String],
-        level: String
+        level: String,
+        label: {
+          type: String,
+          enum: ['Very Low', 'Low', 'Medium', 'High', 'Very High']
+        },
+        aiInsights: String
       },
       strength: {
         score: {
@@ -95,7 +101,13 @@ const mealSchema = new mongoose.Schema({
           min: 0,
           max: 10
         },
-        why: [String]
+        why: [String],
+        level: String,
+        label: {
+          type: String,
+          enum: ['Very Low', 'Low', 'Medium', 'High', 'Very High']
+        },
+        aiInsights: String
       },
       immunity: {
         score: {
@@ -103,7 +115,13 @@ const mealSchema = new mongoose.Schema({
           min: 0,
           max: 10
         },
-        why: [String]
+        why: [String],
+        level: String,
+        label: {
+          type: String,
+          enum: ['Very Low', 'Low', 'Medium', 'High', 'Very High']
+        },
+        aiInsights: String
       },
       inflammation: {
         score: {
@@ -114,8 +132,9 @@ const mealSchema = new mongoose.Schema({
         why: [String],
         label: {
           type: String,
-          enum: ['Low', 'Medium', 'High']
-        }
+          enum: ['Very Low', 'Low', 'Medium', 'High', 'Very High']
+        },
+        aiInsights: String
       },
       antiInflammatory: {
         score: {
@@ -127,7 +146,8 @@ const mealSchema = new mongoose.Schema({
         label: {
           type: String,
           enum: ['Very Low', 'Low', 'Medium', 'High', 'Very High']
-        }
+        },
+        aiInsights: String
       },
       energizing: {
         score: {
@@ -135,7 +155,13 @@ const mealSchema = new mongoose.Schema({
           min: 0,
           max: 10
         },
-        why: [String]
+        why: [String],
+        level: String,
+        label: {
+          type: String,
+          enum: ['Very Low', 'Low', 'Medium', 'High', 'Very High']
+        },
+        aiInsights: String
       },
       gutFriendly: {
         score: {
@@ -143,7 +169,13 @@ const mealSchema = new mongoose.Schema({
           min: 0,
           max: 10
         },
-        why: [String]
+        why: [String],
+        level: String,
+        label: {
+          type: String,
+          enum: ['Very Low', 'Low', 'Medium', 'High', 'Very High']
+        },
+        aiInsights: String
       },
       moodLifting: {
         score: {
@@ -151,7 +183,13 @@ const mealSchema = new mongoose.Schema({
           min: 0,
           max: 10
         },
-        why: [String]
+        why: [String],
+        level: String,
+        label: {
+          type: String,
+          enum: ['Very Low', 'Low', 'Medium', 'High', 'Very High']
+        },
+        aiInsights: String
       }
     }
   }

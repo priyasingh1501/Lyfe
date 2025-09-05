@@ -1,6 +1,6 @@
-# Lyfe Design System
+# Untangle Design System
 
-This document outlines the comprehensive design system for the Lyfe application, ensuring visual consistency across all components and pages.
+This document outlines the comprehensive design system for the Untangle application, ensuring visual consistency across all components and pages.
 
 ## 🎨 **Design Tokens**
 
@@ -443,4 +443,4 @@ className={`p-${spacing[4]} m-${spacing[6]}`}
 
 ---
 
-*This design system ensures that every component in the Lyfe application maintains visual consistency while providing flexibility for different use cases. Always refer to this guide when creating new components or modifying existing ones.*
+*This design system ensures that every component in the Untangle application maintains visual consistency while providing flexibility for different use cases. Always refer to this guide when creating new components or modifying existing ones.*

@@ -1,15 +1,15 @@
-# 🚀 Quick Deploy - Lyfe App
+# 🚀 Quick Deploy - Untangle App
 
 ## ⚡ Fastest Way: Render (5 minutes)
 
 1. **Go to [render.com](https://render.com)** and sign up
 2. **Click "New +"** → "Blueprint"
 3. **Connect your GitHub** repository
-4. **Select your Lyfe repository**
+4. **Select your Untangle repository**
 5. **Render will auto-detect** the `render.yaml` configuration
 6. **Set these environment variables**:
    ```
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/lyfe
+   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/untangle
    JWT_SECRET=your_random_secret_here
    OPENAI_API_KEY=sk-your_openai_key
    NODE_ENV=production
@@ -33,8 +33,8 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 ## 📱 Test Your Deployed App
 
-- **Backend API**: `https://lyfe-backend.onrender.com`
-- **Frontend**: `https://lyfe-frontend.onrender.com`
+- **Backend API**: `https://untangle-backend.onrender.com`
+- **Frontend**: `https://untangle-frontend.onrender.com`
 
 ## 🆘 Need Help?
 

@@ -54,11 +54,11 @@ const Login = () => {
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             className="mx-auto w-20 h-20 bg-gradient-to-r from-accent-yellow via-accent-green to-accent-teal rounded-2xl flex items-center justify-center shadow-lg"
           >
-            <span className="text-text-inverse font-bold text-3xl">L</span>
+            <span className="text-text-inverse font-bold text-3xl">U</span>
           </motion.div>
           
           <Header level={2} className="mt-6">
-            Welcome back to Alfred
+            Welcome back to Untangle
           </Header>
           
           <motion.p

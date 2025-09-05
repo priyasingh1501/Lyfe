@@ -130,67 +130,6 @@ const MealAnalysis = ({ mealItems, context }) => {
     };
   }, [totals, mealItems]);
 
-  // Calculate mindful meal score
-  const score = useMemo(() => {
-    if (!totals || !badges) return null;
-    
-    let score = 0;
-    const rationale = [];
-    
-    // Protein bonus (+2)
-    if (badges.protein) {
-      score += 2;
-      rationale.push('✅ Good protein content');
-    }
-    
-    // Vegetable bonus (+1)
-    if (badges.veg) {
-      score += 1;
-      rationale.push('✅ Contains vegetables/fiber');
-    }
-    
-    // Ultra-processed penalty (-1)
-    if (badges.nova >= 4) {
-      score -= 1;
-      rationale.push('⚠️ Ultra-processed foods');
-    }
-    
-    // Sugar penalty (-1)
-    if (totals.sugar >= 15) {
-      score -= 1;
-      rationale.push('⚠️ High sugar content');
-    }
-    
-    // GI penalty (-1)
-    if (badges.gi && badges.gi >= 70) {
-      score -= 1;
-      rationale.push('⚠️ High glycemic index');
-    }
-    
-    // Carbohydrate balance bonus (+1)
-    if (totals.kcal > 0) {
-      const carbsPercentage = (totals.carbs * 4 / totals.kcal) * 100;
-      if (carbsPercentage <= 45 || totals.fiber >= 7) {
-        score += 1;
-        rationale.push('✅ Balanced carbs/fiber');
-      }
-    }
-    
-    // Context bonuses
-    if (context.postWorkout && badges.protein) {
-      score += 0.5;
-      rationale.push('✅ Good post-workout protein');
-    }
-    
-    if (context.fermented && badges.veg) {
-      score += 0.5;
-      rationale.push('✅ Fermented vegetables');
-    }
-    
-    score = Math.max(0, Math.min(5, score));
-    
-    return { score: Math.round(score * 10) / 10, rationale };
-  }, [totals, badges, context]);
 
   // Calculate effects
   const effects = useMemo(() => {
@@ -692,49 +631,12 @@ const MealAnalysis = ({ mealItems, context }) => {
         </div>
       </motion.div>
 
-      {/* Mindful Meal Score */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6"
-      >
-        <h2 className="text-xl font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
-          Mindful Meal Score
-        </h2>
-        
-        <div className="text-center mb-4">
-          <div className={`text-4xl font-bold mb-2 ${
-            score.score >= 4 ? 'text-green-400' :
-            score.score >= 3 ? 'text-blue-400' :
-            score.score >= 2 ? 'text-yellow-400' :
-            'text-red-400'
-          }`}>
-            {score.score}/5
-          </div>
-          <div className="text-sm text-[#C9D1D9]">
-            {score.score >= 4 ? 'Excellent' : 
-             score.score >= 3 ? 'Good' : 
-             score.score >= 2 ? 'Fair' : 'Needs Improvement'}
-          </div>
-        </div>
-        
-        {/* Rationale */}
-        <div className="space-y-2">
-          {score.rationale.map((reason, index) => (
-            <div key={index} className="text-sm text-[#C9D1D9] flex items-start space-x-2">
-              <span className="text-[#FFD200] mt-0.5">•</span>
-              <span>{reason}</span>
-            </div>
-          ))}
-        </div>
-      </motion.div>
 
       {/* Effects */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.2 }}
         className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6"
       >
         <h2 className="text-xl font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">

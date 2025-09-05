@@ -30,7 +30,7 @@ Create a `.env` file in the root directory:
 
 ```bash
 # MongoDB connection
-MONGODB_URI=mongodb://localhost:27017/lyfe
+MONGODB_URI=mongodb://localhost:27017/untangle
 
 # API Keys (optional)
 USDA_API_KEY=your_usda_api_key_here
@@ -47,7 +47,7 @@ SEED_QA_PORTION_BANDS={"roti": [35,60], "idli": [80,180]}
 ### 2. Install Dependencies
 
 ```bash
-cd /Users/priyas/Lyfe
+cd /Users/priyas/Untangle
 npm install
 ```
 

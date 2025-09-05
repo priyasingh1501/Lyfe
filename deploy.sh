@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Lyfe Application Deployment Script"
+echo "🚀 Untangle Application Deployment Script"
 echo "====================================="
 
 # Check if .env file exists

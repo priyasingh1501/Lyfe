@@ -1,4 +1,4 @@
-# ⚡ Vercel Deployment Guide for Lyfe App
+# ⚡ Vercel Deployment Guide for Untangle App
 
 ## 🎯 **Deployment Strategy: Frontend on Vercel + Backend on Railway**
 
@@ -55,7 +55,7 @@ Click "Deploy" and wait for build to complete!
 ```
 NODE_ENV=production
 PORT=10000
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/lyfe
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/untangle
 JWT_SECRET=your_jwt_secret_here
 OPENAI_API_KEY=sk-your_openai_key_here
 ```

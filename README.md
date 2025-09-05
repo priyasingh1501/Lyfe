@@ -1,6 +1,6 @@
-# Lyfe - Comprehensive Lifestyle Management Application
+# Untangle - Comprehensive Lifestyle Management Application
 
-Lyfe is a full-stack web application designed to help individuals manage every aspect of their lifestyle, from time management and task organization to health tracking, financial management, and relationship maintenance.
+Untangle is a full-stack web application designed to help individuals manage every aspect of their lifestyle, from time management and task organization to health tracking, financial management, and relationship maintenance.
 
 ## 🌟 Features
 
@@ -93,7 +93,7 @@ Before running this application, make sure you have:
 ### 1. Clone the Repository
 ```bash
 git clone <repository-url>
-cd lyfe
+cd untangle
 ```
 
 ### 2. Install Dependencies
@@ -114,7 +114,7 @@ PORT=5000
 NODE_ENV=development
 
 # MongoDB Connection
-MONGODB_URI=mongodb://localhost:27017/lyfe
+MONGODB_URI=mongodb://localhost:27017/untangle
 
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-here
@@ -169,7 +169,7 @@ The application will be available at:
 ## 🏗️ Project Structure
 
 ```
-lyfe/
+untangle/
 ├── server/                 # Backend server
 │   ├── models/            # MongoDB schemas
 │   ├── routes/            # API endpoints
@@ -354,4 +354,4 @@ For support and questions:
 
 ---
 
-**Lyfe** - Transform your lifestyle management with intelligent organization and tracking tools. 🚀
+**Untangle** - Transform your lifestyle management with intelligent organization and tracking tools. 🚀

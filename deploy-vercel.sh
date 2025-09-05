@@ -1,10 +1,10 @@
 #!/bin/bash
 
-echo "⚡ Vercel Deployment Script for Lyfe App"
+echo "⚡ Vercel Deployment Script for Untangle App"
 echo "========================================"
 
 echo ""
-echo "🎯 This script will help you deploy your Lyfe app to Vercel"
+echo "🎯 This script will help you deploy your Untangle app to Vercel"
 echo ""
 
 # Check if vercel CLI is installed

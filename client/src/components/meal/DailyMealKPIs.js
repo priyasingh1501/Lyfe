@@ -166,54 +166,10 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
     return { level: 'Needs Attention', color: 'text-red-600' };
   };
 
-  const handleEffectClick = async (effectKey, effectData, meal) => {
+  const handleEffectClick = (effectKey, effectData, meal) => {
     console.log('🔍 Effect clicked:', effectKey, effectData);
     setSelectedEffect({ key: effectKey, data: effectData });
     setSelectedMeal(meal);
-
-    try {
-      // Determine date range based on active tab
-      let startDate;
-      let endDate;
-      if (activeTab === 'day') {
-        const today = getTodayDate();
-        startDate = today;
-        endDate = today;
-      } else {
-        const range = getCurrentMonthRange();
-        startDate = range.startDate;
-        endDate = range.endDate;
-      }
-
-      console.log('🔍 Fetching AI analysis for:', effectKey, 'from', startDate, 'to', endDate);
-      const url = `${buildApiUrl('/api/meals/effects/ai')}?effect=${encodeURIComponent(effectKey)}&startDate=${startDate}&endDate=${endDate}`;
-      console.log('🔍 API URL:', url);
-
-      const resp = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      console.log('🔍 Response status:', resp.status);
-      
-      if (resp.ok) {
-        const data = await resp.json();
-        console.log('🔍 AI response data:', data);
-        const aiInsights = data.aiInsights || (data.analysis && data.analysis.aiInsights) || '';
-        const merged = {
-          ...effectData,
-          ...(data.analysis || {}),
-          aiInsights: aiInsights || effectData.aiInsights || '',
-          aiEnhanced: true,
-        };
-        console.log('🔍 Merged effect data:', merged);
-        setSelectedEffect({ key: effectKey, data: merged });
-      } else {
-        const errorText = await resp.text();
-        console.warn('AI effect fetch failed', resp.status, errorText);
-      }
-    } catch (e) {
-      console.error('Failed to fetch AI effect analysis', e);
-    }
   };
 
   const closeEffectDetails = () => {
@@ -480,38 +436,12 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
                 <span className="text-sm font-semibold text-text-primary">
                   {formatMealTime(meal.ts)}
                 </span>
-                {meal.computed?.mindfulMealScore && (
-                  <span className="text-xs bg-blue-900/20 text-blue-300 px-2 py-1 rounded">
-                    {meal.computed.mindfulMealScore}/10
-                  </span>
-                )}
               </div>
             </div>
 
-            {/* Meal Items */}
-            <div className="mb-2">
-              <div className="flex flex-wrap gap-2">
-                {meal.items?.map((item, itemIndex) => (
-                  <span key={itemIndex} className="text-xs bg-background-primary px-2 py-1 rounded">
-                    {item.customName || item.food?.name || 'Unknown food'} ({item.grams}g)
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Nutrition Summary */}
-            {meal.computed?.totals && (
-              <div className="flex flex-wrap gap-1 text-xs mb-2">
-                <span className="px-2 py-1 rounded bg-background-primary text-text-secondary">{meal.computed.totals.kcal || 0} kcal</span>
-                <span className="px-2 py-1 rounded bg-background-primary text-text-secondary">{meal.computed.totals.protein || 0}g protein</span>
-                <span className="px-2 py-1 rounded bg-background-primary text-text-secondary">{meal.computed.totals.carbs || 0}g carbs</span>
-                <span className="px-2 py-1 rounded bg-background-primary text-text-secondary">{meal.computed.totals.fat || 0}g fat</span>
-              </div>
-            )}
-
-            {/* AI Analysis for this meal */}
+            {/* Meal Effects - Upfront Display */}
             {meal.computed?.effects && Object.keys(meal.computed.effects).length > 0 ? (
-              <div className="mt-2 pt-2 border-t border-border-primary bg-blue-900/10 rounded p-2">
+              <div className="mb-3">
                 <div className="flex flex-wrap gap-1">
                   {Object.entries(meal.computed.effects).map(([effectKey, effectData]) => {
                     const score = effectData.score || 0;
@@ -534,6 +464,163 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
                 </div>
               </div>
             ) : null}
+
+            {/* Meal Badges */}
+            {meal.computed?.badges && (
+              <div className="mb-3">
+                <div className="flex flex-wrap gap-1">
+                  {/* Protein Badge */}
+                  {meal.computed.badges.protein && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-900/20 text-green-300 border border-green-500/30">
+                      💪 Protein
+                    </span>
+                  )}
+                  
+                  {/* Vegetable Badge */}
+                  {meal.computed.badges.veg && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-900/20 text-green-300 border border-green-500/30">
+                      🥬 Vegetables
+                    </span>
+                  )}
+                  
+                  {/* GI Badge */}
+                  {meal.computed.badges.gi && (
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+                      meal.computed.badges.gi <= 55 
+                        ? 'bg-green-900/20 text-green-300 border-green-500/30'
+                        : meal.computed.badges.gi <= 69
+                        ? 'bg-yellow-900/20 text-yellow-300 border-yellow-500/30'
+                        : 'bg-red-900/20 text-red-300 border-red-500/30'
+                    }`}>
+                      📊 GI: {meal.computed.badges.gi}
+                    </span>
+                  )}
+                  
+                  {/* FODMAP Badge */}
+                  {meal.computed.badges.fodmap && meal.computed.badges.fodmap !== 'Unknown' && (
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+                      meal.computed.badges.fodmap === 'Low'
+                        ? 'bg-green-900/20 text-green-300 border-green-500/30'
+                        : meal.computed.badges.fodmap === 'Medium'
+                        ? 'bg-yellow-900/20 text-yellow-300 border-yellow-500/30'
+                        : 'bg-red-900/20 text-red-300 border-red-500/30'
+                    }`}>
+                      🌱 FODMAP: {meal.computed.badges.fodmap}
+                    </span>
+                  )}
+                  
+                  {/* NOVA Badge */}
+                  {meal.computed.badges.nova && (
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+                      meal.computed.badges.nova === 1
+                        ? 'bg-green-900/20 text-green-300 border-green-500/30'
+                        : meal.computed.badges.nova === 2
+                        ? 'bg-blue-900/20 text-blue-300 border-blue-500/30'
+                        : meal.computed.badges.nova === 3
+                        ? 'bg-yellow-900/20 text-yellow-300 border-yellow-500/30'
+                        : 'bg-red-900/20 text-red-300 border-red-500/30'
+                    }`}>
+                      🏭 NOVA {meal.computed.badges.nova}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Meal Items */}
+            <div className="mb-2">
+              <div className="flex flex-wrap gap-2">
+                {meal.items?.map((item, itemIndex) => (
+                  <span key={itemIndex} className="text-xs bg-background-primary px-2 py-1 rounded">
+                    {item.customName || item.food?.name || 'Unknown food'} ({item.grams}g)
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Nutrition Summary */}
+            {meal.computed?.totals && (
+              <div className="flex flex-wrap gap-1 text-xs mb-3">
+                <span className="px-2 py-1 rounded bg-background-primary text-text-secondary">{meal.computed.totals.kcal || 0} kcal</span>
+                <span className="px-2 py-1 rounded bg-background-primary text-text-secondary">{meal.computed.totals.protein || 0}g protein</span>
+                <span className="px-2 py-1 rounded bg-background-primary text-text-secondary">{meal.computed.totals.carbs || 0}g carbs</span>
+                <span className="px-2 py-1 rounded bg-background-primary text-text-secondary">{meal.computed.totals.fat || 0}g fat</span>
+              </div>
+            )}
+
+            {/* AI Insights - Always show for debugging */}
+            <div className="mt-2 pt-2 border-t border-border-primary">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm">🤖</span>
+                <h4 className="text-sm font-medium text-blue-300">AI Insights</h4>
+              </div>
+              <div className="text-xs text-blue-200 leading-relaxed">
+                {(() => {
+                  console.log('🔍 Debug meal data:', {
+                    hasComputed: !!meal.computed,
+                    hasEffects: !!meal.computed?.effects,
+                    effectsKeys: meal.computed?.effects ? Object.keys(meal.computed.effects) : [],
+                    hasAiInsights: !!meal.computed?.aiInsights,
+                    aiInsights: meal.computed?.aiInsights,
+                    fullComputed: meal.computed,
+                    fullMeal: meal
+                  });
+                  
+                  // First check for general AI insights at meal level
+                  if (meal.computed?.aiInsights) {
+                    console.log('🔍 Using general AI insights:', meal.computed.aiInsights);
+                    return meal.computed.aiInsights;
+                  }
+                  
+                  // Then find the first effect with AI insights
+                  if (meal.computed?.effects) {
+                    const effectsWithInsights = Object.entries(meal.computed.effects)
+                      .filter(([_, effectData]) => effectData.aiInsights)
+                      .map(([_, effectData]) => effectData.aiInsights);
+                    
+                    if (effectsWithInsights.length > 0) {
+                      console.log('🔍 Using effect AI insights:', effectsWithInsights[0]);
+                      return effectsWithInsights[0];
+                    }
+                  }
+                  
+                  // Fallback: Generate a basic insight based on the effects
+                  const effects = meal.computed?.effects || {};
+                  const insights = [];
+                  
+                  if (effects.strength?.score >= 7) {
+                    insights.push("Excellent for muscle building and recovery");
+                  }
+                  if (effects.immunity?.score >= 7) {
+                    insights.push("Great for immune system support");
+                  }
+                  if (effects.energizing?.score >= 7) {
+                    insights.push("Very energizing for active periods");
+                  }
+                  if (effects.gutFriendly?.score >= 7) {
+                    insights.push("Excellent for gut health");
+                  }
+                  if (effects.moodLifting?.score >= 7) {
+                    insights.push("Great for mood and mental well-being");
+                  }
+                  if (effects.fatForming?.score >= 6) {
+                    insights.push("May contribute to fat storage - consider lighter options");
+                  }
+                  if (effects.inflammation?.score >= 6) {
+                    insights.push("May trigger inflammation - consider anti-inflammatory foods");
+                  }
+                  
+                  if (insights.length > 0) {
+                    console.log('🔍 Using fallback insights:', insights);
+                    return insights.join(". ") + ".";
+                  }
+                  
+                  console.log('🔍 Using default message');
+                  console.log('🔍 Available effects:', effects);
+                  return `AI analyzed this meal for nutritional impact and health effects. Effects: ${Object.keys(effects).join(', ')}`;
+                })()}
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -596,21 +683,25 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
               </div>
 
               {/* AI Insights */}
-              <div className="mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm">🤖</span>
-                  <h4 className="text-sm font-medium text-blue-300">AI Insights</h4>
+              {selectedEffect.data.aiInsights && (
+                <div className="mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm">🤖</span>
+                    <h4 className="text-sm font-medium text-blue-300">AI Insights</h4>
+                  </div>
+                  <p className="text-sm text-blue-200 leading-relaxed">
+                    {selectedEffect.data.aiInsights}
+                  </p>
                 </div>
-                <p className="text-sm text-blue-200 leading-relaxed">
-                  {selectedEffect.data.aiInsights || 'AI analysed the meal to explain how items contributed to this effect.'}
-                </p>
-              </div>
+              )}
 
               {/* AI Enhanced Indicator */}
-              <div className="mb-4 flex items-center gap-2 text-xs text-green-400">
-                <span>✨</span>
-                <span>Enhanced with AI analysis</span>
-              </div>
+              {selectedEffect.data.aiEnhanced && (
+                <div className="mb-4 flex items-center gap-2 text-xs text-green-400">
+                  <span>✨</span>
+                  <span>Enhanced with AI analysis</span>
+                </div>
+              )}
 
               <div className="mb-4">
                 <h4 className="text-sm font-medium text-text-primary mb-2">

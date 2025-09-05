@@ -659,7 +659,7 @@ function areFoodsSimilar(food1, food2) {
 // Helper function to search Open Food Facts
 async function searchOpenFoodFacts(query, limit) {
   try {
-    const UA = "LyfeApp/1.0 (support@lyfe.example)";
+    const UA = "UntangleApp/1.0 (support@untangle.example)";
     const BASE = "https://world.openfoodfacts.org/cgi/search.pl";
     
     const params = new URLSearchParams({

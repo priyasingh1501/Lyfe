@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lyfe-v1.0.0';
+const CACHE_NAME = 'untangle-v1.0.0';
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',
@@ -115,7 +115,7 @@ self.addEventListener('push', (event) => {
   console.log('📱 Push notification received');
   
   const options = {
-    body: event.data ? event.data.text() : 'New notification from Lyfe',
+    body: event.data ? event.data.text() : 'New notification from Untangle',
     icon: '/logo192.png',
     badge: '/logo192.png',
     vibrate: [100, 50, 100],
@@ -138,7 +138,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('Lyfe', options)
+    self.registration.showNotification('Untangle', options)
   );
 });
 

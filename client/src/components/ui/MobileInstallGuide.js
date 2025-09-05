@@ -57,7 +57,7 @@ const MobileInstallGuide = () => {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-[#E8EEF2] flex items-center">
                   <Smartphone className="mr-2" />
-                  Install Lyfe App
+                  Install Untangle App
                 </h2>
                 <button
                   onClick={() => setIsOpen(false)}

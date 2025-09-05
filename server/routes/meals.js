@@ -13,6 +13,13 @@ const axios = require('axios');
 // Initialize AI service
 const aiService = new OpenAIService();
 
+// Test AI service initialization
+console.log('🤖 AI Service initialized:', {
+  hasOpenAI: !!aiService.openai,
+  hasApiKey: !!process.env.OPENAI_API_KEY,
+  apiKeyLength: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0
+});
+
 /**
  * Fetch external food data from USDA or other sources
  */
@@ -160,6 +167,8 @@ async function fetchExternalFoodData(externalId) {
  */
 router.post('/', auth, async (req, res) => {
   try {
+    console.log('🍽️ MEAL CREATION REQUEST RECEIVED');
+    console.log('🍽️ Request body:', JSON.stringify(req.body, null, 2));
     const userId = req.user.userId;
     const { ts, items, notes, context } = req.body;
 
@@ -245,6 +254,12 @@ router.post('/', auth, async (req, res) => {
     // Enhance with AI analysis
     let enhancedEffects = ruleBasedEffects;
     try {
+      // Check if OpenAI API key is available
+      if (!process.env.OPENAI_API_KEY) {
+        console.warn('⚠️ OPENAI_API_KEY not found, skipping AI analysis');
+        throw new Error('OpenAI API key not configured');
+      }
+
       // Get user profile for AI analysis (you might want to fetch this from user model)
       const userProfile = {
         // Add user profile data here when available
@@ -261,10 +276,18 @@ router.post('/', auth, async (req, res) => {
       };
 
       console.log('🤖 Starting AI meal analysis...');
+      console.log('🤖 Meal data for AI:', JSON.stringify(mealDataForAI, null, 2));
+      console.log('🤖 Rule-based effects before AI:', JSON.stringify(ruleBasedEffects, null, 2));
+      
       enhancedEffects = await aiService.analyzeMealEffects(mealDataForAI, userProfile, ruleBasedEffects);
+      
       console.log('✅ AI meal analysis completed');
+      console.log('🤖 Enhanced effects after AI:', JSON.stringify(enhancedEffects, null, 2));
+      console.log('🤖 AI insights found:', !!enhancedEffects.aiInsights);
+      console.log('🤖 Effects with AI insights:', Object.keys(enhancedEffects).filter(key => enhancedEffects[key]?.aiInsights));
     } catch (aiError) {
       console.error('⚠️ AI analysis failed, using rule-based effects:', aiError.message);
+      console.error('⚠️ AI error details:', aiError);
       // Continue with rule-based effects if AI fails
     }
 
@@ -281,6 +304,7 @@ router.post('/', auth, async (req, res) => {
         mindfulMealScore: scoreResult.score,
         rationale: scoreResult.rationale,
         tip: scoreResult.tip,
+        aiInsights: enhancedEffects.aiInsights || null,
         effects: enhancedEffects
       }
     };
@@ -290,6 +314,15 @@ router.post('/', auth, async (req, res) => {
 
     // Populate food details for response
     await meal.populate('items.foodId');
+
+    console.log('📤 Sending meal response:', {
+      mealId: meal._id,
+      hasComputed: !!meal.computed,
+      hasEffects: !!meal.computed?.effects,
+      effectsKeys: meal.computed?.effects ? Object.keys(meal.computed.effects) : [],
+      hasAiInsights: !!meal.computed?.aiInsights,
+      aiInsights: meal.computed?.aiInsights
+    });
 
     res.status(201).json({
       message: 'Meal created successfully',

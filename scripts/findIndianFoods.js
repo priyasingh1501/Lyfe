@@ -6,7 +6,7 @@ const axios = require('axios');
 async function findIndianFoods() {
   console.log('🇮🇳 Searching for Indian food products in Open Food Facts...\n');
   
-  const UA = "LyfeApp/1.0 (support@lyfe.example)";
+  const UA = "UntangleApp/1.0 (support@untangle.example)";
   const BASE = "https://world.openfoodfacts.org/api/v2";
   
   // Common Indian food terms to search for

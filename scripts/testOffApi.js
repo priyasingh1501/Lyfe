@@ -6,7 +6,7 @@ const axios = require('axios');
 async function testOffApi() {
   console.log('🧪 Testing Open Food Facts API integration...\n');
   
-  const UA = "LyfeApp/1.0 (support@lyfe.example)";
+  const UA = "UntangleApp/1.0 (support@untangle.example)";
   const BASE = "https://world.openfoodfacts.org/api/v2";
   
   // Test with a real barcode from Open Food Facts

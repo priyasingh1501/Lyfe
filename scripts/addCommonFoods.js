@@ -164,7 +164,7 @@ async function addCommonFoods() {
     console.log('🌱 Adding common processed foods...');
     
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/lyfe', {
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/untangle', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: lyfe-backend
+    name: untangle-backend
     env: node
     plan: starter
     buildCommand: npm install
@@ -18,11 +18,11 @@ services:
         sync: false
 
   - type: web
-    name: lyfe-frontend
+    name: untangle-frontend
     env: static
     plan: starter
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: ./client/build
     envVars:
       - key: REACT_APP_API_URL
-        value: https://lyfe-backend.onrender.com
+        value: https://untangle-backend.onrender.com

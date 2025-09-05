@@ -58,7 +58,7 @@ const envOrigins = (process.env.CORS_ORIGIN || '')
 
 const allowedOrigins = [
   ...envOrigins,
-  'https://lyfe-six.vercel.app',
+  'https://untangle-six.vercel.app',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
 ];
@@ -112,7 +112,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Database connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/lyfe', {
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/untangle', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
