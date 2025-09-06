@@ -366,37 +366,34 @@ const MealBuilder = ({ onMealSaved }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0C0F] p-6">
-      <div className="max-w-7xl mx-auto">
-
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Column - Food Search */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6"
-            >
-              <h2 className="text-xl font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
-                Search & Add Foods
-              </h2>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column - Food Search */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-background-secondary border border-border-primary rounded-xl p-6"
+        >
+          <h2 className="font-jakarta text-2xl leading-normal text-text-primary font-bold mb-4">
+            Search & Add Foods
+          </h2>
               
               <form onSubmit={handleSearchSubmit} className="mb-4">
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#C9D1D9] h-5 w-5" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-secondary h-5 w-5" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={handleSearchInput}
                       placeholder="Search foods..."
-                      className="w-full pl-10 pr-4 py-3 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none placeholder-[#6B7280]"
+                      className="w-full pl-10 pr-4 py-3 bg-background-primary border border-border-primary rounded-xl text-text-primary focus:border-accent focus:outline-none placeholder-text-muted"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={!searchQuery.trim()}
-                    className="px-6 py-3 bg-[#FFD200] text-[#0A0C0F] rounded-lg hover:bg-[#FFB800] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-oswald tracking-wide font-semibold"
+                    className="px-6 py-3 bg-accent text-white rounded-xl hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-jakarta text-sm leading-relaxed tracking-wider font-semibold"
                   >
                     Search
                   </button>
@@ -404,7 +401,7 @@ const MealBuilder = ({ onMealSaved }) => {
                     <button
                       type="button"
                       onClick={handleClearSearch}
-                      className="px-4 py-3 bg-[#2A313A] text-[#C9D1D9] rounded-lg hover:bg-[#3A414A] transition-colors duration-200 font-oswald tracking-wide"
+                      className="px-4 py-3 bg-background-tertiary text-text-secondary rounded-xl hover:bg-background-tertiary/80 transition-colors duration-200 font-jakarta text-sm leading-relaxed tracking-wider"
                     >
                       Clear
                     </button>
@@ -421,16 +418,16 @@ const MealBuilder = ({ onMealSaved }) => {
               />
             </motion.div>
 
-            {/* Right Column - Meal Items */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6"
-            >
-              <h2 className="text-xl font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
-                Meal Items
-              </h2>
+        {/* Right Column - Meal Items */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-background-secondary border border-border-primary rounded-xl p-6"
+        >
+          <h2 className="font-jakarta text-2xl leading-normal text-text-primary font-bold mb-4">
+            Meal Items
+          </h2>
               
               <MealItems
                 items={mealItems}
@@ -440,18 +437,18 @@ const MealBuilder = ({ onMealSaved }) => {
             </motion.div>
           </div>
 
-          {/* Full-width sections below */}
-          <div className="mt-6 space-y-6">
-            {/* Meal Context */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6"
-            >
-              <h2 className="text-xl font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
-                Meal Context
-              </h2>
+      {/* Full-width sections below */}
+      <div className="space-y-6">
+        {/* Meal Context */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-background-secondary border border-border-primary rounded-xl p-6"
+        >
+          <h2 className="font-jakarta text-2xl leading-normal text-text-primary font-bold mb-4">
+            Meal Context
+          </h2>
               
               <MealContext
                 context={context}
@@ -459,36 +456,34 @@ const MealBuilder = ({ onMealSaved }) => {
               />
             </motion.div>
 
-            {/* Save Button */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-center"
-            >
-              <button
-                onClick={saveMeal}
-                disabled={isSaving || mealItems.length === 0}
-                className="inline-flex items-center px-8 py-4 bg-[#FFD200] text-[#0A0C0F] rounded-lg hover:bg-[#FFB800] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-oswald tracking-wide text-lg font-semibold shadow-lg hover:shadow-xl"
-              >
-                <Save className="h-5 w-5 mr-2" />
-                {isSaving ? 'Saving...' : 'Save Meal'}
-              </button>
-            </motion.div>
+        {/* Save Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="text-center"
+        >
+          <button
+            onClick={saveMeal}
+            disabled={isSaving || mealItems.length === 0}
+            className="inline-flex items-center px-8 py-4 bg-accent text-white rounded-xl hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-jakarta text-lg font-semibold shadow-lg hover:shadow-xl"
+          >
+            <Save className="h-5 w-5 mr-2" />
+            {isSaving ? 'Saving...' : 'Save Meal'}
+          </button>
+        </motion.div>
 
-            {/* Data Source Footnote */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-center text-sm text-[#6B7280]"
-            >
-              <p>
-                Data: IFCT/USDA/OpenFoodFacts + heuristics; see info for details.
-              </p>
-            </motion.div>
-          </div>
-        </div>
+        {/* Data Source Footnote */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-center text-sm text-text-muted"
+        >
+          <p>
+            Data: IFCT/USDA/OpenFoodFacts + heuristics; see info for details.
+          </p>
+        </motion.div>
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { buildApiUrl } from '../../config';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Utensils } from 'lucide-react';
+import Card from '../ui/Card';
 
 const DailyMealKPIs = ({ refreshTrigger }) => {
   const { token } = useAuth();
@@ -125,7 +126,7 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
     } else if (activeTab === 'month') {
       fetchMonthlyMeals();
     }
-  }, [activeTab, fetchTodayMeals, fetchMonthlyMeals]);
+  }, [activeTab]);
 
   // Respond to refresh trigger from parent component
   useEffect(() => {
@@ -136,7 +137,7 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
         fetchMonthlyMeals(true);
       }
     }
-  }, [refreshTrigger, activeTab, fetchTodayMeals, fetchMonthlyMeals]);
+  }, [refreshTrigger, activeTab]);
 
   // Handle manual refresh
   const handleRefresh = () => {
@@ -179,14 +180,14 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
 
   // Icons and labels for effects
   const icons = {
-    strength: '💪',
-    immunity: '🛡️',
-    inflammation: '🔥',
-    antiInflammatory: '❄️',
-    energizing: '⚡',
-    gutFriendly: '🌱',
-    moodLifting: '😊',
-    fatForming: '🍔'
+    strength: 'Strength',
+    immunity: 'Immunity',
+    inflammation: 'Inflammation',
+    antiInflammatory: 'Anti-Inflammatory',
+    energizing: 'Energizing',
+    gutFriendly: 'Gut Friendly',
+    moodLifting: 'Mood',
+    fatForming: 'Fat Forming'
   };
 
   const labels = {
@@ -292,7 +293,11 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
   
   if (loading) {
     return (
-      <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-6 mb-6">
+      <Card
+        title="DAILY MEAL KPIs"
+        subtitle="Nutrition tracking & insights"
+        icon={<Utensils className="h-5 w-5 text-accent" />}
+      >
         <div className="animate-pulse">
           <div className="h-4 bg-background-tertiary rounded w-1/4 mb-4"></div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -302,50 +307,62 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
             <div className="h-16 bg-background-tertiary rounded"></div>
           </div>
         </div>
-      </div>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-6 mb-6">
+      <Card
+        title="DAILY MEAL KPIs"
+        subtitle="Nutrition tracking & insights"
+        icon={<Utensils className="h-5 w-5 text-accent" />}
+      >
         <div className="text-center">
-          <p className="text-red-400 mb-4">Error loading meals: {error}</p>
+          <p className="font-jakarta text-sm text-accent mb-4">Error loading meals: {error}</p>
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 bg-accent-green text-text-inverse rounded hover:bg-accent-green/90 transition-colors"
+            className="px-4 py-2 bg-accent text-white rounded hover:bg-accent/90 transition-colors"
           >
             Try Again
           </button>
         </div>
-      </div>
+      </Card>
     );
   }
 
   if (!currentMeals.length) {
     return (
-      <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-4 mb-6">
+      <Card
+        title="DAILY MEAL KPIs"
+        subtitle="Nutrition tracking & insights"
+        icon={<Utensils className="h-5 w-5 text-accent" />}
+      >
         <div className="text-center text-text-secondary">
           No meals {activeTab === 'day' ? 'today' : 'this month'}
         </div>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-background-secondary rounded-lg shadow-sm border border-border-primary p-6 mb-6">
-      {/* Header */}
+    <Card
+      title="DAILY MEAL KPIs"
+      subtitle="Nutrition tracking & insights"
+      icon={<Utensils className="h-5 w-5 text-accent" />}
+    >
+      {/* Tab Selector */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-text-primary">
+          <h2 className="font-jakarta text-2xl leading-normal text-text-primary font-bold">
             {activeTab === 'day' ? 'Today' : 'This Month'}
           </h2>
-          <div className="flex bg-background-tertiary rounded p-1">
+          <div className="flex bg-background-primary rounded p-1">
             <button
               onClick={() => setActiveTab('day')}
-              className={`px-2 py-1 text-xs rounded transition-colors ${
+              className={`px-2 py-1 font-jakarta text-xs leading-relaxed tracking-wider rounded transition-colors ${
                 activeTab === 'day'
-                  ? 'bg-accent-green text-text-inverse'
+                  ? 'bg-accent text-white'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
@@ -353,9 +370,9 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
             </button>
             <button
               onClick={() => setActiveTab('month')}
-              className={`px-2 py-1 text-xs rounded transition-colors ${
+              className={`px-2 py-1 font-jakarta text-xs leading-relaxed tracking-wider rounded transition-colors ${
                 activeTab === 'month'
-                  ? 'bg-accent-green text-text-inverse'
+                  ? 'bg-accent text-white'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
@@ -366,7 +383,7 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-text-secondary hover:text-text-primary disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 font-jakarta text-xs leading-relaxed tracking-wider text-text-secondary hover:text-text-primary disabled:opacity-50 transition-colors"
         >
           <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh
@@ -414,7 +431,7 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
                       className={`px-2 py-1 rounded border text-xs cursor-pointer hover:opacity-80 transition-opacity ${bgColor}`}
                       onClick={() => handleEffectClick(effectKey, effectData, null)}
                     >
-                      <span className="text-xs">{icons[effectKey] || '📊'}</span>
+                      <span className="text-xs">{icons[effectKey] || 'Data'}</span>
                       <span className="ml-1 font-medium">{labels[effectKey] || effectKey}</span>
                       <span className="ml-1 text-text-secondary">({score})</span>
                     </div>
@@ -455,7 +472,7 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
                         className={`px-2 py-1 rounded border text-xs cursor-pointer hover:opacity-80 transition-opacity ${bgColor}`}
                         onClick={() => handleEffectClick(effectKey, effectData, meal)}
                       >
-                        <span className="text-xs">{icons[effectKey] || '📊'}</span>
+                        <span className="text-xs">{icons[effectKey] || 'Data'}</span>
                         <span className="ml-1 font-medium">{labels[effectKey] || effectKey}</span>
                         <span className="ml-1 text-text-secondary">({score})</span>
                       </div>
@@ -471,56 +488,36 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
                 <div className="flex flex-wrap gap-1">
                   {/* Protein Badge */}
                   {meal.computed.badges.protein && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-900/20 text-green-300 border border-green-500/30">
-                      💪 Protein
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#1E49C9]/20 text-[#1E49C9] border border-[#1E49C9]/30">
+                      Protein
                     </span>
                   )}
                   
                   {/* Vegetable Badge */}
                   {meal.computed.badges.veg && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-900/20 text-green-300 border border-green-500/30">
-                      🥬 Vegetables
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#1E49C9]/20 text-[#1E49C9] border border-[#1E49C9]/30">
+                      Vegetables
                     </span>
                   )}
                   
                   {/* GI Badge */}
                   {meal.computed.badges.gi && (
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
-                      meal.computed.badges.gi <= 55 
-                        ? 'bg-green-900/20 text-green-300 border-green-500/30'
-                        : meal.computed.badges.gi <= 69
-                        ? 'bg-yellow-900/20 text-yellow-300 border-yellow-500/30'
-                        : 'bg-red-900/20 text-red-300 border-red-500/30'
-                    }`}>
-                      📊 GI: {meal.computed.badges.gi}
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#1E49C9]/20 text-[#1E49C9] border border-[#1E49C9]/30">
+                      GI: {meal.computed.badges.gi}
                     </span>
                   )}
                   
                   {/* FODMAP Badge */}
                   {meal.computed.badges.fodmap && meal.computed.badges.fodmap !== 'Unknown' && (
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
-                      meal.computed.badges.fodmap === 'Low'
-                        ? 'bg-green-900/20 text-green-300 border-green-500/30'
-                        : meal.computed.badges.fodmap === 'Medium'
-                        ? 'bg-yellow-900/20 text-yellow-300 border-yellow-500/30'
-                        : 'bg-red-900/20 text-red-300 border-red-500/30'
-                    }`}>
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#1E49C9]/20 text-[#1E49C9] border border-[#1E49C9]/30">
                       🌱 FODMAP: {meal.computed.badges.fodmap}
                     </span>
                   )}
                   
                   {/* NOVA Badge */}
                   {meal.computed.badges.nova && (
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
-                      meal.computed.badges.nova === 1
-                        ? 'bg-green-900/20 text-green-300 border-green-500/30'
-                        : meal.computed.badges.nova === 2
-                        ? 'bg-blue-900/20 text-blue-300 border-blue-500/30'
-                        : meal.computed.badges.nova === 3
-                        ? 'bg-yellow-900/20 text-yellow-300 border-yellow-500/30'
-                        : 'bg-red-900/20 text-red-300 border-red-500/30'
-                    }`}>
-                      🏭 NOVA {meal.computed.badges.nova}
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#1E49C9]/20 text-[#1E49C9] border border-[#1E49C9]/30">
+                      NOVA {meal.computed.badges.nova}
                     </span>
                   )}
                 </div>
@@ -548,79 +545,18 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
               </div>
             )}
 
-            {/* AI Insights - Always show for debugging */}
-            <div className="mt-2 pt-2 border-t border-border-primary">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm">🤖</span>
-                <h4 className="text-sm font-medium text-blue-300">AI Insights</h4>
+            {/* AI Insights */}
+            {meal.computed?.aiInsights && (
+              <div className="mt-2 pt-2 border-t border-border-primary">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm">AI</span>
+                  <h4 className="text-sm font-medium text-accent">AI Insights</h4>
+                </div>
+                <div className="text-xs text-text-secondary leading-relaxed">
+                  {meal.computed.aiInsights}
+                </div>
               </div>
-              <div className="text-xs text-blue-200 leading-relaxed">
-                {(() => {
-                  console.log('🔍 Debug meal data:', {
-                    hasComputed: !!meal.computed,
-                    hasEffects: !!meal.computed?.effects,
-                    effectsKeys: meal.computed?.effects ? Object.keys(meal.computed.effects) : [],
-                    hasAiInsights: !!meal.computed?.aiInsights,
-                    aiInsights: meal.computed?.aiInsights,
-                    fullComputed: meal.computed,
-                    fullMeal: meal
-                  });
-                  
-                  // First check for general AI insights at meal level
-                  if (meal.computed?.aiInsights) {
-                    console.log('🔍 Using general AI insights:', meal.computed.aiInsights);
-                    return meal.computed.aiInsights;
-                  }
-                  
-                  // Then find the first effect with AI insights
-                  if (meal.computed?.effects) {
-                    const effectsWithInsights = Object.entries(meal.computed.effects)
-                      .filter(([_, effectData]) => effectData.aiInsights)
-                      .map(([_, effectData]) => effectData.aiInsights);
-                    
-                    if (effectsWithInsights.length > 0) {
-                      console.log('🔍 Using effect AI insights:', effectsWithInsights[0]);
-                      return effectsWithInsights[0];
-                    }
-                  }
-                  
-                  // Fallback: Generate a basic insight based on the effects
-                  const effects = meal.computed?.effects || {};
-                  const insights = [];
-                  
-                  if (effects.strength?.score >= 7) {
-                    insights.push("Excellent for muscle building and recovery");
-                  }
-                  if (effects.immunity?.score >= 7) {
-                    insights.push("Great for immune system support");
-                  }
-                  if (effects.energizing?.score >= 7) {
-                    insights.push("Very energizing for active periods");
-                  }
-                  if (effects.gutFriendly?.score >= 7) {
-                    insights.push("Excellent for gut health");
-                  }
-                  if (effects.moodLifting?.score >= 7) {
-                    insights.push("Great for mood and mental well-being");
-                  }
-                  if (effects.fatForming?.score >= 6) {
-                    insights.push("May contribute to fat storage - consider lighter options");
-                  }
-                  if (effects.inflammation?.score >= 6) {
-                    insights.push("May trigger inflammation - consider anti-inflammatory foods");
-                  }
-                  
-                  if (insights.length > 0) {
-                    console.log('🔍 Using fallback insights:', insights);
-                    return insights.join(". ") + ".";
-                  }
-                  
-                  console.log('🔍 Using default message');
-                  console.log('🔍 Available effects:', effects);
-                  return `AI analyzed this meal for nutritional impact and health effects. Effects: ${Object.keys(effects).join(', ')}`;
-                })()}
-              </div>
-            </div>
+            )}
           </div>
         ))}
       </div>
@@ -686,7 +622,7 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
               {selectedEffect.data.aiInsights && (
                 <div className="mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm">🤖</span>
+                    <span className="text-sm">AI</span>
                     <h4 className="text-sm font-medium text-blue-300">AI Insights</h4>
                   </div>
                   <p className="text-sm text-blue-200 leading-relaxed">
@@ -749,7 +685,7 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

@@ -17,26 +17,26 @@ import {
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { componentStyles, colors, typography } from '../../styles/designTokens';
+import { Logo } from '../ui';
 
 const ConsistentPopup = ({ isOpen, onClose, title, children, maxWidth = "md", showReasonStrip = true, reasonStripColor = "from-accent-yellow to-accent-green" }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4 safe-area-top safe-area-bottom" onClick={onClose}>
-      <div className="bg-[#1E2330] border-2 border-[#2A313A] rounded-2xl p-4 lg:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl relative overflow-hidden" 
-           style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }} 
+      <div className="bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.2)] rounded-2xl p-4 lg:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto backdrop-blur-[32px] backdrop-saturate-[180%] shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)] relative overflow-hidden" 
            onClick={(e) => e.stopPropagation()}>
         
-        {/* Film grain overlay */}
-        <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+        {/* Glassmorphic Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(255,255,255,0.1)] to-transparent pointer-events-none"></div>
         
         {/* Reason Strip */}
         {showReasonStrip && (
-          <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${reasonStripColor}`}></div>
+          <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${reasonStripColor} z-20`}></div>
         )}
         
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 lg:mb-6">
+        <div className="flex items-center justify-between mb-4 lg:mb-6 relative z-10 pt-1">
           <h3 className="text-lg lg:text-xl font-semibold text-[#E8EEF2] tracking-wide">
             {title}
           </h3>
@@ -99,7 +99,7 @@ const Layout = () => {
     { name: 'Food', href: '/food', icon: Utensils },
     { name: 'Finance', href: '/finance', icon: DollarSign },
     { name: 'Content', href: '/content', icon: Brain },
-    { name: 'Journal 🧠', href: '/journal', icon: BookOpen },
+    { name: 'Journal', href: '/journal', icon: BookOpen },
   ];
 
   // Debug log
@@ -207,6 +207,10 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-background-primary text-text-primary">
+      {/* Skip Link for Keyboard Navigation */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       {/* Mobile Sidebar Overlay */}
       {isMobile && mobileSidebarOpen && (
         <div 
@@ -220,7 +224,7 @@ const Layout = () => {
         {/* Left Sidebar */}
         <div 
           className={cn(
-            "bg-background-secondary border-r border-border-primary flex flex-col transition-all duration-300 ease-in-out",
+            "bg-[rgba(0,0,0,0.2)] border-r border-[rgba(255,255,255,0.2)] flex flex-col transition-all duration-300 ease-in-out backdrop-blur-[32px] backdrop-saturate-[180%] shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)] relative overflow-hidden",
             isMobile 
               ? cn(
                   "fixed left-0 top-0 h-full z-50 transform transition-transform duration-300",
@@ -231,9 +235,12 @@ const Layout = () => {
                 )
           )}
         >
+          {/* Glassmorphic Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[rgba(255,255,255,0.1)] to-transparent pointer-events-none"></div>
+          
           {/* Logo */}
           <div className={cn(
-            "border-b border-border-primary transition-all duration-300",
+            "border-b border-[rgba(255,255,255,0.2)] transition-all duration-300 relative z-10",
             isMobile ? 'p-4' : sidebarCollapsed ? 'p-3' : 'p-6'
           )}>
             <div className={cn(
@@ -253,12 +260,15 @@ const Layout = () => {
                   )}
                 </button>
               )}
-              <span className={cn(
-                "text-xl font-bold tracking-wide transition-all duration-300",
+              <div className={cn(
+                "flex items-center space-x-2 transition-all duration-300",
                 isMobile ? 'opacity-100' : sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
               )}>
-                Untangle
-              </span>
+                <Logo size="sm" variant="primary" />
+                <span className="text-xl font-bold tracking-wide">
+                  Untangle
+                </span>
+              </div>
               {isMobile && (
                 <button
                   onClick={() => setMobileSidebarOpen(false)}
@@ -270,9 +280,23 @@ const Layout = () => {
             </div>
           </div>
 
+          {/* Mobile Menu Button - Only visible on mobile when sidebar is closed */}
+          {isMobile && !mobileSidebarOpen && (
+            <div className="p-4 border-b border-[rgba(255,255,255,0.2)] relative z-10">
+              <button
+                onClick={() => setMobileSidebarOpen(true)}
+                className="w-full flex items-center justify-center space-x-2 text-text-muted hover:text-text-primary transition-colors px-4 py-3 rounded-xl hover:bg-[rgba(255,255,255,0.05)] hover:border hover:border-[rgba(255,255,255,0.15)]"
+                aria-label="Open menu"
+              >
+                <Menu size={20} />
+                <span className="font-medium">Menu</span>
+              </button>
+            </div>
+          )}
+
           {/* Navigation */}
           <nav className={cn(
-            "flex-1 transition-all duration-300",
+            "flex-1 transition-all duration-300 relative z-10",
             isMobile ? 'p-4' : sidebarCollapsed ? 'p-2' : 'p-4'
           )}>
             <div className={cn(
@@ -314,13 +338,37 @@ const Layout = () => {
             </div>
           </nav>
 
+          {/* Chat with Alfred Button */}
+          <div className={cn(
+            "border-t border-[rgba(255,255,255,0.2)] transition-all duration-300 relative z-10",
+            isMobile ? 'p-4' : sidebarCollapsed ? 'p-2' : 'p-4'
+          )}>
+            <button
+              onClick={() => setAiChatOpen(true)}
+              className={cn(
+                "w-full flex items-center space-x-2 bg-accent-green text-text-inverse rounded-lg hover:bg-accent-green/90 transition-all duration-200 font-medium",
+                isMobile ? 'px-4 py-3' : sidebarCollapsed ? 'justify-center px-2 py-3' : 'px-4 py-3'
+              )}
+              aria-label="Chat with Alfred"
+              title={sidebarCollapsed && !isMobile ? 'Chat with Alfred' : ''}
+            >
+              <Brain size={isMobile ? 16 : 18} />
+              <span className={cn(
+                "transition-all duration-300",
+                isMobile ? 'opacity-100' : sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+              )}>
+                Chat with Alfred
+              </span>
+            </button>
+          </div>
+
           {/* User Section */}
           <div className={cn(
-            "border-t border-border-primary transition-all duration-300",
+            "border-t border-[rgba(255,255,255,0.2)] transition-all duration-300 relative z-10",
             isMobile ? 'p-4' : sidebarCollapsed ? 'p-2' : 'p-4'
           )}>
             <div className={cn(
-              "flex items-center rounded-xl bg-background-tertiary transition-all duration-300",
+              "flex items-center rounded-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] backdrop-blur-[28px] backdrop-saturate-[140%] shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_4px_6px_-1px_rgba(0,0,0,0.1)] transition-all duration-300",
               isMobile ? 'space-x-3 p-3' : sidebarCollapsed ? 'justify-center p-2' : 'space-x-3 p-3'
             )}>
               <div className="w-8 h-8 bg-accent-green rounded-full flex items-center justify-center">
@@ -356,44 +404,9 @@ const Layout = () => {
           "flex-1 flex flex-col overflow-hidden",
           isMobile && mobileSidebarOpen ? 'ml-0' : ''
         )}>
-          {/* Top Bar */}
-          <header className="h-16 bg-background-secondary border-b border-border-primary flex items-center justify-between px-4 lg:px-6">
-            <div className="flex items-center space-x-4">
-              {isMobile && (
-                <button
-                  onClick={() => setMobileSidebarOpen(true)}
-                  className="text-text-muted hover:text-text-primary transition-colors lg:hidden"
-                  aria-label="Open menu"
-                >
-                  <Menu size={24} />
-                </button>
-              )}
-              <h1 className={cn(
-                "text-xl font-semibold tracking-wide",
-                isMobile ? 'text-lg' : 'text-xl'
-              )}>
-                Untangle
-              </h1>
-            </div>
-            
-            <div className="flex items-center space-x-2 lg:space-x-3">
-              {/* Chat with Alfred Button */}
-              <button
-                onClick={() => setAiChatOpen(true)}
-                className={cn(
-                  "flex items-center space-x-2 bg-accent-green text-text-inverse rounded-lg hover:bg-accent-green/90 transition-all duration-200 font-medium",
-                  isMobile ? 'px-3 py-2' : 'px-4 py-2'
-                )}
-                aria-label="Chat with Alfred"
-              >
-                <Brain size={isMobile ? 16 : 18} />
-                {!isMobile && <span>Chat with Alfred</span>}
-              </button>
-            </div>
-          </header>
 
           {/* Page Content */}
-          <main className="flex-1 overflow-auto bg-background-primary safe-area-bottom">
+          <main id="main-content" className="flex-1 overflow-auto bg-background-primary safe-area-bottom">
             <Outlet />
           </main>
         </div>
@@ -462,7 +475,7 @@ const Layout = () => {
                     }
                   }}
                   className={cn(
-                    componentStyles.input.base,
+                    "input",
                     "flex-1 min-h-[44px]"
                   )}
                   disabled={aiLoading}

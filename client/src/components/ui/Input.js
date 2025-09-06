@@ -13,12 +13,14 @@ const Input = ({
 }) => {
   const baseClasses = componentStyles.input.base;
   
-  const statusClasses = error ? 'border-status-error focus:ring-status-error/50 focus:border-status-error' : 
-                         success ? 'border-status-success focus:ring-status-success/50 focus:border-status-success' : '';
+  const statusClasses = error ? 'input-error' : 
+                         success ? 'input-success' : 
+                         '';
   
   const inputClasses = `
-    ${baseClasses}
+    input
     ${statusClasses}
+    focus:outline-none
     ${className}
   `.trim();
   
@@ -52,7 +54,7 @@ const Input = ({
       
       {error && (
         <motion.p 
-          className="text-sm text-status-error"
+          className="error-text"
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
           transition={animations.fade.transition}
@@ -63,7 +65,7 @@ const Input = ({
       
       {success && (
         <motion.p 
-          className="text-sm text-status-success"
+          className="text-sm text-[#1E49C9]"
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
           transition={animations.fade.transition}

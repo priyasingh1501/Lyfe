@@ -48,7 +48,7 @@ const taskSchema = new mongoose.Schema({
   tags: [String],
   goalIds: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'LifestyleGoal'
+    ref: 'Goal'
   }],
   start: {
     type: Date

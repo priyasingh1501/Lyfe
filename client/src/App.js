@@ -76,22 +76,29 @@ function App() {
               position="top-right"
               toastOptions={{
                 duration: 4000,
+                className: 'glass-toast',
                 style: {
-                  background: '#363636',
-                  color: '#fff',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  backdropFilter: 'blur(28px) saturate(140%)',
+                  WebkitBackdropFilter: 'blur(28px) saturate(140%)',
+                  color: '#E8EEF2',
+                  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                 },
                 success: {
                   duration: 3000,
+                  className: 'glass-toast',
                   iconTheme: {
-                    primary: '#22c55e',
-                    secondary: '#fff',
+                    primary: '#3CCB7F',
+                    secondary: '#E8EEF2',
                   },
                 },
                 error: {
                   duration: 5000,
+                  className: 'glass-toast glass-toast-error',
                   iconTheme: {
-                    primary: '#ef4444',
-                    secondary: '#fff',
+                    primary: '#FF6B6B',
+                    secondary: '#E8EEF2',
                   },
                 },
               }}

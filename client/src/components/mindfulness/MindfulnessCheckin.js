@@ -3,12 +3,20 @@ import { motion } from 'framer-motion';
 import { Save, CheckCircle, Clock, Sparkles } from 'lucide-react';
 import MoonPhaseSlider from '../ui/MoonPhaseSlider';
 import MindfulnessGlass from '../ui/MindfulnessGlass';
+import { Card, Button } from '../ui';
 import { useAuth } from '../../contexts/AuthContext';
 import { buildApiUrl } from '../../config';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const MindfulnessCheckin = ({ onCheckinComplete }) => {
+const MindfulnessCheckin = ({ 
+  onCheckinComplete, 
+  goals = [], 
+  getTodayTasksForGoal = () => [], 
+  getActivitiesForGoal = () => [], 
+  getTodayHoursForGoal = () => 0,
+  onSaveStateChange = () => {}
+}) => {
   const { token } = useAuth();
 
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
@@ -36,6 +44,7 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
 
   // Calculate total score
   const totalScore = Object.values(dimensions).reduce((sum, dim) => sum + dim.rating, 0);
+
 
   // Check if user has already checked in on the selected date
   const checkDateCheckin = useCallback(async (date) => {
@@ -228,6 +237,18 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
       setLastSaved(new Date());
       console.log('Save completed successfully');
       
+      // Show success toast
+      toast.success('Check-in recorded! ✨', {
+        duration: 3000,
+        style: {
+          background: 'rgba(0,0,0,0.8)',
+          color: '#3CCB7F',
+          border: '1px solid rgba(60, 203, 127, 0.3)',
+          borderRadius: '12px',
+          backdropFilter: 'blur(16px)',
+        },
+      });
+      
       if (onCheckinComplete) {
         onCheckinComplete();
       }
@@ -250,7 +271,6 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
       console.log('Save finished');
     }
   }, [hasCheckedInToday, todayCheckin, token, onCheckinComplete, dimensions, dailyNotes, dayReflection, selectedDate]);
-
 
 
   const handleDimensionChange = (dimension, rating) => {
@@ -278,12 +298,21 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
   const ratedDimensionsCount = Object.values(dimensions).filter(dim => dim.rating > 0).length;
   const totalDimensions = Object.keys(dimensions).length;
 
-
+  // Notify parent about save state changes
+  useEffect(() => {
+    onSaveStateChange({
+      saveCheckin,
+      saving,
+      ratedDimensionsCount,
+      totalDimensions,
+      canSave: ratedDimensionsCount >= totalDimensions
+    });
+  }, [saveCheckin, saving, ratedDimensionsCount, totalDimensions, onSaveStateChange]);
 
   return (
     <div className="space-y-4 p-4 lg:p-0">
       {/* Date Selector */}
-      <div className="bg-[#1A1F2E] border-2 border-[#2A313A] rounded-lg p-4 mb-4">
+      <Card>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Clock className="text-[#3CCB7F]" size={20} />
@@ -314,7 +343,7 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Status Message */}
       {hasCheckedInToday && (
@@ -328,135 +357,153 @@ const MindfulnessCheckin = ({ onCheckinComplete }) => {
         </div>
       )}
 
-      {/* Mindfulness Level and Dimensions Section */}
-      <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 mb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-          {/* Left Column - Mindfulness Glass */}
-          <div className="lg:col-span-1 flex justify-center lg:justify-start">
-            <MindfulnessGlass totalScore={totalScore} />
-          </div>
-
-          {/* Right Column - Dimension Sliders */}
-          <div className="lg:col-span-2">
-            <div className="space-y-3 lg:space-y-4">
-              {/* Presence */}
-              <MoonPhaseSlider
-                value={dimensions.presence.rating}
-                onChange={(rating) => handleDimensionChange('presence', rating)}
-                dimension="presence"
-              />
-
-              {/* Emotion Awareness */}
-              <MoonPhaseSlider
-                value={dimensions.emotionAwareness.rating}
-                onChange={(rating) => handleDimensionChange('emotionAwareness', rating)}
-                dimension="emotionAwareness"
-              />
-
-              {/* Intentionality */}
-              <MoonPhaseSlider
-                value={dimensions.intentionality.rating}
-                onChange={(rating) => handleDimensionChange('intentionality', rating)}
-                dimension="intentionality"
-              />
-
-              {/* Attention Quality */}
-              <MoonPhaseSlider
-                value={dimensions.attentionQuality.rating}
-                onChange={(rating) => handleDimensionChange('attentionQuality', rating)}
-                dimension="attentionQuality"
-              />
-
-              {/* Compassion */}
-              <MoonPhaseSlider
-                value={dimensions.compassion.rating}
-                onChange={(rating) => handleDimensionChange('compassion', rating)}
-                dimension="compassion"
-              />
+      {/* Mindfulness Level and Dimensions Section - 12 Column Grid */}
+      <div className="grid grid-cols-12 gap-8">
+        {/* Left Column - Total Mindfulness Level + Goal Progress + Day Reflection (4 cols) */}
+        <div className="col-span-12 lg:col-span-4 space-y-6">
+          {/* Total Mindfulness Level */}
+          <Card>
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
+                Total Mindfulness Level
+              </h3>
+              <div className="flex justify-center">
+                <MindfulnessGlass totalScore={totalScore} />
+              </div>
             </div>
+          </Card>
+
+          {/* Goal Progress */}
+          <Card>
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
+                Goal Progress
+              </h3>
+              <div className="space-y-4">
+                {goals && goals.length > 0 ? (
+                  goals.slice(0, 3).map((goal, index) => {
+                    const goalTasks = getTodayTasksForGoal(goal._id);
+                    const goalActivities = getActivitiesForGoal(goal._id);
+                    const todayHours = getTodayHoursForGoal(goal._id);
+                    const progressPercentage = Math.min((todayHours / (goal.targetHours || 1)) * 100, 100);
+                    
+                    return (
+                      <div key={goal._id || index} className="bg-[#11151A]/50 rounded-lg p-4 border border-[#2A313A]">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium text-[#E8EEF2] truncate">
+                            {goal.name}
+                          </h4>
+                          <span className="text-xs text-[#94A3B8]">
+                            {Math.round(todayHours * 10) / 10}h / {goal.targetHours || 0}h
+                          </span>
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        <div className="w-full bg-[#2A313A] rounded-full h-2 mb-2">
+                          <div 
+                            className="bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${progressPercentage}%` }}
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-xs text-[#94A3B8]">
+                          <span>{goalActivities.length} activities</span>
+                          <span className={`${goal.isActive ? 'text-[#3CCB7F]' : 'text-[#94A3B8]'}`}>
+                            {goal.isActive ? 'Active' : 'Paused'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-[#94A3B8]">No goals found</p>
+                    <p className="text-xs text-[#6B7280] mt-1">Create goals to track progress</p>
+                  </div>
+                )}
+                
+                {goals && goals.length > 3 && (
+                  <div className="text-center">
+                    <p className="text-xs text-[#94A3B8]">+{goals.length - 3} more goals</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          {/* Day Reflection */}
+          <Card>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-sm font-medium text-[#E8EEF2] font-oswald tracking-wide">
+                  Day Reflection
+                </label>
+                <span className="text-xs text-[#94A3B8]">
+                  {dayReflection.length}/500 characters
+                </span>
+              </div>
+              <textarea
+                value={dayReflection}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  setDayReflection(newValue);
+                }}
+                placeholder="Reflect on today… What stood out? What did you learn?"
+                maxLength={500}
+                className="w-full h-32 px-4 py-3 bg-[#1E2330] border border-[#2A313A] rounded-lg text-[#E8EEF2] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#3CCB7F] focus:border-transparent resize-none"
+                rows="4"
+              />
+              <p className="text-xs text-[#94A3B8] mt-2">Optional</p>
+            </div>
+          </Card>
+        </div>
+
+        {/* Right Column - Dimension Questions + Bioluminescent Dots (8 cols) */}
+        <div className="col-span-12 lg:col-span-8">
+          <div className="space-y-8 flex flex-col items-center">
+            {/* Presence */}
+            <MoonPhaseSlider
+              value={dimensions.presence.rating}
+              onChange={(rating) => handleDimensionChange('presence', rating)}
+              dimension="presence"
+            />
+
+            {/* Emotion Awareness */}
+            <MoonPhaseSlider
+              value={dimensions.emotionAwareness.rating}
+              onChange={(rating) => handleDimensionChange('emotionAwareness', rating)}
+              dimension="emotionAwareness"
+            />
+
+            {/* Intentionality */}
+            <MoonPhaseSlider
+              value={dimensions.intentionality.rating}
+              onChange={(rating) => handleDimensionChange('intentionality', rating)}
+              dimension="intentionality"
+            />
+
+            {/* Attention Quality */}
+            <MoonPhaseSlider
+              value={dimensions.attentionQuality.rating}
+              onChange={(rating) => handleDimensionChange('attentionQuality', rating)}
+              dimension="attentionQuality"
+            />
+
+            {/* Compassion */}
+            <MoonPhaseSlider
+              value={dimensions.compassion.rating}
+              onChange={(rating) => handleDimensionChange('compassion', rating)}
+              dimension="compassion"
+            />
           </div>
         </div>
       </div>
 
-      {/* Day Reflection Section */}
-      <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6">
-        <label className="block text-sm font-medium text-[#E8EEF2] mb-3 font-oswald tracking-wide">
-          Day Reflection
-        </label>
-        <textarea
-          value={dayReflection}
-          onChange={(e) => {
-            const newValue = e.target.value;
-            setDayReflection(newValue);
-          }}
-          placeholder="Reflect on your day... What moments stood out? How did you feel? What did you learn?"
-          className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-md text-[#E8EEF2] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#3CCB7F] focus:border-transparent resize-none min-h-[44px]"
-          rows="4"
-        />
-        <p className="text-xs text-[#6B7280] mt-2">
-          This reflection will be added to your journal and displayed in the Content tab.
-        </p>
-      </div>
-
-      {/* Save Status */}
-      <div className="flex justify-center mt-6">
-        <div className="flex items-center gap-3 text-sm">
-          {saving ? (
-            <div className="flex items-center gap-2 text-[#3CCB7F]">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#3CCB7F]"></div>
-              <span>Saving...</span>
-            </div>
-          ) : lastSaved ? (
-            <div className="flex items-center gap-2 text-[#6B7280]">
-              <CheckCircle size={16} />
-              <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-[#6B7280]">
-              <Clock size={16} />
-              <span>Click Save to record your mindfulness check-in</span>
-            </div>
-          )}
-        </div>
-      </div>
       
 
       
-      {/* Progress Indicator */}
-      <div className="text-center mt-4 mb-2">
-        <div className="text-sm text-[#94A3B8] mb-2">
-          {ratedDimensionsCount === totalDimensions ? (
-            <span className="text-[#3CCB7F]">✅ All dimensions rated! Ready to save.</span>
-          ) : (
-            <span>📊 {ratedDimensionsCount} of {totalDimensions} dimensions rated</span>
-          )}
-        </div>
-        <div className="w-full bg-[#2A313A] rounded-full h-2 mb-4">
-          <div 
-            className="bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] h-2 rounded-full transition-all duration-300"
-            style={{ width: `${(ratedDimensionsCount / totalDimensions) * 100}%` }}
-          ></div>
-        </div>
-      </div>
 
-      {/* Manual Save Button */}
-      <div className="flex justify-center mt-4">
-        <button
-          onClick={saveCheckin}
-          disabled={saving || ratedDimensionsCount < totalDimensions}
-          className="px-6 py-3 bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] text-white rounded-lg hover:from-[#3CCB7F]/90 hover:to-[#4ECDC4]/90 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-[#6B7280] disabled:to-[#6B7280] min-h-[44px] w-full lg:w-auto"
-        >
-          {saving ? '💾 Saving...' : ratedDimensionsCount < totalDimensions ? '⚠️ Rate All Dimensions First' : '💾 Save Mindfulness Check-in'}
-        </button>
-      </div>
 
-      {/* Success Message */}
-      {hasCheckedInToday && (
-        <div className="text-center text-[#3CCB7F] text-sm">
-          <Sparkles className="inline-block mr-2" size={16} />
-          Check-in recorded
-        </div>
-      )}
     </div>
   );
 };

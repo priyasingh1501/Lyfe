@@ -24,6 +24,14 @@ const CreateTaskPopup = ({ isOpen, onClose, onTaskCreated, goalId, goalName }) =
     e.preventDefault();
     setLoading(true);
 
+    const taskData = {
+      ...formData,
+      goalIds: goalId ? [goalId] : [],
+      estimatedDuration: parseInt(formData.estimatedDuration) || 30
+    };
+
+    console.log('Creating task with data:', taskData);
+
     try {
       const response = await fetch(buildApiUrl('/api/tasks'), {
         method: 'POST',
@@ -31,15 +39,14 @@ const CreateTaskPopup = ({ isOpen, onClose, onTaskCreated, goalId, goalName }) =
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          ...formData,
-          goalIds: goalId ? [goalId] : [],
-          estimatedDuration: parseInt(formData.estimatedDuration) || 30
-        })
+        body: JSON.stringify(taskData)
       });
+
+      console.log('Task creation response status:', response.status);
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Task created successfully:', data);
         onTaskCreated(data.task);
         onClose();
         // Reset form
@@ -49,6 +56,7 @@ const CreateTaskPopup = ({ isOpen, onClose, onTaskCreated, goalId, goalName }) =
         });
       } else {
         const error = await response.json();
+        console.error('Task creation failed:', error);
         alert(`Error creating task: ${error.message}`);
       }
     } catch (error) {

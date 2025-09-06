@@ -21,9 +21,14 @@ const Button = ({
     xl: 'px-10 py-5 text-xl'
   };
   
+  const hoverClasses = variant === 'primary' 
+    ? 'hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05),0_0_30px_rgba(30,73,201,0.4)] hover:-translate-y-0.5'
+    : 'hover:bg-[rgba(30,73,201,0.1)] hover:border-[rgba(30,73,201,0.3)] hover:-translate-y-0.5';
+  
   const buttonClasses = `
     ${baseClasses}
     ${sizeClasses[size]}
+    ${!disabled ? hoverClasses : ''}
     ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
     ${className}
   `.trim();
@@ -34,8 +39,8 @@ const Button = ({
     <MotionComponent
       className={buttonClasses}
       disabled={disabled || loading}
-      whileHover={animate && !disabled ? animations.hover : undefined}
-      whileTap={animate && !disabled ? animations.tap : undefined}
+      whileHover={animate && !disabled ? { y: -1, transition: { duration: 0.2 } } : undefined}
+      whileTap={animate && !disabled ? { scale: 0.98, transition: { duration: 0.1 } } : undefined}
       {...props}
     >
       {loading ? (

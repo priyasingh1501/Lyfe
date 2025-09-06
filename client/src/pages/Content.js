@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { buildApiUrl } from '../config';
+import { Button, Input, Card, Section, Header, Badge } from '../components/ui';
 
 const Content = () => {
   const { token } = useAuth();
@@ -208,6 +209,9 @@ const Content = () => {
   };
 
   const handleDeleteBook = async (bookId) => {
+    if (!window.confirm('Are you sure you want to delete this book? This action cannot be undone.')) {
+      return;
+    }
 
     try {
       const response = await fetch(buildApiUrl(`/api/book-documents/${bookId}`), {
@@ -230,6 +234,9 @@ const Content = () => {
   };
 
   const handleDeleteNote = async (bookId, noteId) => {
+    if (!window.confirm('Are you sure you want to delete this note?')) {
+      return;
+    }
 
     try {
       const response = await fetch(buildApiUrl(`/api/book-documents/${bookId}/notes/${noteId}`), {
@@ -328,9 +335,9 @@ const Content = () => {
     switch (status) {
       case 'completed': return '✓';
       case 'currently_reading': return '▶';
-      case 'not_started': return '📖';
-      case 'paused': return '⏸';
-      default: return '📖';
+      case 'not_started': return 'Not Started';
+      case 'paused': return 'Paused';
+      default: return 'Not Started';
     }
   };
 
@@ -340,7 +347,7 @@ const Content = () => {
       case 'currently_reading': return 'text-blue-600';
       case 'not_started': return 'text-yellow-600';
       case 'paused': return 'text-red-600';
-      default: return 'text-gray-600';
+      default: return 'text-[#C9D1D9]';
     }
   };
 
@@ -355,35 +362,21 @@ const Content = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0C0F]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
-        {/* Header - Mission Card */}
-        <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden mb-4 lg:mb-8" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-          {/* Film grain overlay */}
-          <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-          
-          {/* Reason Strip */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] via-[#3CCB7F] to-[#4ECDC4]"></div>
-          
-          <div className="text-center">
-            <h1 className="text-2xl lg:text-3xl font-bold text-[#E8EEF2] mb-2 font-oswald tracking-wide">BOOK DOCUMENTS</h1>
-            <p className="text-[#C9D1D9] font-inter">Track your reading journey, take notes, and collect inspiring quotes</p>
+    <Section>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <Header level={1} className="tracking-tight">Book Documents</Header>
+            <p className="text-text-secondary mt-2">Track your reading journey, take notes, and collect inspiring quotes</p>
           </div>
-        </div>
-
-
-
-        {/* Action Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 lg:mb-6 gap-4">
-          <div className="flex space-x-3">
-            <button
-              onClick={() => setShowNewBookForm(true)}
-              className="inline-flex items-center px-4 py-2 bg-[#FFD200] text-[#0A0C0F] rounded-lg hover:bg-[#FFB800] transition-colors duration-200 border border-[#FFD200] hover:shadow-lg hover:shadow-[#FFD200]/20 font-oswald tracking-wide min-h-[44px]"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              New Book
-            </button>
-          </div>
+          <Button
+            onClick={() => setShowNewBookForm(true)}
+            variant="secondary"
+            className="inline-flex items-center"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            New Book
+          </Button>
         </div>
 
         {/* New Book Form */}
@@ -393,132 +386,103 @@ const Content = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg shadow-lg p-6 mb-8"
+              className="mb-8"
             >
-              <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">CREATE NEW BOOK DOCUMENT</h3>
+              <Card title="Create New Book Document">
               
               <form onSubmit={handleCreateBook} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
-                      Title *
-                    </label>
-                    <input
-                      type="text"
-                      value={newBook.title}
-                      onChange={(e) => setNewBook({ ...newBook, title: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
-                      placeholder="Enter book title"
-                      required
-                    />
-                  </div>
+                  <Input
+                    label="Title *"
+                    type="text"
+                    value={newBook.title}
+                    onChange={(e) => setNewBook({ ...newBook, title: e.target.value })}
+                    placeholder="Enter book title"
+                    required
+                  />
 
-                  <div>
-                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
-                      Author *
-                    </label>
-                    <input
-                      type="text"
-                      value={newBook.author}
-                      onChange={(e) => setNewBook({ ...newBook, author: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
-                      placeholder="Enter author name"
-                      required
-                    />
-                  </div>
+                  <Input
+                    label="Author *"
+                    type="text"
+                    value={newBook.author}
+                    onChange={(e) => setNewBook({ ...newBook, author: e.target.value })}
+                    placeholder="Enter author name"
+                    required
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
+                    <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta">
                       Category
                     </label>
                     <select
                       value={newBook.category}
                       onChange={(e) => setNewBook({ ...newBook, category: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                      className="input w-full"
                     >
                       {bookCategories.map(category => (
-                        <option key={category} value={category} className="bg-[#0A0C0F] text-[#E8EEF2]">{category.replace('_', ' ')}</option>
+                        <option key={category} value={category} className="bg-background-primary text-text-primary">{category.replace('_', ' ')}</option>
                       ))}
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
-                      Total Pages
-                    </label>
-                    <input
-                      type="number"
-                      value={newBook.totalPages}
-                      onChange={(e) => setNewBook({ ...newBook, totalPages: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
-                      placeholder="e.g., 300"
-                      min="1"
-                    />
-                  </div>
+                  <Input
+                    label="Total Pages"
+                    type="number"
+                    value={newBook.totalPages}
+                    onChange={(e) => setNewBook({ ...newBook, totalPages: e.target.value })}
+                    placeholder="e.g., 300"
+                    min="1"
+                  />
 
                   <div>
-                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
+                    <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta">
                       Difficulty
                     </label>
                     <select
                       value={newBook.difficulty}
                       onChange={(e) => setNewBook({ ...newBook, difficulty: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                      className="input w-full"
                     >
                       {difficulties.map(difficulty => (
-                        <option key={difficulty} value={difficulty} className="bg-[#0A0C0F] text-[#E8EEF2]">{difficulty}</option>
+                        <option key={difficulty} value={difficulty} className="bg-background-primary text-text-primary">{difficulty}</option>
                       ))}
                     </select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
-                      ISBN
-                    </label>
-                    <input
-                      type="text"
-                      value={newBook.isbn}
-                      onChange={(e) => setNewBook({ ...newBook, isbn: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
-                      placeholder="Enter ISBN"
-                    />
-                  </div>
+                  <Input
+                    label="ISBN"
+                    type="text"
+                    value={newBook.isbn}
+                    onChange={(e) => setNewBook({ ...newBook, isbn: e.target.value })}
+                    placeholder="Enter ISBN"
+                  />
 
-                  <div>
-                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
-                      Publication Year
-                    </label>
-                    <input
-                      type="number"
-                      value={newBook.publicationYear}
-                      onChange={(e) => setNewBook({ ...newBook, publicationYear: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
-                      placeholder="e.g., 2024"
-                      min="1900"
-                      max="2030"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
-                    Description
-                  </label>
-                  <textarea
-                    value={newBook.description}
-                    onChange={(e) => setNewBook({ ...newBook, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
-                    placeholder="Describe the book..."
+                  <Input
+                    label="Publication Year"
+                    type="number"
+                    value={newBook.publicationYear}
+                    onChange={(e) => setNewBook({ ...newBook, publicationYear: e.target.value })}
+                    placeholder="e.g., 2024"
+                    min="1900"
+                    max="2030"
                   />
                 </div>
 
+                <Input
+                  label="Description"
+                  type="textarea"
+                  value={newBook.description}
+                  onChange={(e) => setNewBook({ ...newBook, description: e.target.value })}
+                  rows={3}
+                  placeholder="Describe the book..."
+                />
+
                 <div>
-                  <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
+                  <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta">
                     Tags
                   </label>
                   <div className="flex">
@@ -527,13 +491,13 @@ const Content = () => {
                       value={bookTagInput}
                       onChange={(e) => setBookTagInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addBookTag())}
-                      className="flex-1 px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-l-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                      className="flex-1 input rounded-l-lg rounded-r-none"
                       placeholder="Add a tag"
                     />
                     <button
                       type="button"
                       onClick={addBookTag}
-                      className="px-3 py-2 bg-[#2A313A] border border-l-0 border-[#2A313A] rounded-r-lg hover:bg-[#3A414A] text-[#E8EEF2]"
+                      className="px-3 py-2 bg-background-tertiary border border-l-0 border-border-primary rounded-r-lg hover:bg-background-secondary text-text-primary"
                     >
                       Add
                     </button>
@@ -560,21 +524,22 @@ const Content = () => {
                 </div>
 
                 <div className="flex justify-end space-x-3">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setShowNewBookForm(false)}
-                    className="px-4 py-2 text-[#C9D1D9] bg-[#2A313A] rounded-lg hover:bg-[#3A414A] transition-colors duration-200 border border-[#2A313A]"
+                    variant="ghost"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    className="px-4 py-2 bg-[#FFD200] text-[#0A0C0F] rounded-lg hover:bg-[#FFB800] transition-colors duration-200 border border-[#FFD200] font-oswald tracking-wide"
+                    variant="primary"
                   >
                     Create Book
-                  </button>
+                  </Button>
                 </div>
               </form>
+              </Card>
             </motion.div>
           )}
         </AnimatePresence>
@@ -586,16 +551,14 @@ const Content = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg shadow-lg p-6 mb-8"
+              className="mb-8"
             >
-              <h3 className="text-lg font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
-                {selectedBook ? `ADD NOTE TO "${selectedBook.title.toUpperCase()}"` : 'ADD NOTE'}
-              </h3>
+              <Card title={selectedBook ? `Add Note to "${selectedBook.title}"` : 'Add Note'}>
               
               <form onSubmit={handleAddNote} className="space-y-4">
                 {!selectedBook && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
                       Select Book *
                     </label>
                     <select
@@ -604,7 +567,7 @@ const Content = () => {
                         const book = bookDocuments.find(b => b._id === e.target.value);
                         setSelectedBook(book);
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
                       required
                     >
                       <option value="">Select a book</option>
@@ -615,10 +578,10 @@ const Content = () => {
                   </div>
                 )}
 
-                                  <div>
-                    <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
-                      Note Content *
-                    </label>
+                <div>
+                  <label className="block text-sm font-medium text-[#C9D1D9] mb-2 font-inter">
+                    Note Content *
+                  </label>
                     <textarea
                       value={newNote.content}
                       onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
@@ -692,9 +655,9 @@ const Content = () => {
                       type="checkbox"
                       checked={newNote.isImportant}
                       onChange={(e) => setNewNote({ ...newNote, isImportant: e.target.checked })}
-                      className="mr-2 h-4 w-4 text-[#FFD200] focus:ring-[#FFD200] border-[#2A313A] rounded"
+                      className="mr-2 h-4 w-4 text-accent-primary focus:ring-accent-primary border-border-primary rounded"
                     />
-                    <span className="text-sm text-[#C9D1D9] font-inter">Mark as important</span>
+                    <span className="text-sm text-text-secondary font-jakarta">Mark as important</span>
                   </label>
                   
                   <label className="flex items-center">
@@ -702,248 +665,258 @@ const Content = () => {
                       type="checkbox"
                       checked={newNote.isQuote}
                       onChange={(e) => setNewNote({ ...newNote, isQuote: e.target.checked })}
-                      className="mr-2 h-4 w-4 text-[#FFD200] focus:ring-[#FFD200] border-[#2A313A] rounded"
+                      className="mr-2 h-4 w-4 text-accent-primary focus:ring-accent-primary border-border-primary rounded"
                     />
-                    <span className="text-sm text-[#C9D1D9] font-inter">Include in dashboard quotes</span>
+                    <span className="text-sm text-text-secondary font-jakarta">Include in dashboard quotes</span>
                   </label>
                 </div>
 
                 <div className="flex justify-end space-x-3">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => {
                       setShowNoteForm(false);
                       setSelectedBook(null);
                     }}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                    variant="ghost"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    className="px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors duration-200"
+                    variant="primary"
                   >
                     Add Note
-                  </button>
+                  </Button>
                 </div>
               </form>
+            </Card>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Book Documents */}
-        <div className="space-y-8">
-          {bookDocuments.length === 0 ? (
+        {bookDocuments.length === 0 ? (
+          <Card>
             <div className="text-center py-12">
-              <Book className="mx-auto h-12 w-12 text-[#2A313A]" />
-              <h3 className="mt-2 text-sm font-medium text-[#E8EEF2] font-oswald tracking-wide">NO BOOK DOCUMENTS YET</h3>
-              <p className="mt-1 text-sm text-[#C9D1D9]">
+              <Book className="mx-auto h-12 w-12 text-text-muted" />
+              <h3 className="mt-2 text-sm font-medium text-text-primary font-jakarta">No Book Documents Yet</h3>
+              <p className="mt-1 text-sm text-text-secondary">
                 Get started by creating your first book document
               </p>
             </div>
-          ) : (
-            bookDocuments.map((book, index) => (
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {bookDocuments.map((book, index) => (
               <motion.div
                 key={book._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg shadow-lg overflow-hidden"
               >
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                                              <div className="flex items-center space-x-3 mb-2">
-                          <div className="p-2 bg-[#2A313A] rounded-lg">
-                            <Book className="h-6 w-6 text-[#4ECDC4]" />
+                <Card variant="elevated" className="overflow-hidden h-full flex flex-col">
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <div className="p-2 bg-background-tertiary rounded-lg">
+                            <Book className="h-6 w-6 text-accent-primary" />
                           </div>
                           <div>
-                            <h3 className="text-xl font-semibold text-[#E8EEF2] font-oswald tracking-wide">{book.title}</h3>
-                            <p className="text-[#C9D1D9]">by {book.author}</p>
+                            <h3 className="text-xl font-semibold text-text-primary font-jakarta">{book.title}</h3>
+                            <p className="text-text-secondary">by {book.author}</p>
                           </div>
                         </div>
                       
-                                              <div className="flex items-center space-x-4 text-sm text-[#C9D1D9] mb-3">
-                          <span className="capitalize">{book.category.replace('_', ' ')}</span>
-                          <span>•</span>
-                          <span className={`flex items-center ${getBookStatusColor(book.status)}`}>
-                            <span className="mr-1">{getBookStatusIcon(book.status)}</span>
-                            {book.status.replace('_', ' ')}
-                          </span>
-                          {book.totalPages && (
-                            <>
-                              <span>•</span>
-                              <span>{book.totalPages} pages</span>
-                            </>
-                          )}
-                          {book.isDefault && (
-                            <>
-                              <span>•</span>
-                              <span className="text-[#FFD200] font-medium font-oswald tracking-wide">Personal Journal</span>
-                            </>
-                          )}
+                      <div className="flex items-center space-x-4 text-sm text-text-secondary mb-3">
+                        <Badge variant="outline" className="text-xs">
+                          {book.category.replace('_', ' ')}
+                        </Badge>
+                        <span className={`flex items-center ${getBookStatusColor(book.status)}`}>
+                          <span className="mr-1">{getBookStatusIcon(book.status)}</span>
+                          {book.status.replace('_', ' ')}
+                        </span>
+                        {book.totalPages && (
+                          <>
+                            <span>•</span>
+                            <span>{book.totalPages} pages</span>
+                          </>
+                        )}
+                        {book.isDefault && (
+                          <>
+                            <span>•</span>
+                            <Badge variant="success" className="text-xs">Personal Journal</Badge>
+                          </>
+                        )}
+                      </div>
+
+                      {book.description && (
+                        <p className="text-text-secondary mb-3">{book.description}</p>
+                      )}
+
+                      {book.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {book.tags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="text-xs">
+                              <Tag className="h-3 w-3 mr-1" />
+                              {tag}
+                            </Badge>
+                          ))}
                         </div>
+                      )}
+                      </div>
 
-                                              {book.description && (
-                          <p className="text-[#C9D1D9] mb-3">{book.description}</p>
-                        )}
-
-                        {book.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-3">
-                            {book.tags.map(tag => (
-                              <span
-                                key={tag}
-                                className="inline-flex items-center px-2 py-1 bg-[#2A313A] text-[#E8EEF2] text-xs rounded-full"
-                              >
-                                <Tag className="h-3 w-3 mr-1" />
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                    </div>
-
-                                          <div className="flex items-center space-x-2">
-                        <button
+                      <div className="flex items-center space-x-2">
+                        <Button
                           onClick={() => {
                             setSelectedBook(book);
                             setShowNoteForm(true);
                           }}
-                          className="inline-flex items-center px-3 py-2 bg-[#3CCB7F] text-[#0A0C0F] rounded-lg hover:bg-[#2BB870] transition-colors duration-200 border border-[#3CCB7F] text-sm font-medium"
+                          variant="primary"
+                          size="sm"
+                          className="inline-flex items-center"
                           title="Add note"
                         >
                           <Plus className="h-3 w-3 mr-1" />
                           Add Note
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleDeleteBook(book._id)}
-                          className="p-2 text-[#C9D1D9] hover:text-red-500 transition-colors duration-200"
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 text-text-secondary hover:text-status-error"
                           title="Delete book"
                         >
                           <Trash2 className="h-4 w-4" />
-                        </button>
+                        </Button>
                       </div>
-                  </div>
+                    </div>
 
-                                      {/* Notes Section */}
-                    <div className="border-t border-[#2A313A] pt-4">
+                    {/* Notes Section */}
+                    <div className="border-t border-border-primary pt-4 mt-auto">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-lg font-medium text-[#E8EEF2] font-oswald tracking-wide">NOTES ({book.notes.length})</h4>
-                        <button
+                        <h4 className="text-lg font-medium text-text-primary font-jakarta">Notes ({book.notes.length})</h4>
+                        <Button
                           onClick={() => {
                             setSelectedBook(book);
                             setShowNoteForm(true);
                           }}
-                          className="inline-flex items-center px-2 py-1 bg-[#2A313A] text-[#C9D1D9] rounded text-sm hover:bg-[#3A414A] transition-colors duration-200 border border-[#2A313A]"
+                          variant="outline"
+                          size="sm"
+                          className="inline-flex items-center"
                           title="Add note to this book"
                         >
                           <Plus className="h-3 w-3 mr-1" />
                           Add Note
-                        </button>
+                        </Button>
                       </div>
                       
-                      {book.notes.length === 0 ? (
-                        <div className="text-center py-6">
-                          <p className="text-[#C9D1D9] text-sm mb-3">No notes yet. Add your first note to start tracking your reading journey.</p>
-                          <button
-                            onClick={() => {
-                              setSelectedBook(book);
-                              setShowNoteForm(true);
-                            }}
-                            className="inline-flex items-center px-3 py-2 bg-[#3CCB7F] text-[#0A0C0F] rounded-lg hover:bg-[#2BB870] transition-colors duration-200 border border-[#3CCB7F] text-sm font-medium"
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add First Note
-                          </button>
-                        </div>
-                      ) : (
-                      <div className="space-y-3">
-                        {book.notes.map((note, noteIndex) => (
-                                                      <div
-                              key={note._id}
-                              className={`p-3 rounded-lg border ${
-                                note.isImportant ? 'border-[#FFD200] bg-[#2A313A]' : 'border-[#2A313A] bg-[#0A0C0F]'
-                              }`}
-                            >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center space-x-2">
-                                {note.isQuote && (
-                                  <Quote className="h-4 w-4 text-blue-500" title="Quote note" />
-                                )}
-                                {note.isImportant && (
-                                  <Star className="h-4 w-4 text-amber-500" title="Important note" />
-                                )}
-                                {note.location && (
-                                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
-                                    {note.location}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <button
-                                  onClick={() => handleUpdateNote(book._id, note._id, { isQuote: !note.isQuote })}
-                                  className={`p-1 rounded ${
-                                    note.isQuote 
-                                      ? 'text-blue-600 bg-blue-100' 
-                                      : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
-                                  }`}
-                                  title={note.isQuote ? 'Remove from quotes' : 'Add to quotes'}
-                                >
-                                  <Quote className="h-3 w-3" />
-                                </button>
-                                <button
-                                  onClick={() => handleUpdateNote(book._id, note._id, { isImportant: !note.isImportant })}
-                                  className={`p-1 rounded ${
-                                    note.isImportant 
-                                      ? 'text-amber-600 bg-amber-100' 
-                                      : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50'
-                                  }`}
-                                  title={note.isImportant ? 'Remove from important' : 'Mark as important'}
-                                >
-                                  <Star className="h-3 w-3" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteNote(book._id, note._id)}
-                                  className="p-1 text-gray-400 hover:text-red-500 transition-colors duration-200"
-                                  title="Delete note"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </button>
-                              </div>
-                            </div>
-                            
-                                                          <p className="text-[#E8EEF2] text-sm mb-2">{note.content}</p>
-                              
-                              {note.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-1">
-                                  {note.tags.map(tag => (
-                                    <span
-                                      key={tag}
-                                      className="inline-flex items-center px-1.5 py-0.5 bg-[#2A313A] text-[#C9D1D9] text-xs rounded border border-[#2A313A]"
-                                    >
-                                      {tag}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                              
-                              <div className="text-xs text-[#C9D1D9] mt-2">
-                                {new Date(note.timestamp).toLocaleDateString()}
-                              </div>
-                          </div>
-                        ))}
+                    {book.notes.length === 0 ? (
+                      <div className="text-center py-6">
+                        <p className="text-text-secondary text-sm mb-3">No notes yet. Add your first note to start tracking your reading journey.</p>
+                        <Button
+                          onClick={() => {
+                            setSelectedBook(book);
+                            setShowNoteForm(true);
+                          }}
+                          variant="primary"
+                          size="sm"
+                          className="inline-flex items-center"
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add First Note
+                        </Button>
                       </div>
-                    )}
+                    ) : (
+                    <div className="space-y-3">
+                      {book.notes.map((note, noteIndex) => (
+                        <div
+                          key={note._id}
+                          className={`p-3 rounded-lg border ${
+                            note.isImportant ? 'border-accent-primary bg-background-card' : 'border-border-primary bg-background-primary'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              {note.isQuote && (
+                                <Quote className="h-4 w-4 text-accent-primary" title="Quote note" />
+                              )}
+                              {note.isImportant && (
+                                <Star className="h-4 w-4 text-accent-primary" title="Important note" />
+                              )}
+                              {note.location && (
+                                <Badge variant="outline" className="text-xs">
+                                  {note.location}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Button
+                                onClick={() => handleUpdateNote(book._id, note._id, { isQuote: !note.isQuote })}
+                                variant="ghost"
+                                size="sm"
+                                className={`p-1 ${
+                                  note.isQuote 
+                                    ? 'text-accent-primary bg-accent-primary/20' 
+                                    : 'text-text-secondary hover:text-accent-primary hover:bg-accent-primary/10'
+                                }`}
+                                title={note.isQuote ? 'Remove from quotes' : 'Add to quotes'}
+                              >
+                                <Quote className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                onClick={() => handleUpdateNote(book._id, note._id, { isImportant: !note.isImportant })}
+                                variant="ghost"
+                                size="sm"
+                                className={`p-1 ${
+                                  note.isImportant 
+                                    ? 'text-accent-primary bg-accent-primary/20' 
+                                    : 'text-text-secondary hover:text-accent-primary hover:bg-accent-primary/10'
+                                }`}
+                                title={note.isImportant ? 'Remove from important' : 'Mark as important'}
+                              >
+                                <Star className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                onClick={() => handleDeleteNote(book._id, note._id)}
+                                variant="ghost"
+                                size="sm"
+                                className="p-1 text-text-secondary hover:text-status-error"
+                                title="Delete note"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <p className="text-text-primary text-sm mb-2">{note.content}</p>
+                              
+                            {note.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {note.tags.map(tag => (
+                                  <Badge key={tag} variant="secondary" className="text-xs">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          
+                          <div className="text-xs text-text-secondary mt-2">
+                            {new Date(note.timestamp).toLocaleDateString()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                    </div>
                   </div>
-                </div>
+                </Card>
               </motion.div>
-            ))
-          )}
-        </div>
-      </div>
-
-
-    </div>
+            ))}
+          </div>
+        )}
+    </Section>
   );
 };
 

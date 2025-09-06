@@ -27,11 +27,8 @@ const Food = () => {
     <Section>
       <Header level={1}>Food & Nutrition</Header>
       
-      <div className="mb-8">
+      <div className="space-y-8">
         <MealBuilder onMealSaved={triggerMealRefresh} />
-      </div>
-      
-      <div>
         <DailyMealKPIs refreshTrigger={refreshTrigger} />
       </div>
     </Section>

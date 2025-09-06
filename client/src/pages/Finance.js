@@ -8,9 +8,16 @@ import {
   Edit3,
   Trash2,
   Upload,
-  Image
+  Image,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  CreditCard,
+  Target
 } from 'lucide-react';
 import axios from 'axios';
+import Card from '../components/ui/Card';
+import { componentStyles, animations } from '../styles/designTokens';
 
 const Finance = () => {
   
@@ -614,27 +621,25 @@ const Finance = () => {
       className="relative w-full max-w-full overflow-x-auto p-4 lg:p-0"
     >
       {/* Header - Mission Card */}
-      <div className="bg-gray-900 border-2 border-gray-600 rounded-lg p-4 lg:p-6 relative overflow-hidden mb-4 lg:mb-6" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-        {/* Film grain overlay */}
-        <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-        
-        {/* Reason Strip */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-blue-500 to-green-500"></div>
-        
-        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 gap-4">
+      <Card 
+        variant="elevated" 
+        className="mb-6"
+        title="FINANCIAL MISSION"
+        subtitle="Track expenses, manage budgets, and achieve financial goals"
+        icon={<DollarSign className="h-5 w-5 text-[#1E49C9]" />}
+      >
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-            <h1 className="text-lg font-bold text-white font-oswald tracking-wide text-center lg:text-left">FINANCIAL MISSION</h1>
-            
             {/* Tabs */}
-            <div className="flex space-x-0.5 bg-gray-800 p-0.5 rounded-md w-fit border border-gray-600 mx-auto lg:mx-0">
+            <div className="flex space-x-1 bg-[rgba(0,0,0,0.2)] p-1 rounded-lg w-fit border border-[rgba(255,255,255,0.1)] mx-auto lg:mx-0">
               {['overview', 'expenses', 'subscriptions'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-1 px-2 rounded-sm text-xs font-medium transition-colors font-oswald tracking-wide ${
+                  className={`py-2 px-3 rounded-md text-sm font-medium transition-all duration-200 font-jakarta tracking-wider ${
                     activeTab === tab
-                      ? 'bg-amber-500 text-white shadow-sm'
-                      : 'text-gray-300 hover:text-amber-400'
+                      ? 'bg-[#1E49C9] text-white shadow-lg'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-[rgba(30,73,201,0.1)]'
                   }`}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -646,375 +651,269 @@ const Finance = () => {
           <div className="flex justify-center lg:justify-end">
             <button
               onClick={() => setShowAddForm(true)}
-              className="bg-amber-500 text-white px-3 py-2 rounded hover:bg-amber-400 flex items-center gap-1 font-oswald tracking-wide transition-colors text-xs border border-amber-400 hover:shadow-lg hover:shadow-amber-500/20 min-h-[44px]"
+              className={componentStyles.button.primary + " flex items-center gap-2"}
             >
-              <Plus size={14} />
+              <Plus size={16} />
               ADD RECORD
             </button>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <>
 
-          {/* Monthly Expense Analysis - Mission Card */}
-          <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden mb-4 lg:mb-6" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-            {/* Film grain overlay */}
-            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-            
-            {/* Reason Strip */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] via-[#3EA6FF] to-[#3CCB7F]"></div>
-            
-            <h3 className="text-sm font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide">MONTHLY EXPENSE ANALYSIS</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {/* Current Month */}
-              <div className="text-center p-3 bg-[#0A0C0F] border border-[#2A313A] rounded-lg">
-                <p className="text-xs text-[#C9D1D9] mb-1 font-oswald tracking-wide">CURRENT MONTH</p>
-                <p className="text-base font-bold text-[#E8EEF2] font-mono">
+          {/* Monthly Expense Analysis */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {/* Current Month */}
+            <Card 
+              variant="base"
+              title="CURRENT MONTH"
+              subtitle={new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              icon={<TrendingUp className="h-5 w-5 text-[#1E49C9]" />}
+            >
+              <div className="text-center">
+                <p className="text-3xl font-bold text-[#1E49C9] font-mono">
                   {formatCurrency(summary.currentMonthExpenses || 0)}
                 </p>
-                <p className="text-xs text-[#C9D1D9] font-inter">
-                  {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </p>
               </div>
-              
-              {/* Previous Month */}
-              <div className="text-center p-3 bg-[#0A0C0F] border border-[#2A313A] rounded-lg">
-                <p className="text-xs text-[#C9D1D9] mb-1 font-oswald tracking-wide">PREVIOUS MONTH</p>
-                <p className="text-base font-bold text-[#E8EEF2] font-mono">
+            </Card>
+            
+            {/* Previous Month */}
+            <Card 
+              variant="base"
+              title="PREVIOUS MONTH"
+              subtitle={new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              icon={<TrendingDown className="h-5 w-5 text-[#1E49C9]" />}
+            >
+              <div className="text-center">
+                <p className="text-3xl font-bold text-[#1E49C9] font-mono">
                   {formatCurrency(summary.previousMonthExpenses || 0)}
                 </p>
-                <p className="text-xs text-[#C9D1D9] font-inter">
-                  {new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </p>
               </div>
-              
-              {/* Monthly Average */}
-              <div className="text-center p-2 bg-[#0A0C0F] border border-[#2A313A] rounded">
-                <p className="text-xs text-[#C9D1D9] mb-1 font-oswald tracking-wide">MONTHLY AVERAGE</p>
-                <p className="text-base font-bold text-[#E8EEF2] font-mono">
+            </Card>
+            
+            {/* Monthly Average */}
+            <Card 
+              variant="base"
+              title="MONTHLY AVERAGE"
+              subtitle="Last 6 months"
+              icon={<DollarSign className="h-5 w-5 text-[#1E49C9]" />}
+            >
+              <div className="text-center">
+                <p className="text-3xl font-bold text-[#1E49C9] font-mono">
                   {formatCurrency(summary.monthlyAverage || 0)}
                 </p>
-                <p className="text-xs text-[#C9D1D9] font-inter">Last 6 months</p>
               </div>
-            </div>
-            
-            {/* Monthly Trend Chart */}
-            <div className="mt-2 p-2 bg-[#0A0C0F] border border-[#2A313A] rounded max-w-full overflow-x-auto">
-              <p className="text-xs text-[#C9D1D9] mb-1 font-oswald tracking-wide">MONTHLY TREND</p>
-              <div className="flex items-end justify-between h-16 space-x-1 min-w-max">
-                {Array.from({ length: 6 }, (_, i) => {
-                  const month = new Date(new Date().getFullYear(), new Date().getMonth() - (5 - i), 1);
-                  const monthKey = month.toISOString().slice(0, 7); // YYYY-MM format
-                  
-                  // Generate sample data for demonstration since monthlyExpenses might not exist
-                  const monthExpense = summary.monthlyExpenses?.[monthKey] || Math.floor(Math.random() * 1000) + 100;
-                  const maxExpense = Math.max(...Object.values(summary.monthlyExpenses || { 1: 1000, 2: 800, 3: 1200, 4: 900, 5: 1100, 6: 950 }), 1);
-                  const height = maxExpense > 0 ? (monthExpense / maxExpense) * 100 : 0;
-                  
-                  return (
-                    <div key={monthKey} className="flex flex-col items-center">
-                      <div 
-                        className="w-3 bg-[#3EA6FF] rounded-t-sm transition-all duration-300 hover:bg-[#FFD200]"
-                        style={{ height: `${height}%` }}
-                        title={`${month.toLocaleDateString('en-US', { month: 'short' })}: ${formatCurrency(monthExpense)}`}
-                      ></div>
-                      <p className="text-xs text-[#C9D1D9] mt-1 font-mono">
-                        {month.toLocaleDateString('en-US', { month: 'short' })}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            </Card>
           </div>
 
+          {/* Monthly Trend Chart */}
+          <Card 
+            variant="base" 
+            className="mb-6"
+            title="MONTHLY TREND"
+            subtitle="Track your spending patterns over time"
+            icon={<TrendingUp className="h-5 w-5 text-[#1E49C9]" />}
+          >
+            <div className="flex items-end justify-between h-20 space-x-2 min-w-max">
+              {Array.from({ length: 6 }, (_, i) => {
+                const month = new Date(new Date().getFullYear(), new Date().getMonth() - (5 - i), 1);
+                const monthKey = month.toISOString().slice(0, 7); // YYYY-MM format
+                
+                // Generate sample data for demonstration since monthlyExpenses might not exist
+                const monthExpense = summary.monthlyExpenses?.[monthKey] || Math.floor(Math.random() * 1000) + 100;
+                const maxExpense = Math.max(...Object.values(summary.monthlyExpenses || { 1: 1000, 2: 800, 3: 1200, 4: 900, 5: 1100, 6: 950 }), 1);
+                const height = maxExpense > 0 ? (monthExpense / maxExpense) * 100 : 0;
+                
+                return (
+                  <div key={monthKey} className="flex flex-col items-center group">
+                    <div 
+                      className="w-4 bg-[#1E49C9] rounded-t-md transition-all duration-300 hover:bg-[#1E49C9]/80 group-hover:scale-105"
+                      style={{ height: `${height}%` }}
+                      title={`${month.toLocaleDateString('en-US', { month: 'short' })}: ${formatCurrency(monthExpense)}`}
+                    ></div>
+                    <p className="text-xs text-text-secondary mt-2 font-mono">
+                      {month.toLocaleDateString('en-US', { month: 'short' })}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
           {/* Category Goals vs Expenses */}
-          <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 relative overflow-hidden mb-4" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-            {/* Film grain overlay */}
-            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-            
-            {/* Reason Strip */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] via-[#3EA6FF] to-[#FFD200]"></div>
-            
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-[#E8EEF2] font-oswald tracking-wide">CATEGORY GOALS VS EXPENSES</h3>
-              <div className="flex items-center space-x-2">
+          <Card 
+            variant="base" 
+            className="mb-6"
+            title="CATEGORY GOALS VS EXPENSES"
+            subtitle="Monitor spending against your budget goals"
+            icon={<Target className="h-5 w-5 text-[#1E49C9]" />}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div></div>
+              <div className="flex items-center space-x-3">
                 <button 
                   onClick={() => setShowAddGoalForm(true)}
-                  className="text-xs bg-[#3CCB7F] text-[#0A0C0F] px-2 py-1 rounded hover:bg-[#2FB86B] transition-colors font-oswald tracking-wide"
+                  className={componentStyles.button.secondary + " text-sm"}
                 >
                   ADD GOAL
                 </button>
                 <button 
                   onClick={() => setShowCategoryGoalsForm(true)}
-                  className="text-xs bg-[#FFD200] text-[#0A0C0F] px-2 py-1 rounded hover:bg-[#FFD200]/90 transition-colors font-oswald tracking-wide"
+                  className={componentStyles.button.outline + " text-sm"}
                 >
                   SET GOALS
                 </button>
               </div>
             </div>
             
-            <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-3">
               {getCategoryGoalsWithProgress().map((category) => {
                 const existingGoal = expenseGoals.find(goal => goal.category === category.name);
+                const categoryExpenses = expenses.filter(expense => expense.category === category.name);
+                const spendCount = categoryExpenses.length;
+                
+                // Get category color
+                const getCategoryColor = (categoryName) => {
+                  const colors = {
+                    food: '#10B981', // green-500
+                    transportation: '#3B82F6', // blue-500
+                    shopping: '#8B5CF6', // purple-500
+                    entertainment: '#EC4899', // pink-500
+                    healthcare: '#EF4444', // red-500
+                    utilities: '#F59E0B', // yellow-500
+                    housing: '#6366F1', // indigo-500
+                    travel: '#06B6D4', // cyan-500
+                    education: '#F97316', // orange-500
+                    other: '#6B7280' // gray-500
+                  };
+                  return colors[categoryName] || '#6B7280';
+                };
+
                 return (
-                  <div key={category.name} className="p-4 bg-gradient-to-br from-[#0A0C0F] to-[#11151A] border-2 border-[#2A313A] rounded-xl group relative overflow-hidden shadow-lg hover:shadow-xl hover:border-[#3EA6FF]/30 transition-all duration-300">
-                    {/* Subtle background pattern */}
-                    <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-                    
-                    {/* Header with category name and indicator */}
-                    <div className="flex items-center justify-between mb-4 relative z-10">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-4 h-4 rounded-full ${category.percentage >= 100 ? 'bg-[#D64545]' : 'bg-[#3EA6FF]'} shadow-lg`}></div>
-                        <span className="text-base font-semibold text-[#E8EEF2] font-oswald tracking-wide capitalize">{category.name}</span>
+                  <div key={category.name} className="flex items-center justify-between p-4 bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.1)] rounded-lg backdrop-blur-sm hover:border-[#1E49C9]/30 transition-all duration-300">
+                    {/* Left side - Glass circle with colored dot, name, and spend count */}
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-[rgba(255,255,255,0.1)] border border-[rgba(255,255,255,0.2)] rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <div 
+                          className="w-4 h-4 rounded-full" 
+                          style={{ backgroundColor: getCategoryColor(category.name) }}
+                        ></div>
                       </div>
-                      
-                      {/* Action buttons - visible on hover */}
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        {existingGoal ? (
-                          <button
-                            onClick={() => handleEditGoal(existingGoal)}
-                            className="p-2 bg-[#2A313A]/80 backdrop-blur-sm text-[#C9D1D9] rounded-lg hover:bg-[#3A414A] hover:text-[#E8EEF2] transition-all duration-200 shadow-lg"
-                            title="Edit goal"
-                          >
-                            <Edit3 size={16} />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setNewGoalForm({
-                                ...newGoalForm,
-                                category: category.name
-                              });
-                              setShowAddGoalForm(true);
-                            }}
-                            className="p-2 bg-[#3CCB7F]/20 backdrop-blur-sm text-[#3CCB7F] rounded-lg hover:bg-[#3CCB7F] hover:text-[#0A0C0F] transition-all duration-200 shadow-lg"
-                            title="Add goal for this category"
-                          >
-                            <Plus size={16} />
-                          </button>
-                        )}
+                      <div>
+                        <h3 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide capitalize">
+                          {category.name}
+                        </h3>
+                        <p className="text-sm text-text-secondary font-jakarta">
+                          {spendCount} Spend{spendCount !== 1 ? 's' : ''}
+                        </p>
                       </div>
                     </div>
                     
-                    {/* Amount display with better typography */}
-                    <div className="text-center mb-4 relative z-10">
-                      <div className="mb-2">
-                        <p className="text-2xl font-bold text-[#FFD200] font-mono mb-1">
-                          {formatCurrency(category.spent)}
-                        </p>
-                        <p className="text-sm text-[#C9D1D9] font-inter">
+                    {/* Right side - Amount and budget status */}
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-[#1E49C9] font-mono">
+                        {formatCurrency(category.spent)}
+                      </p>
+                      {existingGoal ? (
+                        <p className="text-sm text-text-secondary font-jakarta">
                           of {formatCurrency(category.goal)}
                         </p>
-                      </div>
-                    </div>
-                    
-                    {/* Enhanced Circular Progress Indicator */}
-                    <div className="flex justify-center mb-4 relative z-10">
-                      <div className="relative w-20 h-20">
-                        <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
-                          {/* Background circle with subtle glow */}
-                          <defs>
-                            <filter id="glow">
-                              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                              <feMerge> 
-                                <feMergeNode in="coloredBlur"/>
-                                <feMergeNode in="SourceGraphic"/>
-                              </feMerge>
-                            </filter>
-                          </defs>
-                          
-                          {/* Background circle */}
-                          <path
-                            d="M18 2.0845
-                              a 15.9155 15.9155 0 0 1 0 31.831
-                              a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke="#2A313A"
-                            strokeWidth="2.5"
-                          />
-                          {/* Progress circle with glow effect */}
-                          <path
-                            d="M18 2.0845
-                              a 15.9155 15.9155 0 0 1 0 31.831
-                              a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke={category.percentage >= 100 ? '#D64545' : '#3EA6FF'}
-                            strokeWidth="2.5"
-                            strokeDasharray={`${Math.min(category.percentage, 100) * 1.01}, 100`}
-                            strokeLinecap="round"
-                            className="transition-all duration-500 ease-out"
-                            filter="url(#glow)"
-                          />
-                        </svg>
-                        {/* Percentage text in center */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-sm font-bold text-[#E8EEF2] font-mono">
-                            {Math.min(category.percentage, 100)}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Enhanced Status and Remaining Amount */}
-                    <div className="space-y-3 relative z-10">
-                      {/* Status Badge */}
-                      <div className="text-center">
-                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold font-oswald tracking-wide shadow-lg ${
-                          category.percentage >= 100 
-                            ? 'bg-gradient-to-r from-[#D64545] to-[#B91C1C] text-white' 
-                            : 'bg-gradient-to-r from-[#2A313A] to-[#3A414A] text-[#C9D1D9]'
-                        }`}>
-                          {category.percentage >= 100 
-                            ? '🚨 OVER BUDGET' 
-                            : '✅ ON TRACK'
-                          }
-                        </span>
-                      </div>
-                      
-                      {/* Remaining Amount */}
-                      {category.percentage < 100 && (
-                        <div className="text-center">
-                          <div className="bg-[#2A313A]/50 backdrop-blur-sm rounded-lg p-2 border border-[#3EA6FF]/20">
-                            <p className="text-xs text-[#C9D1D9] font-inter mb-1">Remaining</p>
-                            <p className="text-sm font-semibold text-[#3CCB7F] font-mono">
-                              {formatCurrency(category.goal - category.spent)}
-                            </p>
-                          </div>
-                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setNewGoalForm({
+                              ...newGoalForm,
+                              category: category.name
+                            });
+                            setShowAddGoalForm(true);
+                          }}
+                          className="text-sm text-[#1E49C9] hover:text-[#1E49C9]/80 font-jakarta transition-colors"
+                        >
+                          Set budget →
+                        </button>
                       )}
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </Card>
 
 
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-max">
-            {/* Recent Expenses */}
-            <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-              {/* Film grain overlay */}
-              <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-              
-              {/* Reason Strip */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] to-[#3EA6FF]"></div>
-              
-              <h3 className="text-sm font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide">RECENT EXPENSES</h3>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {(summary.recentExpenses || []).length > 0 ? (
-                  (summary.recentExpenses || []).map((expense) => (
-                    <div key={expense._id} className="flex items-center justify-between p-2 bg-[#0A0C0F] border border-[#2A313A] rounded hover:bg-[#2A313A] transition-colors">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 rounded-full bg-[#3EA6FF]"></div>
-                        <div>
-                          <p className="text-xs font-medium text-[#E8EEF2] font-oswald tracking-wide">{expense.description || expense.vendor}</p>
-                          <p className="text-xs text-[#C9D1D9] font-inter">{formatDate(expense.date)}</p>
-                        </div>
-                      </div>
-                      <p className="text-xs font-semibold text-[#FFD200] font-mono">{formatCurrency(expense.amount)}</p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-[#C9D1D9] font-inter text-xs">No expenses yet</p>
-                    <p className="text-xs text-[#C9D1D9] mt-1 font-inter">Add your first expense to get started</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Subscriptions */}
-            <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-              {/* Film grain overlay */}
-              <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-              
-              {/* Reason Strip */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] to-[#3CCB7F]"></div>
-              
-              <h3 className="text-sm font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide">ACTIVE SUBSCRIPTIONS</h3>
-              <div className="space-y-1">
-                <div className="text-center py-3">
-                  <p className="text-[#C9D1D9] font-inter text-xs">No subscriptions yet</p>
-                  <p className="text-xs text-[#C9D1D9] mt-1 font-inter">Track your recurring payments</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </>
       )}
 
       {activeTab === 'expenses' && (
-        <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 relative overflow-hidden max-w-full overflow-x-auto" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-          {/* Film grain overlay */}
-          <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-          
-          {/* Reason Strip */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D64545] to-[#FFD200]"></div>
-          
-          <h3 className="text-sm font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide">ALL EXPENSES</h3>
-          <div className="overflow-y-auto max-h-[320px] relative min-w-max">
+        <Card 
+          variant="base"
+          title="ALL EXPENSES"
+          subtitle="Complete list of your financial transactions"
+          icon={<CreditCard className="h-5 w-5 text-[#1E49C9]" />}
+        >
+          <div className="overflow-y-auto max-h-[400px] relative min-w-max">
             <table className="w-full">
-              <thead className="sticky top-0 bg-[#0A0C0F] z-10 border-b border-[#2A313A]">
+              <thead className="sticky top-0 bg-[rgba(0,0,0,0.3)] z-10 border-b border-[rgba(255,255,255,0.1)] backdrop-blur-sm">
                 <tr>
-                  <th className="text-left py-2 px-3 font-medium text-[#E8EEF2] font-oswald tracking-wide text-sm">DATE</th>
-                  <th className="text-left py-2 px-3 font-medium text-[#E8EEF2] font-oswald tracking-wide text-sm">DESCRIPTION</th>
-                  <th className="text-left py-2 px-3 font-medium text-[#E8EEF2] font-oswald tracking-wide text-sm">CATEGORY</th>
-                  <th className="text-left py-2 px-3 font-medium text-[#E8EEF2] font-oswald tracking-wide text-sm">VENDOR</th>
-                  <th className="text-left py-2 px-3 font-medium text-[#E8EEF2] font-oswald tracking-wide text-sm">PAYMENT</th>
-                  <th className="text-center py-2 px-3 font-medium text-[#E8EEF2] font-oswald tracking-wide text-sm">BILL IMAGE</th>
-                  <th className="text-right py-2 px-3 font-medium text-[#E8EEF2] font-oswald tracking-wide text-sm">AMOUNT</th>
-                  <th className="text-center py-2 px-3 font-medium text-[#E8EEF2] font-oswald tracking-wide text-sm">ACTIONS</th>
+                  <th className="text-left py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">DATE</th>
+                  <th className="text-left py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">DESCRIPTION</th>
+                  <th className="text-left py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">CATEGORY</th>
+                  <th className="text-left py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">VENDOR</th>
+                  <th className="text-left py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">PAYMENT</th>
+                  <th className="text-center py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">BILL IMAGE</th>
+                  <th className="text-right py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">AMOUNT</th>
+                  <th className="text-center py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
                 {expenses.length > 0 ? (
                   expenses.map((expense) => (
-                    <tr key={expense._id} className="border-b border-[#2A313A] hover:bg-[#2A313A] transition-colors">
-                      <td className="py-2 px-3 text-xs text-[#C9D1D9] font-inter">{formatDate(expense.date)}</td>
-                      <td className="py-2 px-3">
-                        <p className="font-medium text-[#E8EEF2] font-oswald tracking-wide text-sm">{expense.description}</p>
-                        {expense.notes && <p className="text-xs text-[#C9D1D9] font-inter">{expense.notes}</p>}
+                    <tr key={expense._id} className="border-b border-[rgba(255,255,255,0.1)] hover:bg-[rgba(30,73,201,0.05)] transition-colors">
+                      <td className="py-3 px-4 text-sm text-text-secondary font-jakarta">{formatDate(expense.date)}</td>
+                      <td className="py-3 px-4">
+                        <p className="font-medium text-text-primary font-jakarta tracking-wide text-sm">{expense.description}</p>
+                        {expense.notes && <p className="text-xs text-text-secondary font-jakarta mt-1">{expense.notes}</p>}
                       </td>
-                      <td className="py-2 px-3">
-                        <span className="px-2 py-1 rounded-full text-xs font-medium font-oswald tracking-wide bg-[#2A313A] text-[#E8EEF2] border border-[#3EA6FF]">
+                      <td className="py-3 px-4">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium font-jakarta tracking-wider bg-[rgba(30,73,201,0.2)] text-[#1E49C9] border border-[#1E49C9]/30">
                           {expense.category}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-xs text-[#C9D1D9] font-inter">{expense.vendor}</td>
-                      <td className="py-2 px-3 text-xs text-[#C9D1D9] font-inter">{expense.paymentMethod}</td>
-                      <td className="py-2 px-3 text-center">
+                      <td className="py-3 px-4 text-sm text-text-secondary font-jakarta">{expense.vendor}</td>
+                      <td className="py-3 px-4 text-sm text-text-secondary font-jakarta">{expense.paymentMethod}</td>
+                      <td className="py-3 px-4 text-center">
                         {expense.billImage?.url || expense.billImageUrl ? (
                           <button
                             onClick={() => window.open(expense.billImage?.url || expense.billImageUrl, '_blank')}
-                            className="inline-flex items-center space-x-1 text-[#3EA6FF] hover:text-[#3EA6FF]/80 transition-colors"
+                            className="inline-flex items-center space-x-1 text-[#1E49C9] hover:text-[#1E49C9]/80 transition-colors"
                             title="View bill image"
                           >
                             <Image className="h-4 w-4" />
-                            <span className="text-xs">View</span>
+                            <span className="text-xs font-jakarta">View</span>
                           </button>
                         ) : (
-                          <span className="text-xs text-[#C9D1D9]">No image</span>
+                          <span className="text-xs text-text-secondary font-jakarta">No image</span>
                         )}
                       </td>
-                      <td className="py-2 px-3 text-right font-semibold text-[#FFD200] font-mono text-sm">{formatCurrency(expense.amount)}</td>
-                      <td className="py-2 px-3 text-center">
-                        <div className="flex justify-center space-x-1">
+                      <td className="py-3 px-4 text-right font-semibold text-[#1E49C9] font-mono text-sm">{formatCurrency(expense.amount)}</td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex justify-center space-x-2">
                           <button
                             onClick={() => handleEdit(expense)}
-                            className="text-[#3EA6FF] hover:text-[#3EA6FF]/80 transition-colors p-1"
+                            className="text-[#1E49C9] hover:text-[#1E49C9]/80 transition-colors p-2 rounded-lg hover:bg-[rgba(30,73,201,0.1)]"
+                            title="Edit expense"
                           >
-                            <Edit3 size={14} />
+                            <Edit3 size={16} />
                           </button>
                           <button
                             onClick={() => handleDelete(expense._id, 'expense')}
-                            className="text-[#D64545] hover:text-[#D64545]/80 transition-colors p-1"
+                            className="text-red-500 hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-red-500/10"
+                            title="Delete expense"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -1022,13 +921,14 @@ const Finance = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="py-8 text-center">
-                      <div className="text-[#C9D1D9] font-inter">
-                        <p className="text-base mb-2">No expenses yet</p>
-                        <p className="text-xs text-[#C9D1D9]">Add your first expense to get started</p>
+                    <td colSpan="8" className="py-12 text-center">
+                      <div className="text-text-secondary font-jakarta">
+                        <CreditCard className="h-12 w-12 text-text-secondary mx-auto mb-4" />
+                        <p className="text-lg mb-2 font-semibold">No expenses yet</p>
+                        <p className="text-sm text-text-secondary mb-4">Add your first expense to get started</p>
                         <button
                           onClick={() => setShowAddForm(true)}
-                          className="mt-3 bg-[#FFD200] text-[#0A0C0F] px-3 py-1.5 rounded-lg hover:bg-[#FFD200]/90 font-oswald tracking-wide transition-colors text-sm"
+                          className={componentStyles.button.primary}
                         >
                           ADD FIRST EXPENSE
                         </button>
@@ -1039,58 +939,83 @@ const Finance = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {activeTab === 'subscriptions' && (
-        <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-3 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-          {/* Film grain overlay */}
-          <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-          
-          {/* Reason Strip */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] to-[#3CCB7F]"></div>
-          
-          <h3 className="text-sm font-semibold text-[#E8EEF2] mb-2 font-oswald tracking-wide">ACTIVE SUBSCRIPTIONS</h3>
-          <div className="space-y-1.5">
-            <div className="text-center py-4">
-              <p className="text-[#C9D1D9] font-inter text-xs">No subscriptions yet</p>
-              <p className="text-xs text-[#C9D1D9] mt-1 font-inter">Track your recurring payments</p>
-            </div>
+        <Card 
+          variant="base"
+          title="ACTIVE SUBSCRIPTIONS"
+          subtitle="Manage your recurring payments and subscriptions"
+          icon={<Target className="h-5 w-5 text-[#1E49C9]" />}
+        >
+          <div className="text-center py-12">
+            <Target className="h-16 w-16 text-text-secondary mx-auto mb-4" />
+            <p className="text-lg font-semibold text-text-primary font-jakarta mb-2">No subscriptions yet</p>
+            <p className="text-sm text-text-secondary font-jakarta mb-6">Track your recurring payments and manage subscriptions</p>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className={componentStyles.button.primary}
+            >
+              ADD SUBSCRIPTION
+            </button>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Add/Edit Form Modal */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4">
-          <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-            {/* Film grain overlay */}
-            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-            
-            {/* Reason Strip */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD200] to-[#3EA6FF]"></div>
-            
-            <h3 className="text-base font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide">
-              {editingItem ? 'EDIT EXPENSE' : 'ADD NEW EXPENSE'}
-            </h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <motion.div 
+            className="bg-[rgba(0,0,0,0.8)] border border-[rgba(255,255,255,0.2)] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl backdrop-blur-[32px]"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-text-primary font-jakarta tracking-wide">
+                {editingItem ? 'EDIT EXPENSE' : 'ADD NEW EXPENSE'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAddForm(false);
+                  setEditingItem(null);
+                  setFormData({
+                    amount: '',
+                    category: '',
+                    description: '',
+                    vendor: '',
+                    paymentMethod: '',
+                    date: new Date().toISOString().split('T')[0],
+                    notes: '',
+                    billImage: null,
+                    billImageUrl: ''
+                  });
+                }}
+                className="text-text-secondary hover:text-text-primary transition-colors p-1"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             
             {ocrSuccess && (
-              <div className="mb-3 p-2 bg-green-500/20 border border-green-500/50 rounded-md">
-                <p className="text-sm text-green-400 font-inter">
+              <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
+                <p className="text-sm text-green-400 font-jakarta">
                   ✨ OCR Analysis Complete! Form fields have been auto-populated.
                 </p>
-                <p className="text-xs text-green-300 font-inter mt-1">
+                <p className="text-xs text-green-300 font-jakarta mt-1">
                   Amount: ₹{formData.amount} | Vendor: {formData.vendor || 'N/A'} | Category: {formData.category || 'N/A'}
                 </p>
               </div>
             )}
             
-            <form onSubmit={handleSubmit} className="space-y-3">
-
-
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#E8EEF2] mb-1 font-oswald tracking-wide">
-                  AMOUNT {isAnalyzingImage && <span className="text-[#FFD200]">(Analyzing...)</span>}
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">
+                  AMOUNT {isAnalyzingImage && <span className="text-[#1E49C9]">(Analyzing...)</span>}
                 </label>
                 <input
                   type="number"
@@ -1098,8 +1023,8 @@ const Finance = () => {
                   required
                   value={formData.amount}
                   onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value)})}
-                  className={`w-full p-1.5 border-2 rounded-md focus:ring-2 focus:ring-[#FFD200] focus:border-[#FFD200] bg-[#0A0C0F] text-[#E8EEF2] placeholder-[#C9D1D9] font-inter text-sm ${
-                    isAnalyzingImage ? 'border-[#FFD200]' : 'border-[#2A313A]'
+                  className={componentStyles.input.base + ` ${
+                    isAnalyzingImage ? 'border-[#1E49C9]' : ''
                   }`}
                   placeholder="0.00"
                   disabled={isAnalyzingImage}
@@ -1107,11 +1032,11 @@ const Finance = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#C9D1D9] mb-1 font-oswald tracking-wide">CATEGORY</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">CATEGORY</label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  className="w-full p-1.5 border-2 border-[#2A313A] rounded-md focus:ring-2 focus:ring-[#FFD200] focus:border-[#FFD200] bg-[#0A0C0F] text-[#E8EEF2] font-inter text-sm"
+                  className={componentStyles.input.base}
                 >
                   <option value="">Select Category</option>
                   <option value="food">Food</option>
@@ -1128,22 +1053,22 @@ const Finance = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#C9D1D9] mb-1 font-oswald tracking-wide">VENDOR</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">VENDOR</label>
                 <input
                   type="text"
                   value={formData.vendor}
                   onChange={(e) => setFormData({...formData, vendor: e.target.value})}
-                  className="w-full p-1.5 border-2 border-[#2A313A] rounded-md focus:ring-2 focus:ring-[#FFD200] focus:border-[#FFD200] bg-[#0A0C0F] text-[#E8EEF2] placeholder-[#C9D1D9] font-inter text-sm"
+                  className={componentStyles.input.base}
                   placeholder="Where did you spend?"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#C9D1D9] mb-1 font-oswald tracking-wide">PAYMENT METHOD</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">PAYMENT METHOD</label>
                 <select
                   value={formData.paymentMethod}
                   onChange={(e) => setFormData({...formData, paymentMethod: e.target.value})}
-                  className="w-full p-1.5 border-2 border-[#2A313A] rounded-md focus:ring-2 focus:ring-[#FFD200] focus:border-[#FFD200] bg-[#0A0C0F] text-[#E8EEF2] font-inter text-sm"
+                  className={componentStyles.input.base}
                 >
                   <option value="">Select Payment Method</option>
                   <option value="cash">Cash</option>
@@ -1155,50 +1080,48 @@ const Finance = () => {
                 </select>
               </div>
 
-
-
               <div>
-                <label className="block text-xs font-medium text-[#C9D1D9] mb-1 font-oswald tracking-wide">DESCRIPTION</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">DESCRIPTION</label>
                 <input
                   type="text"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  className="w-full p-1.5 border-2 border-[#2A313A] rounded-md focus:ring-2 focus:ring-[#FFD200] focus:border-[#FFD200] bg-[#0A0C0F] text-[#E8EEF2] placeholder-[#C9D1D9] font-inter text-sm"
+                  className={componentStyles.input.base}
                   placeholder="What was this for?"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#C9D1D9] mb-1 font-oswald tracking-wide">DATE</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">DATE</label>
                 <input
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  className="w-full p-1.5 border-2 border-[#2A313A] rounded-md focus:ring-2 focus:ring-[#FFD200] focus:border-[#FFD200] bg-[#0A0C0F] text-[#E8EEF2] font-inter text-sm"
+                  className={componentStyles.input.base}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#C9D1D9] mb-1 font-oswald tracking-wide">NOTES</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">NOTES</label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                  className="w-full p-1.5 border-2 border-[#2A313A] rounded-md focus:ring-2 focus:ring-[#FFD200] focus:border-[#FFD200] bg-[#0A0C0F] text-[#E8EEF2] placeholder-[#C9D1D9] font-inter text-sm"
-                  rows="2"
+                  className={componentStyles.input.base}
+                  rows="3"
                   placeholder="Additional notes..."
                 />
               </div>
 
               {/* Bill Image Upload */}
               <div>
-                <label className="block text-xs font-medium text-[#C9D1D9] mb-1 font-oswald tracking-wide">BILL IMAGE</label>
-                <div className="space-y-2">
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">BILL IMAGE</label>
+                <div className="space-y-3">
                   {formData.billImageUrl ? (
                     <div className="relative">
                       <img 
                         src={formData.billImageUrl} 
                         alt="Bill preview" 
-                        className="w-full h-32 object-cover rounded-md border-2 border-[#2A313A]"
+                        className="w-full h-32 object-cover rounded-lg border border-[rgba(255,255,255,0.2)]"
                       />
                       <button
                         type="button"
@@ -1209,16 +1132,16 @@ const Finance = () => {
                         <Trash2 className="h-3 w-3" />
                       </button>
                       {isAnalyzingImage && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
                           <div className="text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FFD200] mx-auto mb-2"></div>
-                            <p className="text-xs text-white font-inter">Analyzing bill...</p>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E49C9] mx-auto mb-2"></div>
+                            <p className="text-xs text-white font-jakarta">Analyzing bill...</p>
                           </div>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="border-2 border-dashed border-[#2A313A] rounded-md p-4 text-center hover:border-[#FFD200] transition-colors">
+                    <div className="border-2 border-dashed border-[rgba(255,255,255,0.2)] rounded-lg p-6 text-center hover:border-[#1E49C9] transition-colors">
                       <label className="cursor-pointer">
                         <input
                           type="file"
@@ -1226,72 +1149,25 @@ const Finance = () => {
                           onChange={handleBillImageUpload}
                           className="hidden"
                         />
-                        <div className="space-y-2">
-                          <Upload className="h-8 w-8 text-[#C9D1D9] mx-auto" />
-                          <p className="text-sm text-[#C9D1D9] font-inter">
+                        <div className="space-y-3">
+                          <Upload className="h-8 w-8 text-text-secondary mx-auto" />
+                          <p className="text-sm text-text-secondary font-jakarta">
                             Click to upload bill image
                           </p>
-                          <p className="text-xs text-[#C9D1D9] placeholder-[#C9D1D9] font-inter">
+                          <p className="text-xs text-text-secondary font-jakarta">
                             JPG, PNG, GIF up to 5MB
                           </p>
-                          <p className="text-xs text-[#FFD200] font-inter">
+                          <p className="text-xs text-[#1E49C9] font-jakarta">
                             ✨ Auto-extract expense details
                           </p>
                         </div>
                       </label>
                     </div>
                   )}
-                  
-                  {/* Debug: Test OCR button */}
-                  {formData.billImageUrl && (
-                    <div className="space-y-2">
-                      <button
-                        type="button"
-                        onClick={() => analyzeBillImage(formData.billImage)}
-                        className="w-full px-3 py-2 bg-[#3EA6FF] text-white rounded-md hover:bg-[#3EA6FF]/80 font-inter text-sm"
-                        disabled={isAnalyzingImage}
-                      >
-                        🔍 Test OCR Analysis
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={() => {
-                          console.log('🔍 Current form data:', formData);
-                          console.log('🔍 Bill image:', formData.billImage);
-                          console.log('🔍 Bill image URL:', formData.billImageUrl);
-                        }}
-                        className="w-full px-3 py-2 bg-[#FFD200] text-[#0A0C0F] rounded-md hover:bg-[#FFD200]/80 font-inter text-sm"
-                      >
-                        🐛 Debug Form Data
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const testData = {
-                            amount: 999,
-                            description: 'Test Description',
-                            vendor: 'Test Vendor',
-                            category: 'food',
-                            date: '2025-08-24'
-                          };
-                          console.log('🔍 Testing form update with:', testData);
-                          setFormData(prev => ({
-                            ...prev,
-                            ...testData
-                          }));
-                        }}
-                        className="w-full px-3 py-2 bg-[#3CCB7F] text-white rounded-md hover:bg-[#3CCB7F]/80 font-inter text-sm"
-                      >
-                        🧪 Test Form Update
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              <div className="flex space-x-2 pt-3">
+              <div className="flex space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -1309,19 +1185,19 @@ const Finance = () => {
                       billImageUrl: ''
                     });
                   }}
-                  className="flex-1 px-3 py-1.5 border-2 border-[#2A313A] text-[#C9D1D9] rounded-md hover:bg-[#2A313A] font-oswald tracking-wide transition-colors text-sm"
+                  className={componentStyles.button.outline + " flex-1"}
                 >
                   CANCEL
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-3 py-1.5 bg-[#FFD200] text-[#0A0C0F] rounded-md hover:bg-[#FFD200]/90 font-oswald tracking-wide transition-colors text-sm"
+                  className={componentStyles.button.primary + " flex-1"}
                 >
                   {editingItem ? 'UPDATE' : 'ADD'} EXPENSE
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
 

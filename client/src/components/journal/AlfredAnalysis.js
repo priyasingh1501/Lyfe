@@ -12,6 +12,7 @@ import {
   BarChart3,
   MessageSquare
 } from 'lucide-react';
+import Card from '../ui/Card';
 
 const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -22,11 +23,11 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
   // Safety check for malformed analysis data
   if (!analysis || typeof analysis !== 'object') {
     return (
-      <div className="mt-4 p-4 bg-gray-800 border border-gray-600 rounded-lg">
+      <Card className="mt-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Brain className="h-5 w-5 text-blue-400" />
-            <span className="text-sm font-medium text-gray-300">Alfred Analysis</span>
+            <Brain className="h-5 w-5 text-primary-500" />
+            <span className="text-sm font-medium text-text-primary font-jakarta">Alfred Analysis</span>
           </div>
           <button
             onClick={async () => {
@@ -39,35 +40,35 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
               }
             }}
             disabled={isAnalyzing}
-            className="px-3 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-400 transition-colors duration-200 disabled:opacity-50"
+            className="px-3 py-1 bg-primary-500 text-white text-xs rounded-lg hover:bg-primary-500/90 transition-colors duration-200 disabled:opacity-50 font-jakarta"
           >
             {isAnalyzing ? 'Analyzing...' : 'Analyze'}
           </button>
         </div>
-      </div>
+      </Card>
     );
   }
 
   const getSentimentColor = (label) => {
-    if (!label) return 'text-gray-300';
+    if (!label) return 'text-text-secondary';
     switch (label) {
-      case 'very_positive': return 'text-green-400';
-      case 'positive': return 'text-green-300';
-      case 'neutral': return 'text-gray-300';
-      case 'negative': return 'text-yellow-300';
-      case 'very_negative': return 'text-red-400';
-      default: return 'text-gray-300';
+      case 'very_positive': return 'text-primary-500';
+      case 'positive': return 'text-primary-500';
+      case 'neutral': return 'text-text-secondary';
+      case 'negative': return 'text-primary-500';
+      case 'very_negative': return 'text-primary-500';
+      default: return 'text-text-secondary';
     }
   };
 
   const getSentimentBgColor = (label) => {
     if (!label) return 'bg-gray-500';
     switch (label) {
-      case 'very_positive': return 'bg-green-500';
-      case 'positive': return 'bg-green-400';
+      case 'very_positive': return 'bg-primary-500';
+      case 'positive': return 'bg-primary-500';
       case 'neutral': return 'bg-gray-500';
-      case 'negative': return 'bg-yellow-500';
-      case 'very_negative': return 'bg-red-500';
+      case 'negative': return 'bg-primary-500';
+      case 'very_negative': return 'bg-primary-500';
       default: return 'bg-gray-500';
     }
   };
@@ -98,35 +99,31 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
 
   const getBeliefCategoryColor = (category) => {
     switch (category) {
-      case 'personal_values': return 'text-pink-400';
-      case 'life_philosophy': return 'text-yellow-400';
-      case 'relationships': return 'text-blue-400';
-      case 'work_ethics': return 'text-green-400';
-      case 'spirituality': return 'text-purple-400';
-      case 'health_wellness': return 'text-emerald-400';
-      default: return 'text-gray-400';
+      case 'personal_values': return 'text-primary-500';
+      case 'life_philosophy': return 'text-primary-500';
+      case 'relationships': return 'text-primary-500';
+      case 'work_ethics': return 'text-primary-500';
+      case 'spirituality': return 'text-primary-500';
+      case 'health_wellness': return 'text-primary-500';
+      default: return 'text-text-tertiary';
     }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mt-4 bg-gray-800 border border-gray-600 rounded-lg overflow-hidden"
-    >
+    <Card className="mt-4">
       {/* Header */}
       <div 
-        className="p-4 cursor-pointer hover:bg-gray-700 transition-colors duration-200"
+        className="cursor-pointer hover:bg-gray-700/50 transition-colors duration-200 rounded-lg p-2 -m-2"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-500 bg-opacity-20 rounded-lg">
-              <Brain className="h-5 w-5 text-blue-400" />
+            <div className="p-2 bg-primary-500 bg-opacity-20 rounded-lg">
+              <Brain className="h-5 w-5 text-primary-500" />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white font-oswald tracking-wide">Alfred's Analysis</h4>
-              <p className="text-xs text-gray-400 font-inter">
+              <h4 className="text-sm font-semibold text-text-primary font-jakarta tracking-wide">Alfred's Analysis</h4>
+              <p className="text-xs text-text-tertiary font-jakarta">
                 Analyzed on {analysis?.analyzedAt ? new Date(analysis.analyzedAt).toLocaleDateString() : 'Unknown date'}
               </p>
             </div>
@@ -137,9 +134,9 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
               {getSentimentLabel(analysis?.sentiment?.label)}
             </span>
             {isExpanded ? (
-              <ChevronUp className="h-4 w-4 text-gray-400" />
+              <ChevronUp className="h-4 w-4 text-text-tertiary" />
             ) : (
-              <ChevronDown className="h-4 w-4 text-gray-400" />
+              <ChevronDown className="h-4 w-4 text-text-tertiary" />
             )}
           </div>
         </div>
@@ -153,34 +150,34 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="border-t border-gray-600"
+            className="border-t border-border-primary mt-4"
           >
-            <div className="p-4 space-y-4">
+            <div className="pt-4 space-y-4">
               {/* Summary */}
               <div>
-                <h5 className="text-sm font-semibold text-white mb-2 font-oswald tracking-wide flex items-center">
+                <h5 className="text-sm font-semibold text-text-primary mb-2 font-jakarta tracking-wide flex items-center">
                   <MessageSquare className="h-4 w-4 mr-2 text-blue-400" />
                   Summary
                 </h5>
-                <p className="text-sm text-gray-300 font-inter">{analysis?.summary || 'No summary available'}</p>
+                <p className="text-sm text-text-secondary font-jakarta">{analysis?.summary || 'No summary available'}</p>
               </div>
 
               {/* Sentiment Analysis */}
               <div>
-                <h5 className="text-sm font-semibold text-white mb-2 font-oswald tracking-wide flex items-center">
+                <h5 className="text-sm font-semibold text-text-primary mb-2 font-jakarta tracking-wide flex items-center">
                   <BarChart3 className="h-4 w-4 mr-2 text-green-400" />
                   Sentiment Analysis
                 </h5>
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-400">Score:</span>
+                    <span className="text-sm text-text-tertiary">Score:</span>
                     <span className={`text-sm font-medium ${getSentimentColor(analysis?.sentiment?.label)}`}>
                       {analysis?.sentiment?.score?.toFixed(2) || '0.00'}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-400">Confidence:</span>
-                    <span className="text-sm text-gray-300">
+                    <span className="text-sm text-text-tertiary">Confidence:</span>
+                    <span className="text-sm text-text-secondary">
                       {((analysis?.sentiment?.confidence || 0) * 100).toFixed(0)}%
                     </span>
                   </div>
@@ -190,7 +187,7 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
               {/* Topics */}
               {analysis?.topics && analysis.topics.length > 0 && (
                 <div>
-                  <h5 className="text-sm font-semibold text-white mb-2 font-oswald tracking-wide flex items-center">
+                  <h5 className="text-sm font-semibold text-text-primary mb-2 font-jakarta tracking-wide flex items-center">
                     <Target className="h-4 w-4 mr-2 text-purple-400" />
                     Main Topics
                   </h5>
@@ -213,7 +210,7 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
               {/* Beliefs and Values */}
               {analysis?.beliefs && analysis.beliefs.length > 0 && (
                 <div>
-                  <h5 className="text-sm font-semibold text-white mb-2 font-oswald tracking-wide flex items-center">
+                  <h5 className="text-sm font-semibold text-text-primary mb-2 font-jakarta tracking-wide flex items-center">
                     <Heart className="h-4 w-4 mr-2 text-pink-400" />
                     Beliefs & Values
                   </h5>
@@ -224,12 +221,12 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
                         <div key={index} className="flex items-start space-x-2 p-2 bg-gray-700 rounded-lg">
                           <IconComponent className={`h-4 w-4 mt-0.5 ${getBeliefCategoryColor(belief.category)}`} />
                           <div className="flex-1">
-                            <p className="text-sm text-gray-300 font-inter">{belief.belief}</p>
+                            <p className="text-sm text-text-secondary font-jakarta">{belief.belief}</p>
                             <div className="flex items-center space-x-2 mt-1">
-                              <span className="text-xs text-gray-400 capitalize">
+                              <span className="text-xs text-text-tertiary capitalize">
                                 {belief.category.replace('_', ' ')}
                               </span>
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-text-muted">
                                 ({(belief.confidence * 100).toFixed(0)}% confidence)
                               </span>
                             </div>
@@ -244,7 +241,7 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
               {/* Insights */}
               {analysis?.insights && analysis.insights.length > 0 && (
                 <div>
-                  <h5 className="text-sm font-semibold text-white mb-2 font-oswald tracking-wide flex items-center">
+                  <h5 className="text-sm font-semibold text-text-primary mb-2 font-jakarta tracking-wide flex items-center">
                     <Lightbulb className="h-4 w-4 mr-2 text-yellow-400" />
                     Insights
                   </h5>
@@ -252,7 +249,7 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
                     {analysis.insights.map((insight, index) => (
                       <div key={index} className="flex items-start space-x-2 p-2 bg-yellow-500 bg-opacity-10 rounded-lg">
                         <Sparkles className="h-4 w-4 mt-0.5 text-yellow-400" />
-                        <p className="text-sm text-gray-300 font-inter">{insight}</p>
+                        <p className="text-sm text-text-secondary font-jakarta">{insight}</p>
                       </div>
                     ))}
                   </div>
@@ -262,7 +259,7 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </Card>
   );
 };
 

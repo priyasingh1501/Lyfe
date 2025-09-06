@@ -1,31 +1,107 @@
 // Design Tokens for Untangle App
 // This file contains all design constants to ensure visual consistency
 
-export const colors = {
-  // Primary Colors
-  primary: {
-    50: '#f0f9ff',
-    100: '#e0f2fe',
-    200: '#bae6fd',
-    300: '#7dd3fc',
-    400: '#38bdf8',
-    500: '#0ea5e9',
-    600: '#0284c7',
-    700: '#0369a1',
-    800: '#075985',
-    900: '#0c4a6e',
+export const typography = {
+  // Font Families
+  fonts: {
+    sans: 'Plus Jakarta Sans',
+    primary: 'Plus Jakarta Sans',
+    display: 'Plus Jakarta Sans',
   },
   
-  // Accent Colors
+  // Font Sizes - Exact specifications
+  sizes: {
+    xs: '0.75rem',      // 12px
+    sm: '0.8125rem',    // 13px - Labels/inputs/chips
+    base: '1rem',       // 16px - Base body text
+    lg: '0.9375rem',    // 15px - Secondary text (iris color)
+    xl: '1.25rem',      // 20px
+    '2xl': '1.5rem',    // 24px - H3 (card headers, modal titles)
+    '3xl': '2rem',      // 32px - H2 (section headers)
+    '4xl': '2.5rem',    // 40px - H1 (hero) - clamp(2.5rem, 5vw, 3.25rem)
+    '5xl': '3.25rem',   // 52px - H1 (hero) max
+    hero: 'clamp(2.5rem, 5vw, 3.25rem)', // Responsive hero text
+  },
+  
+  // Line Heights - Exact specifications
+  lineHeights: {
+    tight: '1.1',       // 110% - H1 (hero) tight, cinematic
+    snug: '1.15',       // 115% - H2 (section headers) - tightened for editorial weight
+    normal: '1.2',      // 120% - H3 (card headers, modal titles)
+    relaxed: '1.4',     // 140% - Labels/inputs/chips
+    loose: '1.45',      // 145% - Secondary text
+    body: '1.5',        // 150% - Base body text (airy, easy to read on glass)
+  },
+  
+  // Letter Spacing - Exact specifications
+  letterSpacing: {
+    tighter: '-0.01em', // H1 (hero) slight tightening
+    tight: '-0.005em',  // H2 (section headers) - tightened for editorial weight
+    normal: '0em',
+    wide: '0.015em',    // Base body text
+    wider: '0.03em',    // Labels/inputs/chips (for clarity in small glassy pills)
+  },
+  
+  // Typography Classes - Exact specifications
+  classes: {
+    // Headings
+    h1: 'font-jakarta text-hero leading-tight tracking-tighter',
+    h2: 'font-jakarta text-3xl leading-snug tracking-tight',
+    h3: 'font-jakarta text-2xl leading-normal',
+    
+    // Body Text
+    body: 'font-jakarta text-base leading-body tracking-wide',
+    secondary: 'font-jakarta text-lg leading-loose',
+    label: 'font-jakarta text-sm leading-relaxed tracking-wider',
+    
+    // UI Elements
+    button: 'font-jakarta text-sm leading-relaxed tracking-wider',
+    input: 'font-jakarta text-base leading-body tracking-wide',
+    chip: 'font-jakarta text-sm leading-relaxed tracking-wider',
+  },
+  
+  // Spacing around headings - Exact specifications
+  headingSpacing: {
+    h1: 'mt-21 mb-4xl', // 2.5× font-size top, 1× font-size bottom
+    h2: 'mt-16 mb-3xl', // 2.5× font-size top, 1× font-size bottom
+    h3: 'mt-12 mb-2xl', // 2.5× font-size top, 1× font-size bottom
+  },
+  
+  // Spacing around body text - Exact specifications
+  bodySpacing: {
+    paragraph: 'mb-5', // 1.25× font-size
+    input: 'p-6',      // 20–24px padding inside
+    card: 'p-6',       // 20–24px padding inside
+  },
+  
+  // Layout spacing - 4px grid with 1.5× ratio: 4 / 8 / 12 / 20 / 32 / 52 / 84
+  layout: {
+    section: 'py-13',  // 52px top/bottom
+    hero: 'py-21',     // 84px top/bottom
+    card: 'p-6',       // 24px padding
+  },
+};
+
+export const colors = {
+  // Primary Colors - Only Blue
+  primary: {
+    50: '#1E49C9',
+    100: '#1E49C9',
+    200: '#1E49C9',
+    300: '#1E49C9',
+    400: '#1E49C9',
+    500: '#1E49C9',
+    600: '#1E49C9',
+    700: '#1E49C9',
+    800: '#1E49C9',
+    900: '#1E49C9',
+  },
+  
+  // Accent Colors - Only Primary Blue
   accent: {
-    yellow: '#FFD200',
-    green: '#3CCB7F',
-    teal: '#4ECDC4',
-    blue: '#0EA5E9',
-    purple: '#8B5CF6',
-    pink: '#EC4899',
-    orange: '#F97316',
-    red: '#EF4444',
+    primary: '#1E49C9',
+    opal: '#1E49C9',
+    blue: '#1E49C9',
   },
   
   // Neutral Colors
@@ -54,82 +130,29 @@ export const colors = {
   // Text Colors
   text: {
     primary: '#E8EEF2',
-    secondary: '#C9D1D9',
+    secondary: 'rgba(156, 166, 198, 0.85)', // Iris at 85% opacity
     tertiary: '#94A3B8',
     muted: '#64748B',
-    inverse: '#0A0C0F',
+    inverse: '#FFFFFF',
+    iris: '#9CA6C6', // Pure Iris color
   },
   
-  // Border Colors
+  // Border Colors - Only Primary Blue
   border: {
     primary: '#2A313A',
     secondary: '#3A414A',
-    accent: '#3CCB7F',
-    error: '#EF4444',
-    success: '#3CCB7F',
-    warning: '#F59E0B',
+    accent: '#1E49C9',
+    error: '#1E49C9',
+    success: '#1E49C9',
+    warning: '#1E49C9',
   },
   
-  // Status Colors
+  // Status Colors - Only Primary Blue
   status: {
-    success: '#3CCB7F',
-    error: '#EF4444',
-    warning: '#F59E0B',
-    info: '#0EA5E9',
-  }
-};
-
-export const typography = {
-  // Font Families
-  fontFamily: {
-    primary: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    display: 'Oswald, Inter, sans-serif',
-    mono: 'JetBrains Mono, "Fira Code", monospace',
-  },
-  
-  // Font Sizes
-  fontSize: {
-    xs: '0.75rem',    // 12px
-    sm: '0.875rem',   // 14px
-    base: '1rem',     // 16px
-    lg: '1.125rem',   // 18px
-    xl: '1.25rem',    // 20px
-    '2xl': '1.5rem',  // 24px
-    '3xl': '1.875rem', // 30px
-    '4xl': '2.25rem',  // 36px
-    '5xl': '3rem',     // 48px
-    '6xl': '3.75rem',  // 60px
-  },
-  
-  // Font Weights
-  fontWeight: {
-    light: 300,
-    normal: 400,
-    medium: 500,
-    semibold: 600,
-    bold: 700,
-    extrabold: 800,
-    black: 900,
-  },
-  
-  // Line Heights
-  lineHeight: {
-    none: 1,
-    tight: 1.25,
-    snug: 1.375,
-    normal: 1.5,
-    relaxed: 1.625,
-    loose: 2,
-  },
-  
-  // Letter Spacing
-  letterSpacing: {
-    tighter: '-0.05em',
-    tight: '-0.025em',
-    normal: '0em',
-    wide: '0.025em',
-    wider: '0.05em',
-    widest: '0.1em',
+    success: '#1E49C9',
+    error: '#1E49C9',
+    warning: '#1E49C9',
+    info: '#1E49C9',
   }
 };
 
@@ -231,140 +254,170 @@ export const zIndex = {
 
 // Common component styles
 export const componentStyles = {
-  // Card styles
+  // Card styles - Enhanced Glassmorphic
   card: {
     base: `
-      bg-background-card 
-      border border-border-primary 
+      bg-[rgba(0,0,0,0.2)]
+      border border-[rgba(255,255,255,0.2)]
       rounded-2xl 
-      shadow-lg 
       p-6 
       transition-all 
-      duration-200 
-      hover:shadow-xl 
-      hover:border-border-accent/30
+      duration-300
+      backdrop-blur-[32px]
+      backdrop-saturate-[180%]
+      shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)]
+      relative
+      overflow-hidden
     `,
     elevated: `
-      bg-background-card 
-      border border-border-primary 
+      bg-[rgba(0,0,0,0.2)]
+      border border-[rgba(255,255,255,0.25)]
       rounded-2xl 
-      shadow-xl 
       p-6 
       transition-all 
-      duration-200 
-      hover:shadow-2xl 
-      hover:border-border-accent/50
+      duration-300
+      backdrop-blur-[40px]
+      backdrop-saturate-[200%]
+      shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_12px_40px_rgba(0,0,0,0.15),0_4px_12px_rgba(0,0,0,0.1)]
+      relative
+      overflow-hidden
     `,
     interactive: `
-      bg-background-card 
-      border border-border-primary 
+      bg-[rgba(0,0,0,0.2)]
+      border border-[rgba(255,255,255,0.2)]
       rounded-2xl 
-      shadow-lg 
       p-6 
       transition-all 
-      duration-200 
-      hover:shadow-xl 
-      hover:border-border-accent/30 
-      hover:scale-[1.02] 
-      active:scale-[0.98] 
+      duration-300
+      backdrop-blur-[32px]
+      backdrop-saturate-[180%]
+      shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)]
+      relative
+      overflow-hidden
       cursor-pointer
+      hover:bg-[rgba(0,0,0,0.25)]
+      hover:border-[rgba(255,255,255,0.3)]
+      hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_12px_40px_rgba(0,0,0,0.15),0_4px_12px_rgba(0,0,0,0.1)]
+      hover:-translate-y-1
     `,
   },
   
-  // Button styles
+  // Button styles - Enhanced Glassmorphic
   button: {
     primary: `
-      bg-gradient-to-r from-accent-yellow via-accent-green to-accent-teal 
-      text-text-inverse 
-      font-semibold 
+      bg-[#1E49C9]
+      border border-[rgba(255,255,255,0.3)]
+      text-[#FFFFFF] 
+      font-jakarta text-sm leading-relaxed tracking-wider font-semibold
       px-6 
       py-3 
       rounded-xl 
-      transition-all 
-      duration-200 
-      hover:from-accent-yellow/90 
-      hover:via-accent-green/90 
-      hover:to-accent-teal/90 
-      hover:scale-[1.02] 
-      active:scale-[0.98] 
-      shadow-lg 
-      hover:shadow-xl
+      backdrop-blur-[24px]
+      backdrop-saturate-[200%]
+      shadow-[0_8px_32px_rgba(30,73,201,0.3),0_2px_8px_rgba(0,0,0,0.1)]
+      relative
+      overflow-hidden
+      transition-all
+      duration-300
+      hover:shadow-[0_12px_40px_rgba(30,73,201,0.4),0_4px_12px_rgba(0,0,0,0.15)]
+      hover:-translate-y-1
+      hover:scale-[1.02]
     `,
     secondary: `
-      bg-background-secondary 
-      border border-border-primary 
+      bg-[rgba(0,0,0,0.2)]
+      border border-[rgba(255,255,255,0.2)]
       text-text-primary 
-      font-medium 
+      font-jakarta text-sm leading-relaxed tracking-wider font-medium
       px-6 
       py-3 
-      rounded-xl 
-      transition-all 
-      duration-200 
-      hover:bg-background-tertiary 
-      hover:border-border-accent/50 
-      hover:scale-[1.02] 
-      active:scale-[0.98]
+      rounded-xl
+      backdrop-blur-[32px]
+      backdrop-saturate-[180%]
+      shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)]
+      transition-all
+      duration-300
+      hover:bg-[rgba(30,73,201,0.1)]
+      hover:border-[rgba(30,73,201,0.3)]
+      hover:shadow-[0_12px_40px_rgba(30,73,201,0.2),0_4px_12px_rgba(0,0,0,0.1)]
+      hover:-translate-y-1
+      relative
+      overflow-hidden
     `,
     ghost: `
+      bg-[rgba(0,0,0,0.2)]
+      border border-[rgba(255,255,255,0.15)]
       text-text-primary 
-      font-medium 
+      font-jakarta text-sm leading-relaxed tracking-wider font-medium
       px-4 
       py-2 
-      rounded-lg 
-      transition-all 
-      duration-200 
-      hover:bg-background-secondary 
-      hover:text-text-secondary
+      rounded-lg
+      backdrop-blur-[28px]
+      backdrop-saturate-[140%]
+      shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]
+      transition-all
+      duration-200
     `,
     outline: `
-      bg-transparent 
-      border border-border-primary 
+      bg-[rgba(0,0,0,0.2)]
+      border border-[rgba(255,255,255,0.15)]
       text-text-primary 
-      font-medium 
+      font-jakarta text-sm leading-relaxed tracking-wider font-medium
       px-6 
       py-3 
-      rounded-xl 
-      transition-all 
-      duration-200 
-      hover:bg-background-secondary 
-      hover:border-border-accent/50 
-      hover:scale-[1.02] 
-      active:scale-[0.98]
+      rounded-xl
+      backdrop-blur-[28px]
+      backdrop-saturate-[140%]
+      shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]
+      transition-all
+      duration-200
     `,
     default: `
-      bg-background-secondary 
-      border border-border-primary 
+      bg-[rgba(0,0,0,0.2)]
+      border border-[rgba(255,255,255,0.15)]
       text-text-primary 
-      font-medium 
+      font-jakarta text-sm leading-relaxed tracking-wider font-medium
       px-6 
       py-3 
-      rounded-xl 
-      transition-all 
-      duration-200 
-      hover:bg-background-tertiary 
-      hover:border-border-accent/50 
-      hover:scale-[1.02] 
-      active:scale-[0.98]
+      rounded-xl
+      backdrop-blur-[28px]
+      backdrop-saturate-[140%]
+      shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]
+      transition-all
+      duration-200
     `,
   },
   
-  // Input styles
+  // Input styles - Enhanced Glassmorphic
   input: {
     base: `
-      bg-background-secondary 
-      border border-border-primary 
+      bg-[rgba(255,255,255,0.05)]
+      border border-[rgba(255,255,255,0.2)]
       text-text-primary 
+      font-jakarta text-base leading-body tracking-wide
       placeholder:text-text-muted 
       px-4 
       py-3 
-      rounded-xl 
-      transition-all 
-      duration-200 
-      focus:outline-none 
-      focus:ring-2 
-      focus:ring-accent-green/50 
-      focus:border-accent-green 
-      hover:border-border-secondary
+      rounded-xl
+      backdrop-blur-[32px]
+      backdrop-saturate-[180%]
+      shadow-[inset_0_1px_0_rgba(255,255,255,0.2),inset_0_1px_2px_rgba(0,0,0,0.1),0_4px_16px_rgba(0,0,0,0.08)]
+      transition-all
+      duration-300
+      focus:border-[rgba(30,73,201,0.5)]
+      focus:shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_1px_2px_rgba(0,0,0,0.1),0_0_0_3px_rgba(30,73,201,0.2),0_8px_32px_rgba(30,73,201,0.15)]
+      focus:bg-[rgba(255,255,255,0.08)]
+      relative
+      overflow-hidden
+      before:content-['']
+      before:absolute
+      before:top-0
+      before:left-0
+      before:right-0
+      before:h-1/4
+      before:bg-gradient-to-b
+      before:from-[rgba(255,255,255,0.1)]
+      before:to-transparent
+      before:pointer-events-none
     `,
   },
   
@@ -435,7 +488,7 @@ export const componentStyles = {
     `,
   },
   
-  // Header styles
+  // Header styles - Exact specifications
   header: {
     base: `
       text-text-primary 
@@ -444,42 +497,63 @@ export const componentStyles = {
       tracking-wide
     `,
     h1: `
-      text-4xl 
-      sm:text-5xl 
-      lg:text-6xl
+      font-jakarta 
+      text-hero 
+      leading-tight 
+      tracking-tighter
+      mt-21 
+      mb-4xl
     `,
     h2: `
+      font-jakarta 
       text-3xl 
-      sm:text-4xl 
-      lg:text-5xl
+      leading-snug 
+      tracking-tight
+      mt-16 
+      mb-3xl
     `,
     h3: `
+      font-jakarta 
       text-2xl 
-      sm:text-3xl 
-      lg:text-4xl
+      leading-normal
+      mt-12 
+      mb-2xl
     `,
     h4: `
+      font-jakarta 
       text-xl 
-      sm:text-2xl 
-      lg:text-3xl
+      leading-normal
+      mt-8 
+      mb-4
     `,
   },
   
-  // Text styles
+  // Text styles - Exact specifications
   text: {
     base: `
       text-text-primary 
       font-primary
     `,
     body: `
+      font-jakarta 
       text-base 
-      leading-relaxed
+      leading-body 
+      tracking-wide
+      mb-5
     `,
-    large: `
+    secondary: `
+      font-jakarta 
       text-lg 
-      leading-relaxed
+      leading-loose
+    `,
+    label: `
+      font-jakarta 
+      text-sm 
+      leading-relaxed 
+      tracking-wider
     `,
     small: `
+      font-jakarta 
       text-sm 
       leading-relaxed
     `,

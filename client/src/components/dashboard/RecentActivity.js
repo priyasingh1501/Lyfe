@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { buildApiUrl } from '../../config';
 import axios from 'axios';
+import Card from '../ui/Card';
 
 const RecentActivity = () => {
   const { token } = useAuth();
@@ -20,8 +21,10 @@ const RecentActivity = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchRecentActivity();
-  }, []);
+    if (token) {
+      fetchRecentActivity();
+    }
+  }, [token]);
 
   const fetchRecentActivity = async () => {
     try {
@@ -59,8 +62,8 @@ const RecentActivity = () => {
           description: task.description || 'Task completed',
           timestamp: task.completedAt || task.createdAt,
           icon: CheckCircle,
-          color: 'text-[#3CCB7F]',
-          bgColor: 'bg-[#3CCB7F]'
+          color: 'text-[#1E49C9]',
+          bgColor: 'bg-[#1E49C9]'
         });
       });
 
@@ -73,8 +76,8 @@ const RecentActivity = () => {
           description: `${meal.items?.length || 0} items logged`,
           timestamp: meal.ts || meal.createdAt,
           icon: Utensils,
-          color: 'text-[#3EA6FF]',
-          bgColor: 'bg-[#3EA6FF]'
+          color: 'text-[#1E49C9]',
+          bgColor: 'bg-[#1E49C9]'
         });
       });
 
@@ -87,8 +90,8 @@ const RecentActivity = () => {
           description: entry.type || 'Daily reflection',
           timestamp: entry.createdAt,
           icon: BookOpen,
-          color: 'text-[#FFD200]',
-          bgColor: 'bg-[#FFD200]'
+          color: 'text-[#1E49C9]',
+          bgColor: 'bg-[#1E49C9]'
         });
       });
 
@@ -101,8 +104,8 @@ const RecentActivity = () => {
           description: `${expense.description || 'Expense'} - ₹${expense.amount || 0}`,
           timestamp: expense.date || expense.createdAt,
           icon: DollarSign,
-          color: 'text-[#E74C3C]',
-          bgColor: 'bg-[#E74C3C]'
+          color: 'text-[#1E49C9]',
+          bgColor: 'bg-[#1E49C9]'
         });
       });
 
@@ -115,8 +118,8 @@ const RecentActivity = () => {
           description: `Score: ${checkin.overallScore || 0}/10`,
           timestamp: checkin.date || checkin.createdAt,
           icon: Brain,
-          color: 'text-[#9B59B6]',
-          bgColor: 'bg-[#9B59B6]'
+          color: 'text-[#1E49C9]',
+          bgColor: 'bg-[#1E49C9]'
         });
       });
 
@@ -152,11 +155,10 @@ const RecentActivity = () => {
 
   if (loading) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden"
-        style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
+      <Card
+        title="RECENT ACTIVITY"
+        subtitle="Your latest actions"
+        icon={<Clock className="h-5 w-5 text-[#1E49C9]" />}
       >
         <div className="animate-pulse">
           <div className="h-4 bg-[#2A313A] rounded w-1/3 mb-4"></div>
@@ -166,43 +168,27 @@ const RecentActivity = () => {
             ))}
           </div>
         </div>
-      </motion.div>
+      </Card>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden"
-      style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
+    <Card
+      title="RECENT ACTIVITY"
+      subtitle="Your latest actions"
+      icon={<Clock className="h-5 w-5 text-[#1E49C9]" />}
     >
-      {/* Film grain overlay */}
-      <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-      
-      {/* Reason Strip */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] via-[#3EA6FF] to-[#FFD200]"></div>
-      
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 relative z-10">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-[#3CCB7F] bg-opacity-20 rounded-lg">
-            <Clock className="h-5 w-5 text-[#3CCB7F]" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-[#E8EEF2] font-oswald tracking-wide">RECENT ACTIVITY</h3>
-            <p className="text-sm text-[#C9D1D9] font-inter">Your latest actions</p>
-          </div>
-        </div>
+      {/* Header Action */}
+      <div className="flex justify-end mb-4">
         <button
           onClick={fetchRecentActivity}
-          className="text-sm text-[#FFD200] hover:text-[#FFD200]/80 font-medium flex items-center font-oswald tracking-wide"
+          className="font-jakarta text-sm leading-relaxed tracking-wider text-[#1E49C9] hover:text-[#1E49C9]/80 font-medium flex items-center"
         >
           REFRESH
         </button>
       </div>
 
-      <div className="space-y-3 relative z-10">
+      <div className="space-y-3">
         {activities.length > 0 ? (
           activities.map((activity, index) => {
             const IconComponent = activity.icon;
@@ -212,20 +198,20 @@ const RecentActivity = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="flex items-center space-x-3 p-3 bg-[#0A0C0F] rounded-lg border border-[#2A313A] hover:border-[#FFD200]/30 transition-all duration-200"
+                className="flex items-center space-x-3 p-3 bg-[#0A0C0F] rounded-lg border border-[#2A313A] hover:border-[#1E49C9]/30 transition-all duration-200"
               >
                 <div className={`p-2 rounded-lg ${activity.bgColor} bg-opacity-20`}>
                   <IconComponent className={`h-4 w-4 ${activity.color}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-[#E8EEF2] truncate">
+                  <div className="font-jakarta text-sm leading-relaxed text-text-primary font-medium truncate">
                     {activity.title}
                   </div>
-                  <div className="text-xs text-[#C9D1D9] truncate">
+                  <div className="font-jakarta text-xs text-text-secondary truncate">
                     {activity.description}
                   </div>
                 </div>
-                <div className="text-xs text-[#C9D1D9] whitespace-nowrap">
+                <div className="font-jakarta text-xs text-text-secondary whitespace-nowrap">
                   {formatTimestamp(activity.timestamp)}
                 </div>
               </motion.div>
@@ -233,27 +219,27 @@ const RecentActivity = () => {
           })
         ) : (
           <div className="text-center py-8">
-            <Clock className="h-12 w-12 text-[#C9D1D9] mx-auto mb-3" />
-            <h4 className="text-sm font-semibold text-[#E8EEF2] mb-2">No Recent Activity</h4>
-            <p className="text-sm text-[#C9D1D9] mb-4">Start using the app to see your activity here</p>
+            <Clock className="h-12 w-12 text-text-secondary mx-auto mb-3" />
+            <h4 className="font-jakarta text-2xl leading-normal text-text-primary font-bold mb-2">No Recent Activity</h4>
+            <p className="font-jakarta text-sm text-text-secondary mb-4">Start using the app to see your activity here</p>
             <div className="flex flex-wrap gap-2 justify-center">
               <a 
                 href="/goal-aligned-day" 
-                className="text-xs text-[#3CCB7F] hover:text-[#3CCB7F]/80 font-oswald tracking-wide"
+                className="font-jakarta text-xs text-[#1E49C9] hover:text-[#1E49C9]/80 leading-relaxed tracking-wider"
               >
                 ADD TASK
               </a>
-              <span className="text-[#C9D1D9]">•</span>
+              <span className="text-text-secondary">•</span>
               <a 
                 href="/food" 
-                className="text-xs text-[#3EA6FF] hover:text-[#3EA6FF]/80 font-oswald tracking-wide"
+                className="font-jakarta text-xs text-[#1E49C9] hover:text-[#1E49C9]/80 leading-relaxed tracking-wider"
               >
                 LOG MEAL
               </a>
-              <span className="text-[#C9D1D9]">•</span>
+              <span className="text-text-secondary">•</span>
               <a 
                 href="/journal" 
-                className="text-xs text-[#FFD200] hover:text-[#FFD200]/80 font-oswald tracking-wide"
+                className="font-jakarta text-xs text-[#1E49C9] hover:text-[#1E49C9]/80 leading-relaxed tracking-wider"
               >
                 JOURNAL
               </a>
@@ -261,11 +247,7 @@ const RecentActivity = () => {
           </div>
         )}
       </div>
-
-      {/* Corner accents */}
-      <div className="absolute top-0 right-0 w-6 h-6 bg-[#3CCB7F]"></div>
-      <div className="absolute bottom-0 left-0 w-6 h-6 bg-[#3EA6FF]"></div>
-    </motion.div>
+    </Card>
   );
 };
 

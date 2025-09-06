@@ -35,22 +35,22 @@ const MindfulnessGlass = ({ totalScore, maxScore = 25 }) => {
     }
   }, [totalScore, triggerMilestone]);
 
-  // Get rectangle color based on score - matching month view grid palette
+  // Get rectangle color based on score - using only primary blue
   const getRectangleColor = () => {
     if (totalScore === 0) return '#1a2332'; // Subtle dark blue for no activity
-    if (totalScore <= 2) return '#1e3a8a'; // Dark blue
-    if (totalScore <= 4) return '#1d4ed8'; // Medium dark blue
-    if (totalScore <= 6) return '#2563eb'; // Blue
-    if (totalScore <= 8) return '#3b82f6'; // Medium blue
-    if (totalScore <= 10) return '#60a5fa'; // Light blue
-    if (totalScore <= 12) return '#93c5fd'; // Very light blue
-    if (totalScore <= 14) return '#c7d2fe'; // Pale blue
-    if (totalScore <= 16) return '#e0e7ff'; // Very pale blue
-    if (totalScore <= 18) return '#fef3c7'; // Very pale yellow
-    if (totalScore <= 20) return '#fde68a'; // Pale yellow
-    if (totalScore <= 22) return '#fbbf24'; // Light yellow
-    if (totalScore <= 24) return '#f59e0b'; // Medium yellow
-    return '#eab308'; // Bright yellow
+    if (totalScore <= 2) return '#1E49C9'; // Primary blue
+    if (totalScore <= 4) return '#1E49C9'; // Primary blue
+    if (totalScore <= 6) return '#1E49C9'; // Primary blue
+    if (totalScore <= 8) return '#1E49C9'; // Primary blue
+    if (totalScore <= 10) return '#1E49C9'; // Primary blue
+    if (totalScore <= 12) return '#1E49C9'; // Primary blue
+    if (totalScore <= 14) return '#1E49C9'; // Primary blue
+    if (totalScore <= 16) return '#1E49C9'; // Primary blue
+    if (totalScore <= 18) return '#1E49C9'; // Primary blue
+    if (totalScore <= 20) return '#1E49C9'; // Primary blue
+    if (totalScore <= 22) return '#1E49C9'; // Primary blue
+    if (totalScore <= 24) return '#1E49C9'; // Primary blue
+    return '#1E49C9'; // Primary blue
   };
 
   // Get assessment level

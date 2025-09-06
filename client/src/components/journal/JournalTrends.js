@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { buildApiUrl } from '../../config';
 import toast from 'react-hot-toast';
+import Card from '../ui/Card';
 
 const JournalTrends = () => {
   const { token } = useAuth();
@@ -76,54 +77,40 @@ const JournalTrends = () => {
   };
 
   if (!trends) {
-    return (
-      <div className="bg-gray-900 border-2 border-gray-600 rounded-lg p-6 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-        <div className="flex items-center justify-center py-8">
-          <div className="text-center">
-            <Brain className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-white mb-2 font-oswald tracking-wide">Journal Trends</h3>
-            <p className="text-gray-400 font-inter mb-4">Analyze patterns in your journal entries</p>
-            <button
-              onClick={fetchTrends}
-              disabled={loading}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-400 transition-colors duration-200 disabled:opacity-50 font-oswald tracking-wide"
-            >
-              {loading ? 'Loading...' : 'Load Trends'}
-            </button>
-          </div>
+  return (
+    <Card
+      title="JOURNAL TRENDS"
+      subtitle="Analyze patterns in your journal entries"
+      icon={<Brain className="h-5 w-5 text-primary-500" />}
+    >
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <Brain className="h-12 w-12 text-text-secondary mx-auto mb-4" />
+          <button
+            onClick={fetchTrends}
+            disabled={loading}
+            className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-500/90 transition-colors duration-200 disabled:opacity-50 font-jakarta leading-relaxed tracking-wider"
+          >
+            {loading ? 'Loading...' : 'Load Trends'}
+          </button>
         </div>
       </div>
-    );
+    </Card>
+  );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-900 border-2 border-gray-600 rounded-lg p-6 relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
+    <Card
+      title="ALFRED'S TREND ANALYSIS"
+      subtitle="Insights from your journal patterns"
+      icon={<Brain className="h-5 w-5 text-primary-500" />}
     >
-      {/* Film grain overlay */}
-      <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-      
-      {/* Reason Strip */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-      
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 relative z-10">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-500 bg-opacity-20 rounded-lg">
-            <Brain className="h-6 w-6 text-blue-400" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-white font-oswald tracking-wide">Alfred's Trend Analysis</h3>
-            <p className="text-sm text-gray-400 font-inter">Insights from your journal patterns</p>
-          </div>
-        </div>
+      {/* Header Action */}
+      <div className="flex justify-end mb-6">
         <button
           onClick={fetchTrends}
           disabled={loading}
-          className="p-2 text-gray-400 hover:text-white transition-colors duration-200"
+          className="p-2 text-text-secondary hover:text-text-primary transition-colors duration-200"
         >
           <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
         </button>
@@ -133,7 +120,7 @@ const JournalTrends = () => {
         {/* Sentiment Trend */}
         <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-white font-oswald tracking-wide flex items-center">
+            <h4 className="text-sm font-semibold text-text-primary font-jakarta tracking-wide flex items-center">
               <BarChart3 className="h-4 w-4 mr-2 text-green-400" />
               Sentiment Trend
             </h4>
@@ -157,7 +144,7 @@ const JournalTrends = () => {
         {/* Common Topics */}
         {trends.commonTopics && trends.commonTopics.length > 0 && (
           <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-white mb-3 font-oswald tracking-wide flex items-center">
+            <h4 className="text-sm font-semibold text-text-primary mb-3 font-jakarta tracking-wide flex items-center">
               <Lightbulb className="h-4 w-4 mr-2 text-yellow-400" />
               Common Topics
             </h4>
@@ -177,7 +164,7 @@ const JournalTrends = () => {
         {/* Evolving Beliefs */}
         {trends.evolvingBeliefs && trends.evolvingBeliefs.length > 0 && (
           <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-white mb-3 font-oswald tracking-wide flex items-center">
+            <h4 className="text-sm font-semibold text-text-primary mb-3 font-jakarta tracking-wide flex items-center">
               <Heart className="h-4 w-4 mr-2 text-pink-400" />
               Evolving Beliefs
             </h4>
@@ -185,7 +172,7 @@ const JournalTrends = () => {
               {trends.evolvingBeliefs.map((belief, index) => (
                 <div key={index} className="flex items-start space-x-2 p-2 bg-pink-500 bg-opacity-10 rounded-lg">
                   <Heart className="h-4 w-4 mt-0.5 text-pink-400" />
-                  <p className="text-sm text-gray-300 font-inter">{belief}</p>
+                  <p className="text-sm text-text-secondary font-jakarta">{belief}</p>
                 </div>
               ))}
             </div>
@@ -194,14 +181,14 @@ const JournalTrends = () => {
 
         {/* Summary */}
         <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-white mb-3 font-oswald tracking-wide flex items-center">
-            <Brain className="h-4 w-4 mr-2 text-blue-400" />
-            Overall Summary
-          </h4>
-          <p className="text-sm text-gray-300 font-inter leading-relaxed">{trends.summary}</p>
+            <h4 className="font-jakarta text-sm font-semibold text-text-primary mb-3 tracking-wide flex items-center">
+              <Brain className="h-4 w-4 mr-2 text-blue-400" />
+              Overall Summary
+            </h4>
+          <p className="text-sm text-text-secondary font-jakarta leading-relaxed">{trends.summary}</p>
         </div>
       </div>
-    </motion.div>
+    </Card>
   );
 };
 

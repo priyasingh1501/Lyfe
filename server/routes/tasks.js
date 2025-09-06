@@ -92,7 +92,9 @@ router.get('/:id', auth, async (req, res) => {
 // Create new task
 router.post('/', auth, async (req, res) => {
   try {
-    const { title, description, priority, dueDate, goalIds } = req.body;
+    const { title, description, priority, dueDate, goalIds, estimatedDuration } = req.body;
+    
+    console.log('Creating task with data:', { title, description, priority, dueDate, goalIds, estimatedDuration, userId: req.user.userId });
     
     if (!title) {
       return res.status(400).json({ success: false, message: 'Title is required' });
@@ -102,6 +104,7 @@ router.post('/', auth, async (req, res) => {
     if (goalIds && goalIds.length > 0) {
       const Goal = require('../models/Goal');
       const validGoals = await Goal.find({ _id: { $in: goalIds }, userId: req.user.userId });
+      console.log('Valid goals found:', validGoals.length, 'out of', goalIds.length);
       if (validGoals.length !== goalIds.length) {
         return res.status(400).json({ success: false, message: 'Invalid goal IDs' });
       }
@@ -113,12 +116,15 @@ router.post('/', auth, async (req, res) => {
       description,
       priority: priority || 'medium',
       dueDate: dueDate ? new Date(dueDate) : null,
-      goalIds: goalIds || []
+      goalIds: goalIds || [],
+      estimatedDuration: estimatedDuration || 30
     });
     
     await task.save();
+    console.log('Task saved successfully:', task._id);
     res.status(201).json({ success: true, task });
   } catch (error) {
+    console.error('Error creating task:', error);
     res.status(400).json({ success: false, message: error.message });
   }
 });

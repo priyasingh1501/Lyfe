@@ -501,18 +501,16 @@ const MealAnalysis = ({ mealItems, context }) => {
       moodLifting: { score: moodLiftingScore }
     };
     
-    console.log('Calculated effects:', effectsResult);
-    
     return effectsResult;
   }, [totals, mealItems, context]);
 
   if (!totals) {
     return (
-      <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
+      <div className="bg-background-secondary border border-border-primary rounded-xl p-6">
+        <h2 className="font-jakarta text-2xl leading-normal text-text-primary font-bold mb-4">
           Meal Analysis
         </h2>
-        <div className="text-center py-8 text-[#6B7280]">
+        <div className="text-center py-8 text-text-muted">
           <p>Add foods to see live analysis</p>
         </div>
       </div>
@@ -525,44 +523,44 @@ const MealAnalysis = ({ mealItems, context }) => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6"
+        className="bg-background-secondary border border-border-primary rounded-xl p-6"
       >
-        <h2 className="text-xl font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
+        <h2 className="font-jakarta text-2xl leading-normal text-text-primary font-bold mb-4">
           Nutritional Totals
         </h2>
         
         <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-3 bg-[#2A313A] rounded-lg">
-            <div className="text-2xl font-bold text-[#FFD200]">{Math.round(totals.kcal)}</div>
-            <div className="text-sm text-[#C9D1D9]">kcal</div>
+          <div className="text-center p-3 bg-background-tertiary rounded-lg">
+            <div className="text-2xl font-bold text-accent">{Math.round(totals.kcal)}</div>
+            <div className="text-sm text-text-secondary">kcal</div>
           </div>
-          <div className="text-center p-3 bg-[#2A313A] rounded-lg">
-            <div className="text-2xl font-bold text-[#3EA6FF]">{totals.protein}g</div>
-            <div className="text-sm text-[#C9D1D9]">Protein</div>
+          <div className="text-center p-3 bg-background-tertiary rounded-lg">
+            <div className="text-2xl font-bold text-accent">{totals.protein}g</div>
+            <div className="text-sm text-text-secondary">Protein</div>
           </div>
-          <div className="text-center p-3 bg-[#2A313A] rounded-lg">
-            <div className="text-2xl font-bold text-[#FF6B6B]">{totals.carbs}g</div>
-            <div className="text-sm text-[#C9D1D9]">Carbs</div>
+          <div className="text-center p-3 bg-background-tertiary rounded-lg">
+            <div className="text-2xl font-bold text-accent">{totals.carbs}g</div>
+            <div className="text-sm text-text-secondary">Carbs</div>
           </div>
-          <div className="text-center p-3 bg-[#2A313A] rounded-lg">
-            <div className="text-2xl font-bold text-[#FFD93D]">{totals.fat}g</div>
-            <div className="text-sm text-[#C9D1D9]">Fat</div>
+          <div className="text-center p-3 bg-background-tertiary rounded-lg">
+            <div className="text-2xl font-bold text-accent">{totals.fat}g</div>
+            <div className="text-sm text-text-secondary">Fat</div>
           </div>
         </div>
         
         {/* Additional nutrients */}
         <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-          <div className="text-center p-2 bg-[#0A0C0F] rounded">
-            <div className="text-[#FFD200] font-medium">Fiber</div>
-            <div className="text-[#E8EEF2]">{totals.fiber}g</div>
+          <div className="text-center p-2 bg-background-primary rounded">
+            <div className="text-accent font-medium">Fiber</div>
+            <div className="text-text-primary">{totals.fiber}g</div>
           </div>
-          <div className="text-center p-2 bg-[#0A0C0F] rounded">
-            <div className="text-[#FFD200] font-medium">Sugar</div>
-            <div className="text-[#E8EEF2]">{totals.sugar}g</div>
+          <div className="text-center p-2 bg-background-primary rounded">
+            <div className="text-accent font-medium">Sugar</div>
+            <div className="text-text-primary">{totals.sugar}g</div>
           </div>
-          <div className="text-center p-2 bg-[#0A0C0F] rounded">
-            <div className="text-[#FFD200] font-medium">Iron</div>
-            <div className="text-[#E8EEF2]">{totals.iron}mg</div>
+          <div className="text-center p-2 bg-background-primary rounded">
+            <div className="text-accent font-medium">Iron</div>
+            <div className="text-text-primary">{totals.iron}mg</div>
           </div>
         </div>
       </motion.div>
@@ -572,9 +570,9 @@ const MealAnalysis = ({ mealItems, context }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6"
+        className="bg-background-secondary border border-border-primary rounded-xl p-6"
       >
-        <h2 className="text-xl font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
+        <h2 className="font-jakarta text-2xl leading-normal text-text-primary font-bold mb-4">
           Meal Badges
         </h2>
         
@@ -637,121 +635,113 @@ const MealAnalysis = ({ mealItems, context }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6"
+        className="bg-background-secondary border border-border-primary rounded-xl p-6"
       >
-        <h2 className="text-xl font-semibold text-[#E8EEF2] mb-4 font-oswald tracking-wide">
+        <h2 className="font-jakarta text-2xl leading-normal text-text-primary font-bold mb-4">
           Meal Effects
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Debug: Effects count */}
-          <div className="col-span-2 p-2 bg-red-500 text-white text-xs">
-            Debug: {Object.keys(effects).length} effects calculated
-          </div>
           
           {/* Fat-forming */}
-          <div className="p-3 bg-[#2A313A] rounded-lg">
+          <div className="p-3 bg-background-tertiary rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[#C9D1D9] font-medium">🍔 Fat-forming</span>
-              <span className="text-[#F87171] font-bold">{effects.fatForming.score}/10</span>
+              <span className="text-text-secondary font-medium">🍔 Fat-forming</span>
+              <span className="text-accent font-bold">{effects.fatForming.score}/10</span>
             </div>
-            <div className="w-full bg-[#0A0C0F] rounded-full h-2">
+            <div className="w-full bg-background-primary rounded-full h-2">
               <div 
-                className="bg-[#F87171] h-2 rounded-full transition-all duration-500"
+                className="bg-accent h-2 rounded-full transition-all duration-500"
                 style={{ width: `${(effects.fatForming.score / 10) * 100}%` }}
               />
             </div>
           </div>
           
           {/* Strength */}
-          <div className="p-3 bg-[#2A313A] rounded-lg">
+          <div className="p-3 bg-background-tertiary rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[#C9D1D9] font-medium">💪 Strength</span>
-              <span className="text-[#3EA6FF] font-bold">{effects.strength.score}/10</span>
+              <span className="text-text-secondary font-medium">💪 Strength</span>
+              <span className="text-accent font-bold">{effects.strength.score}/10</span>
             </div>
-            <div className="w-full bg-[#0A0C0F] rounded-full h-2">
+            <div className="w-full bg-background-primary rounded-full h-2">
               <div 
-                className="bg-[#3EA6FF] h-2 rounded-full transition-all duration-500"
+                className="bg-accent h-2 rounded-full transition-all duration-500"
                 style={{ width: `${(effects.strength.score / 10) * 100}%` }}
               />
             </div>
           </div>
           
           {/* Immunity */}
-          <div className="p-3 bg-[#2A313A] rounded-lg">
+          <div className="p-3 bg-background-tertiary rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[#C9D1D9] font-medium">🌿 Immunity</span>
-              <span className="text-[#4ADE80] font-bold">{effects.immunity.score}/10</span>
+              <span className="text-text-secondary font-medium">🌿 Immunity</span>
+              <span className="text-accent font-bold">{effects.immunity.score}/10</span>
             </div>
-            <div className="w-full bg-[#0A0C0F] rounded-full h-2">
+            <div className="w-full bg-background-primary rounded-full h-2">
               <div 
-                className="bg-[#4ADE80] h-2 rounded-full transition-all duration-500"
+                className="bg-accent h-2 rounded-full transition-all duration-500"
                 style={{ width: `${(effects.immunity.score / 10) * 100}%` }}
               />
             </div>
           </div>
           
           {/* Inflammation */}
-          <div className="p-3 bg-[#2A313A] rounded-lg">
+          <div className="p-3 bg-background-tertiary rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[#C9D1D9] font-medium">🔥 Inflammation</span>
+              <span className="text-text-secondary font-medium">🔥 Inflammation</span>
               <span className={`font-bold ${
-                effects.inflammation.label === 'Low' ? 'text-[#4ADE80]' :
-                effects.inflammation.label === 'Medium' ? 'text-[#FBBF24]' :
-                'text-[#F87171]'
+                effects.inflammation.label === 'Low' ? 'text-accent' :
+                effects.inflammation.label === 'Medium' ? 'text-accent' :
+                'text-accent'
               }`}>
                 {effects.inflammation.label}
               </span>
             </div>
-            <div className="w-full bg-[#0A0C0F] rounded-full h-2">
+            <div className="w-full bg-background-primary rounded-full h-2">
               <div 
-                className={`h-2 rounded-full transition-all duration-500 ${
-                  effects.inflammation.label === 'Low' ? 'bg-[#4ADE80]' :
-                  effects.inflammation.label === 'Medium' ? 'bg-[#FBBF24]' :
-                  'bg-[#F87171]'
-                }`}
+                className="bg-accent h-2 rounded-full transition-all duration-500"
                 style={{ width: `${(effects.inflammation.score / 10) * 100}%` }}
               />
             </div>
           </div>
           
           {/* Energizing */}
-          <div className="p-3 bg-[#2A313A] rounded-lg">
+          <div className="p-3 bg-background-tertiary rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[#C9D1D9] font-medium">⚡️ Energizing</span>
-              <span className="text-[#FBBF24] font-bold">{effects.energizing.score}/10</span>
+              <span className="text-text-secondary font-medium">⚡️ Energizing</span>
+              <span className="text-accent font-bold">{effects.energizing.score}/10</span>
             </div>
-            <div className="w-full bg-[#0A0C0F] rounded-full h-2">
+            <div className="w-full bg-background-primary rounded-full h-2">
               <div 
-                className="bg-[#FBBF24] h-2 rounded-full transition-all duration-500"
+                className="bg-accent h-2 rounded-full transition-all duration-500"
                 style={{ width: `${(effects.energizing.score / 10) * 100}%` }}
               />
             </div>
           </div>
           
           {/* Gut-friendly */}
-          <div className="p-3 bg-[#2A313A] rounded-lg">
+          <div className="p-3 bg-background-tertiary rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[#C9D1D9] font-medium">🌀 Gut-friendly</span>
-              <span className="text-[#A78BFA] font-bold">{effects.gutFriendly.score}/10</span>
+              <span className="text-text-secondary font-medium">🌀 Gut-friendly</span>
+              <span className="text-accent font-bold">{effects.gutFriendly.score}/10</span>
             </div>
-            <div className="w-full bg-[#0A0C0F] rounded-full h-2">
+            <div className="w-full bg-background-primary rounded-full h-2">
               <div 
-                className="bg-[#A78BFA] h-2 rounded-full transition-all duration-500"
+                className="bg-accent h-2 rounded-full transition-all duration-500"
                 style={{ width: `${(effects.gutFriendly.score / 10) * 100}%` }}
               />
             </div>
           </div>
           
           {/* Mood-lifting */}
-          <div className="p-3 bg-[#2A313A] rounded-lg">
+          <div className="p-3 bg-background-tertiary rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[#C9D1D9] font-medium">😊 Mood-lifting</span>
-              <span className="text-[#FB7185] font-bold">{effects.moodLifting.score}/10</span>
+              <span className="text-text-secondary font-medium">😊 Mood-lifting</span>
+              <span className="text-accent font-bold">{effects.moodLifting.score}/10</span>
             </div>
-            <div className="w-full bg-[#0A0C0F] rounded-full h-2">
+            <div className="w-full bg-background-primary rounded-full h-2">
               <div 
-                className="bg-[#FB7185] h-2 rounded-full transition-all duration-500"
+                className="bg-accent h-2 rounded-full transition-all duration-500"
                 style={{ width: `${(effects.moodLifting.score / 10) * 100}%` }}
               />
             </div>
@@ -759,9 +749,9 @@ const MealAnalysis = ({ mealItems, context }) => {
         </div>
         
         {/* Effects Summary */}
-        <div className="mt-4 p-3 bg-[#2A313A] rounded-lg">
-          <h3 className="text-sm font-medium text-[#C9D1D9] mb-2">Effects Summary</h3>
-          <div className="text-xs text-[#6B7280] space-y-1">
+        <div className="mt-4 p-3 bg-background-tertiary rounded-lg">
+          <h3 className="text-sm font-medium text-text-secondary mb-2">Effects Summary</h3>
+          <div className="text-xs text-text-muted space-y-1">
             {effects.fatForming.score > 5 && (
               <div>🍔 High fat-forming potential - consider lighter options</div>
             )}

@@ -18,54 +18,50 @@ module.exports = {
         // Text colors
         'text': {
           'primary': '#E8EEF2',
-          'secondary': '#C9D1D9',
+          'secondary': 'rgba(156, 166, 198, 0.85)', // Iris at 85% opacity
           'tertiary': '#94A3B8',
           'muted': '#64748B',
-          'inverse': '#0A0C0F',
+          'inverse': '#FFFFFF',
+          'iris': '#9CA6C6', // Pure Iris color
         },
         
-        // Border colors
+        // Border colors - Only Primary Blue
         'border': {
           'primary': '#2A313A',
           'secondary': '#3A414A',
-          'accent': '#3CCB7F',
-          'error': '#EF4444',
-          'success': '#3CCB7F',
-          'warning': '#F59E0B',
+          'accent': '#1E49C9',
+          'error': '#1E49C9',
+          'success': '#1E49C9',
+          'warning': '#1E49C9',
         },
         
-        // Status colors
+        // Status colors - Only Primary Blue
         'status': {
-          'success': '#3CCB7F',
-          'error': '#EF4444',
-          'warning': '#F59E0B',
-          'info': '#0EA5E9',
+          'success': '#1E49C9',
+          'error': '#1E49C9',
+          'warning': '#1E49C9',
+          'info': '#1E49C9',
         },
         
-        // Accent colors
+        // Accent colors - Only Primary Blue
         'accent': {
-          'yellow': '#FFD200',
-          'green': '#3CCB7F',
-          'teal': '#4ECDC4',
-          'blue': '#0EA5E9',
-          'purple': '#8B5CF6',
-          'pink': '#EC4899',
-          'orange': '#F97316',
-          'red': '#EF4444',
+          'primary': '#1E49C9',
+          'blue': '#1E49C9',
+          'opal': '#1E49C9',
         },
         
-        // Primary colors
+        // Primary colors - Only Blue
         'primary': {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#1E49C9',
+          100: '#1E49C9',
+          200: '#1E49C9',
+          300: '#1E49C9',
+          400: '#1E49C9',
+          500: '#1E49C9',
+          600: '#1E49C9',
+          700: '#1E49C9',
+          800: '#1E49C9',
+          900: '#1E49C9',
         },
         
         // Neutral colors
@@ -84,24 +80,27 @@ module.exports = {
       },
       
       fontFamily: {
-        'primary': ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
-        'display': ['Oswald', 'Inter', 'sans-serif'],
+        'sans': ['Plus Jakarta Sans', 'Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        'serif': ['Newsreader', 'Georgia', 'Times New Roman', 'serif'],
+        'primary': ['Plus Jakarta Sans', 'Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        'display': ['Newsreader', 'Georgia', 'Times New Roman', 'serif'],
         'mono': ['JetBrains Mono', '"Fira Code"', 'monospace'],
-        'oswald': ['Oswald', 'sans-serif'],
-        'inter': ['Inter', 'sans-serif'],
+        'jakarta': ['Plus Jakarta Sans', 'sans-serif'],
+        'newsreader': ['Newsreader', 'serif'],
       },
       
       fontSize: {
         'xs': '0.75rem',      // 12px
-        'sm': '0.875rem',     // 14px
-        'base': '1rem',       // 16px
-        'lg': '1.125rem',     // 18px
+        'sm': '0.8125rem',    // 13px - Labels/inputs/chips
+        'base': '1rem',       // 16px - Base body text
+        'lg': '0.9375rem',    // 15px - Secondary text
         'xl': '1.25rem',      // 20px
-        '2xl': '1.5rem',      // 24px
-        '3xl': '1.875rem',    // 30px
-        '4xl': '2.25rem',     // 36px
-        '5xl': '3rem',        // 48px
+        '2xl': '1.5rem',      // 24px - H3 (card headers, modal titles)
+        '3xl': '2rem',        // 32px - H2 (section headers)
+        '4xl': '2.5rem',      // 40px - H1 (hero) - clamp(2.5rem, 5vw, 3.25rem)
+        '5xl': '3.25rem',     // 52px - H1 (hero) max
         '6xl': '3.75rem',     // 60px
+        'hero': 'clamp(2.5rem, 5vw, 3.25rem)', // Responsive hero text
       },
       
       fontWeight: {
@@ -116,24 +115,27 @@ module.exports = {
       
       lineHeight: {
         'none': 1,
-        'tight': 1.25,
-        'snug': 1.375,
-        'normal': 1.5,
-        'relaxed': 1.625,
-        'loose': 2,
+        'tight': 1.1,        // 110% - H1 (hero) tight, cinematic
+        'snug': 1.1,         // 110% - H2 (section headers) - tightened for editorial weight
+        'normal': 1.2,       // 120% - H3 (card headers, modal titles)
+        'relaxed': 1.4,      // 140% - Labels/inputs/chips
+        'loose': 1.45,       // 145% - Secondary text
+        'body': 1.5,         // 150% - Base body text (airy, easy to read on glass)
+        'wide': 1.625,
+        'wider': 2,
       },
       
       letterSpacing: {
-        'tighter': '-0.05em',
-        'tight': '-0.025em',
+        'tighter': '-0.01em',    // H1 (hero) slight tightening
+        'tight': '-0.01em',      // H2 (section headers) - tightened for editorial weight
         'normal': '0em',
-        'wide': '0.025em',
-        'wider': '0.05em',
-        'widest': '0.1em',
+        'wide': '0.015em',       // Base body text
+        'wider': '0.03em',       // Labels/inputs/chips (for clarity in small glassy pills)
+        'widest': '0.05em',
       },
       
       spacing: {
-        // Base spacing scale (4px grid)
+        // 4px grid with 1.5× ratio jump: 4 / 8 / 12 / 20 / 32 / 52 / 84
         0: '0',
         1: '0.25rem',   // 4px
         2: '0.5rem',    // 8px
@@ -144,8 +146,10 @@ module.exports = {
         8: '2rem',      // 32px
         10: '2.5rem',   // 40px
         12: '3rem',     // 48px
+        13: '3.25rem',  // 52px - Hero spacing
         16: '4rem',     // 64px
         20: '5rem',     // 80px
+        21: '5.25rem',  // 84px - Hero spacing
         24: '6rem',     // 96px
         32: '8rem',     // 128px
         40: '10rem',    // 160px

@@ -23,6 +23,9 @@ const GoalAlignedDay = () => {
   const [showCreateTaskPopup, setShowCreateTaskPopup] = useState(false);
   const [selectedGoalForTask, setSelectedGoalForTask] = useState(null);
   const [selectedGoalForHabit, setSelectedGoalForHabit] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [mindfulnessSaveState, setMindfulnessSaveState] = useState(null);
 
   const tabs = [
     { id: 'mindfulness', label: 'Mindfulness', icon: '' },
@@ -31,8 +34,8 @@ const GoalAlignedDay = () => {
   ];
 
   const timePeriods = [
-    { id: 'day', label: 'Day', icon: '📅' },
-    { id: 'month', label: 'Month', icon: '📆' }
+    { id: 'day', label: 'Day', icon: '' },
+    { id: 'month', label: 'Year', icon: '' }
   ];
 
   // Format date for display
@@ -481,12 +484,28 @@ const GoalAlignedDay = () => {
   // Load data on component mount
   useEffect(() => {
     if (user && token) {
-      loadHabits();
-      loadGoals();
-      loadTasks();
-      loadMindfulnessCheckins();
+      setLoading(true);
+      setError(null);
+      
+      const loadAllData = async () => {
+        try {
+          await Promise.all([
+            loadHabits(),
+            loadGoals(),
+            loadTasks(),
+            loadMindfulnessCheckins()
+          ]);
+        } catch (err) {
+          console.error('Error loading data:', err);
+          setError('Failed to load data. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      loadAllData();
     }
-  }, [user, token, loadHabits, loadGoals, loadTasks, loadMindfulnessCheckins]);
+  }, [user, token]);
 
   // Debug summary when tasks and goals are loaded
   useEffect(() => {
@@ -511,128 +530,29 @@ const GoalAlignedDay = () => {
   );
 
 
-  const renderGoalsTab = () => (
-    <div className="space-y-6">
-      <Card>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Goal Progress</h3>
-          <Button onClick={() => setShowCreateGoalPopup(true)}>
-            Add Goal
-          </Button>
-        </div>
-        {goals.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-600">No goals found. Create some goals to get started!</p>
-            <Button onClick={() => setShowCreateGoalPopup(true)} className="mt-3">
-              Add Goal
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {goals.map((goal, index) => {
-              const goalTasks = getTodayTasksForGoal(goal._id);
-              const goalActivities = getActivitiesForGoal(goal._id);
-              return (
-                <div key={goal._id || index} className="p-4 border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-gray-900">{goal.name}</h4>
-                    <Badge variant={goal.isActive ? "default" : "secondary"}>
-                      {goal.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">{goal.description}</p>
-                  
-                  {/* Activities (Tasks + Habits) for this goal */}
-                  {goalActivities.length > 0 && (
-                    <div className="mb-4">
-                      <h5 className="text-sm font-medium text-gray-700 mb-2">Activities ({goalActivities.length}):</h5>
-                      <div className="space-y-2">
-                        {goalActivities.map((activity, activityIndex) => (
-                          <div key={activity._id || activityIndex} className="flex items-center justify-between p-2 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500">
-                                  {activity.type === 'habit' ? '🔄' : '📋'}
-                                </span>
-                                <p className="text-sm font-medium text-gray-900">{activity.displayName}</p>
-                              </div>
-                              <p className="text-xs text-gray-600">
-                                {activity.duration} min
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {activity.type === 'habit' ? (
-                                activity.isCompleted ? (
-                                  <div className="text-xs text-green-600 font-bold">
-                                    ✅ Completed
-                                  </div>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleHabitComplete(activity)}
-                                    className="text-xs px-2 py-1"
-                                  >
-                                    ⏳ Mark Complete
-                                  </Button>
-                                )
-                              ) : (
-                                <div className="text-xs text-green-600 font-bold">
-                                  {activity.isCompleted ? '✨ Completed' : '⏳ Pending'}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="secondary" 
-                      size="sm"
-                      onClick={() => handleAddTaskToGoal(goal)}
-                    >
-                      Add Task
-                    </Button>
-                    <Button variant="secondary" size="sm">
-                      View Details
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
-    </div>
-  );
 
   // Render unified day view with all three sections
   const renderUnifiedDayView = () => (
     <div className="space-y-8">
       {/* Mindfulness Section */}
-      <Card>
-        <div className="flex items-center gap-3 mb-4">
-          <span className="text-2xl">🧘</span>
-          <h3 className="text-xl font-semibold">Mindfulness Check-in</h3>
-        </div>
-        <p className="text-gray-600 mb-4">
-          Take a moment to reflect on your mindfulness practice for today
-        </p>
-        <MindfulnessCheckin onCheckinComplete={handleMindfulnessComplete} />
-      </Card>
-
+      <div className="w-full">
+        <MindfulnessCheckin 
+          onCheckinComplete={handleMindfulnessComplete}
+          goals={goals}
+          getTodayTasksForGoal={getTodayTasksForGoal}
+          getActivitiesForGoal={getActivitiesForGoal}
+          getTodayHoursForGoal={getTodayHoursForGoal}
+          onSaveStateChange={setMindfulnessSaveState}
+        />
+      </div>
 
       {/* Goals Section */}
-      <Card>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🎯</span>
-            <h3 className="text-xl font-semibold">Goal Progress</h3>
-          </div>
-          <Button onClick={() => setShowCreateGoalPopup(true)}>
+      <div className="w-full">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-[#E8EEF2] font-oswald tracking-wide">
+            Goals
+          </h2>
+          <Button variant="secondary" onClick={() => setShowCreateGoalPopup(true)}>
             Add Goal
           </Button>
         </div>
@@ -640,7 +560,7 @@ const GoalAlignedDay = () => {
         {goals.length === 0 ? (
           <div className="text-center py-6">
             <p className="text-[#C9D1D9]">No goals found. Create some goals to get started!</p>
-            <Button onClick={() => setShowCreateGoalPopup(true)} className="mt-3">
+            <Button variant="secondary" onClick={() => setShowCreateGoalPopup(true)} className="mt-3">
               Add Goal
             </Button>
           </div>
@@ -652,7 +572,7 @@ const GoalAlignedDay = () => {
               return (
                 <div 
                   key={goal._id || index} 
-                  className="group relative bg-gradient-to-br from-[#1A1F2E] to-[#2A313A] border border-[#3CCB7F]/30 rounded-xl p-6 hover:border-[#3CCB7F] hover:shadow-lg hover:shadow-[#3CCB7F]/20 transition-all duration-300 min-h-[350px] flex flex-col"
+                  className="group relative bg-[rgba(0,0,0,0.2)] border border-[#3CCB7F]/30 rounded-xl p-6 hover:border-[#3CCB7F] hover:shadow-lg hover:shadow-[#3CCB7F]/20 transition-all duration-300 min-h-[350px] flex flex-col"
                 >
                       
                       {/* Header */}
@@ -708,7 +628,7 @@ const GoalAlignedDay = () => {
                                   <div key={activity._id || activityIndex} className="flex items-center justify-between p-2 bg-[#11151A]/50 rounded-lg border border-[#2A313A] hover:border-[#3CCB7F]/50 transition-colors">
                                     <div className="flex items-center gap-2 flex-1 min-w-0">
                                       <span className="text-sm">
-                                        {activity.type === 'habit' ? '🔄' : '📋'}
+                                        {activity.type === 'habit' ? 'Habit' : 'Task'}
                                       </span>
                                       <span className="text-xs text-[#E8EEF2] truncate">
                                         {activity.displayName}
@@ -776,20 +696,68 @@ const GoalAlignedDay = () => {
             })}
           </div>
         )}
-      </Card>
+      </div>
+
+      {/* Check-in Button */}
+      {mindfulnessSaveState && (
+        <div className="w-full">
+          <div className="flex justify-center">
+            <Button
+              onClick={mindfulnessSaveState.saveCheckin}
+              disabled={mindfulnessSaveState.saving || !mindfulnessSaveState.canSave}
+              loading={mindfulnessSaveState.saving}
+              size="lg"
+              className="min-w-[200px]"
+            >
+              {mindfulnessSaveState.canSave ? 'Check-in' : 'Rate All Dimensions First'}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
   const dateComponents = formatDateComponents(selectedDate);
 
+  // Show loading state
+  if (loading) {
+    return (
+      <Section>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-green mx-auto mb-4"></div>
+            <p className="text-text-secondary">Loading your goals and activities...</p>
+          </div>
+        </div>
+      </Section>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Section>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="text-status-error text-6xl mb-4">⚠️</div>
+            <p className="text-status-error text-lg mb-4">{error}</p>
+            <Button 
+              variant="primary" 
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </Section>
+    );
+  }
+
   return (
     <Section>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <Header level={1}>Goal-Aligned Day</Header>
-          <p className="text-gray-600 mt-2">
-            Track your daily choices and see how they align with your health goals
-          </p>
+          <Header level={1} className="tracking-tight">Goal-Aligned Day</Header>
         </div>
         
         {/* Time Period Segmented Buttons */}
@@ -800,7 +768,7 @@ const GoalAlignedDay = () => {
               onClick={() => handleTimePeriodChange(period.id)}
               className={`flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-all duration-200 ${
                 timePeriod === period.id
-                  ? 'bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] text-white shadow-lg scale-105'
+                  ? 'bg-[#1E49C9] text-white shadow-lg scale-105'
                   : 'text-[#94A3B8] hover:text-[#E8EEF2] hover:bg-[#2A313A]'
               }`}
             >
@@ -810,8 +778,6 @@ const GoalAlignedDay = () => {
           ))}
         </div>
       </div>
-
-
 
       {/* Content based on time period */}
       {timePeriod === 'day' ? (

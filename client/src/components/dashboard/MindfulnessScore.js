@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Heart, Zap, Moon, Sun, TrendingUp } from 'lucide-react';
+import { Brain, TrendingUp } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { buildApiUrl } from '../../config';
 import axios from 'axios';
+import Card from '../ui/Card';
 
 const MindfulnessScore = () => {
   const { token } = useAuth();
@@ -57,17 +58,17 @@ const MindfulnessScore = () => {
   };
 
   const getScoreColor = (score) => {
-    if (score >= 8) return 'text-[#3CCB7F]';
-    if (score >= 6) return 'text-[#3EA6FF]';
-    if (score >= 4) return 'text-[#FFD200]';
-    return 'text-[#D64545]';
+    if (score >= 8) return 'text-[#1E49C9]';
+    if (score >= 6) return 'text-[#1E49C9]';
+    if (score >= 4) return 'text-[#1E49C9]';
+    return 'text-[#1E49C9]';
   };
 
   const getScoreBgColor = (score) => {
-    if (score >= 8) return 'bg-[#3CCB7F]';
-    if (score >= 6) return 'bg-[#3EA6FF]';
-    if (score >= 4) return 'bg-[#FFD200]';
-    return 'bg-[#D64545]';
+    if (score >= 8) return 'bg-[#1E49C9]';
+    if (score >= 6) return 'bg-[#1E49C9]';
+    if (score >= 4) return 'bg-[#1E49C9]';
+    return 'bg-[#1E49C9]';
   };
 
   const getScoreLabel = (score) => {
@@ -83,18 +84,17 @@ const MindfulnessScore = () => {
   };
 
   const getTrendColor = () => {
-    if (mindfulnessData.trends.improving) return 'text-[#3CCB7F]';
-    if (mindfulnessData.trends.stable) return 'text-[#3EA6FF]';
-    return 'text-[#D64545]';
+    if (mindfulnessData.trends.improving) return 'text-[#1E49C9]';
+    if (mindfulnessData.trends.stable) return 'text-[#1E49C9]';
+    return 'text-[#1E49C9]';
   };
 
   if (loading) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden"
-        style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
+      <Card
+        title="MINDFULNESS"
+        subtitle="Today's mental state"
+        icon={<Brain className="h-5 w-5 text-[#1E49C9]" />}
       >
         <div className="animate-pulse">
           <div className="h-4 bg-[#2A313A] rounded w-1/3 mb-4"></div>
@@ -103,45 +103,29 @@ const MindfulnessScore = () => {
             <div className="h-4 bg-[#2A313A] rounded w-2/3"></div>
           </div>
         </div>
-      </motion.div>
+      </Card>
     );
   }
 
   const TrendIcon = getTrendIcon();
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 lg:p-6 relative overflow-hidden"
-      style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
+    <Card
+      title="MINDFULNESS"
+      subtitle="Today's mental state"
+      icon={<Brain className="h-5 w-5 text-[#1E49C9]" />}
     >
-      {/* Film grain overlay */}
-      <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-      
-      {/* Reason Strip */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#9B59B6] via-[#3EA6FF] to-[#3CCB7F]"></div>
-      
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 relative z-10">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-[#9B59B6] bg-opacity-20 rounded-lg">
-            <Brain className="h-5 w-5 text-[#9B59B6]" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-[#E8EEF2] font-oswald tracking-wide">MINDFULNESS</h3>
-            <p className="text-sm text-[#C9D1D9] font-inter">Today's mental state</p>
-          </div>
-        </div>
+      {/* Header Action */}
+      <div className="flex justify-end mb-4">
         <a 
           href="/goal-aligned-day" 
-          className="text-sm text-[#FFD200] hover:text-[#FFD200]/80 font-medium flex items-center font-oswald tracking-wide"
+          className="font-jakarta text-sm leading-relaxed tracking-wider text-[#1E49C9] hover:text-[#1E49C9]/80 font-medium flex items-center"
         >
           CHECK IN
         </a>
       </div>
 
-      <div className="space-y-4 relative z-10">
+      <div className="space-y-6">
         {/* Today's Score */}
         <div className="text-center">
           <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full ${getScoreBgColor(mindfulnessData.todayScore)} bg-opacity-20 border-2 ${getScoreBgColor(mindfulnessData.todayScore)} border-opacity-30 mb-3`}>
@@ -149,14 +133,14 @@ const MindfulnessScore = () => {
               {mindfulnessData.todayScore}
             </span>
           </div>
-          <div className="space-y-1">
-            <div className={`text-lg font-semibold ${getScoreColor(mindfulnessData.todayScore)}`}>
-              {getScoreLabel(mindfulnessData.todayScore)}
+            <div className="space-y-1">
+              <div className={`font-jakarta text-2xl leading-normal font-bold ${getScoreColor(mindfulnessData.todayScore)}`}>
+                {getScoreLabel(mindfulnessData.todayScore)}
+              </div>
+              <div className="font-jakarta text-sm leading-relaxed text-text-secondary">
+                Today's Score
+              </div>
             </div>
-            <div className="text-sm text-[#C9D1D9]">
-              Today's Score
-            </div>
-          </div>
         </div>
 
         {/* Weekly Average */}
@@ -164,13 +148,13 @@ const MindfulnessScore = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <TrendIcon className={`h-4 w-4 ${getTrendColor()}`} />
-              <span className="text-sm font-medium text-[#E8EEF2]">Weekly Average</span>
+              <span className="font-jakarta text-sm leading-relaxed text-text-primary font-medium">Weekly Average</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className={`text-lg font-bold ${getScoreColor(mindfulnessData.weeklyAverage)}`}>
+              <span className={`font-jakarta text-lg font-bold ${getScoreColor(mindfulnessData.weeklyAverage)}`}>
                 {mindfulnessData.weeklyAverage}
               </span>
-              <span className="text-xs text-[#C9D1D9]">/10</span>
+              <span className="font-jakarta text-xs text-text-secondary">/10</span>
             </div>
           </div>
           <div className="mt-2 w-full bg-[#2A313A] rounded-full h-1">
@@ -184,7 +168,7 @@ const MindfulnessScore = () => {
         {/* Recent Check-ins */}
         {mindfulnessData.recentCheckins.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-[#E8EEF2] font-oswald tracking-wide">Recent Check-ins</h4>
+            <h4 className="font-jakarta text-2xl leading-normal text-text-primary font-bold tracking-wide">Recent Check-ins</h4>
             <div className="space-y-2">
               {mindfulnessData.recentCheckins.map((checkin, index) => (
                 <div key={index} className="flex items-center justify-between p-2 bg-[#0A0C0F] rounded border border-[#2A313A]">
@@ -213,21 +197,17 @@ const MindfulnessScore = () => {
         {mindfulnessData.todayScore === 0 && mindfulnessData.recentCheckins.length === 0 && (
           <div className="text-center py-4">
             <Brain className="h-8 w-8 text-[#C9D1D9] mx-auto mb-2" />
-            <p className="text-sm text-[#C9D1D9] mb-3">No mindfulness data yet</p>
+            <p className="font-jakarta text-sm text-text-secondary mb-3">No mindfulness data yet</p>
             <a 
               href="/goal-aligned-day" 
-              className="text-xs text-[#FFD200] hover:text-[#FFD200]/80 font-oswald tracking-wide"
+              className="font-jakarta text-xs text-[#1E49C9] hover:text-[#1E49C9]/80 leading-relaxed tracking-wider"
             >
               START CHECKING IN
             </a>
           </div>
         )}
       </div>
-
-      {/* Corner accents */}
-      <div className="absolute top-0 right-0 w-6 h-6 bg-[#9B59B6]"></div>
-      <div className="absolute bottom-0 left-0 w-6 h-6 bg-[#3EA6FF]"></div>
-    </motion.div>
+    </Card>
   );
 };
 

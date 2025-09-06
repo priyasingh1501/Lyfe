@@ -1,19 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import BioluminescentDotsRating from './BioluminescentDotsRating.tsx';
 
 const MoonPhaseSlider = ({ 
   value, 
   onChange, 
   dimension
 }) => {
-  const phases = [
-    { value: 1, label: 'Strong No', phase: '🌑', description: 'New Moon' },
-    { value: 2, label: 'No', phase: '🌘', description: 'Waning Crescent' },
-    { value: 3, label: 'Maybe', phase: '🌗', description: 'Last Quarter' },
-    { value: 4, label: 'Yes', phase: '🌖', description: 'Waning Gibbous' },
-    { value: 5, label: 'Strong Yes', phase: '🌕', description: 'Full Moon' }
-  ];
-
   // Map dimension names to questions
   const getDimensionQuestion = (dim) => {
     const questions = {
@@ -26,52 +19,23 @@ const MoonPhaseSlider = ({
     return questions[dim] || dim;
   };
 
-  const handlePhaseClick = (phaseValue) => {
-    onChange(phaseValue);
-  };
-
   return (
-    <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-3 lg:p-4 mb-4">
-      {/* Question and Moon Selectors Side by Side */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6">
+    <div className="bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.2)] rounded-2xl p-6 backdrop-blur-[32px] backdrop-saturate-[180%] shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)]">
+      {/* Question and Rating Dots Stacked */}
+      <div className="space-y-4">
         {/* Question */}
-        <div className="flex-1 text-center lg:text-left">
-          <h3 className="text-sm lg:text-base font-semibold text-[#E8EEF2] font-oswald tracking-wide leading-relaxed">
-            {getDimensionQuestion(dimension)}
-          </h3>
-        </div>
+        <h3 className="text-base leading-[150%] font-medium text-[#E8EEF2]">
+          {getDimensionQuestion(dimension)}
+        </h3>
 
-        {/* Moon Phase Slider */}
-        <div className="flex items-center justify-center gap-2 lg:gap-3">
-          {phases.map((phase) => (
-            <motion.div
-              key={phase.value}
-              onClick={() => handlePhaseClick(phase.value)}
-              className={`flex flex-col items-center cursor-pointer transition-all duration-300 ${
-                value === phase.value 
-                  ? 'scale-110' 
-                  : 'hover:scale-105'
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <div className={`text-2xl lg:text-3xl mb-1 transition-all duration-300 ${
-                value === phase.value 
-                  ? 'text-[#FFD200] drop-shadow-lg' 
-                  : 'text-[#C9D1D9]'
-              }`}>
-                {phase.phase}
-              </div>
-              <div className={`text-xs font-medium text-center transition-colors duration-300 ${
-                value === phase.value 
-                  ? 'text-[#FFD200]' 
-                  : 'text-[#C9D1D9]'
-              }`}>
-                {phase.label}
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        {/* Bioluminescent Dots Rating */}
+        <BioluminescentDotsRating
+          value={value}
+          onChange={onChange}
+          maxValue={5}
+          minValue={1}
+          aria-label={`Rate ${dimension} from 1 to 5`}
+        />
       </div>
     </div>
   );

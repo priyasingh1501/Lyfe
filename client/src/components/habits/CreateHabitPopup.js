@@ -104,23 +104,20 @@ const CreateHabitPopup = ({ isOpen, onClose, onHabitCreated, goals = [], selecte
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#1E2330] border-2 border-[#2A313A] rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        {/* Reason Strip */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-purple to-accent-blue"></div>
-        
-        {/* Subtle pattern overlay */}
-        <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-        
-        <div className="relative z-10">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-[#E8EEF2]">Create New Habit</h2>
-            <button onClick={onClose} className="text-[#94A3B8] hover:text-[#E8EEF2] transition-colors">✕</button>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
+    <ConsistentPopup
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create New Habit"
+      maxWidth="md"
+      showReasonStrip={true}
+      reasonStripColor="from-accent-purple to-accent-blue"
+    >
+      {selectedGoal && (
+        <p className="text-sm text-text-secondary mb-4">for goal: {selectedGoal.name}</p>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
         
           {/* Habit Name */}
           <div>
@@ -217,11 +214,9 @@ const CreateHabitPopup = ({ isOpen, onClose, onHabitCreated, goals = [], selecte
           >
             {loading ? 'Creating...' : 'Create Habit'}
           </Button>
-          </div>
-          </form>
         </div>
-      </div>
-    </div>
+      </form>
+    </ConsistentPopup>
   );
 };
 

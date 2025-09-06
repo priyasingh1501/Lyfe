@@ -231,28 +231,28 @@ const MonthGrid = ({
         const completionRate = habitCompletion.completedCount / habitCompletion.totalCount;
         
         if (completionRate === 0) return '#0f1419'; // No habits completed - very dark
-        if (completionRate <= 0.25) return '#dc2626'; // Red - low completion
-        if (completionRate <= 0.5) return '#ea580c'; // Orange - medium-low completion
-        if (completionRate <= 0.75) return '#ca8a04'; // Yellow - medium-high completion
-        if (completionRate <= 0.9) return '#16a34a'; // Green - high completion
-        return '#059669'; // Emerald - excellent completion
+        if (completionRate <= 0.25) return '#1E49C9'; // Primary blue - low completion
+        if (completionRate <= 0.5) return '#1E49C9'; // Primary blue - medium-low completion
+        if (completionRate <= 0.75) return '#1E49C9'; // Primary blue - medium-high completion
+        if (completionRate <= 0.9) return '#1E49C9'; // Primary blue - high completion
+        return '#1E49C9'; // Primary blue - excellent completion
       }
       
       // Fall back to mindfulness score color if no habits
       if (mindfulnessScore === 0) return '#0f1419'; // Much darker color for no activity - very visible
-      if (mindfulnessScore <= 2) return '#1e3a8a'; // Dark blue
-      if (mindfulnessScore <= 4) return '#1d4ed8'; // Medium dark blue
-      if (mindfulnessScore <= 6) return '#2563eb'; // Blue
-      if (mindfulnessScore <= 8) return '#3b82f6'; // Medium blue
-      if (mindfulnessScore <= 10) return '#60a5fa'; // Light blue
-      if (mindfulnessScore <= 12) return '#93c5fd'; // Very light blue
-      if (mindfulnessScore <= 14) return '#c7d2fe'; // Pale blue
-      if (mindfulnessScore <= 16) return '#e0e7ff'; // Very pale blue
-      if (mindfulnessScore <= 18) return '#fef3c7'; // Very pale yellow
-      if (mindfulnessScore <= 20) return '#fde68a'; // Pale yellow
-      if (mindfulnessScore <= 22) return '#fbbf24'; // Light yellow
-      if (mindfulnessScore <= 24) return '#f59e0b'; // Medium yellow
-      return '#eab308'; // Bright yellow for highest scores
+      if (mindfulnessScore <= 2) return '#1E49C9'; // Primary blue
+      if (mindfulnessScore <= 4) return '#1E49C9'; // Primary blue
+      if (mindfulnessScore <= 6) return '#1E49C9'; // Primary blue
+      if (mindfulnessScore <= 8) return '#1E49C9'; // Primary blue
+      if (mindfulnessScore <= 10) return '#1E49C9'; // Primary blue
+      if (mindfulnessScore <= 12) return '#1E49C9'; // Primary blue
+      if (mindfulnessScore <= 14) return '#1E49C9'; // Primary blue
+      if (mindfulnessScore <= 16) return '#1E49C9'; // Primary blue
+      if (mindfulnessScore <= 18) return '#1E49C9'; // Primary blue
+      if (mindfulnessScore <= 20) return '#1E49C9'; // Primary blue
+      if (mindfulnessScore <= 22) return '#1E49C9'; // Primary blue
+      if (mindfulnessScore <= 24) return '#1E49C9'; // Primary blue
+      return '#1E49C9'; // Primary blue for highest scores
     };
 
     // Generate all days for the past 12 months
