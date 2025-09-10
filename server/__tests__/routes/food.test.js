@@ -12,19 +12,22 @@ import bcrypt from 'bcryptjs';
 process.env.JWT_SECRET = 'test-secret-key';
 
 // Helper function to create valid food item data
-const createFoodItemData = (overrides = {}) => ({
-  name: 'Apple',
-  nameFold: 'apple',
-  source: 'USDA',
-  portionGramsDefault: 100,
-  nutrients: {
-    kcal: 52,
-    protein: 0.3,
-    carbs: 13.8,
-    fat: 0.2
-  },
-  ...overrides
-});
+const createFoodItemData = (overrides = {}) => {
+  const name = overrides.name || 'Apple';
+  return {
+    name,
+    nameFold: name.toLowerCase(),
+    source: 'USDA',
+    portionGramsDefault: 100,
+    nutrients: {
+      kcal: 52,
+      protein: 0.3,
+      carbs: 13.8,
+      fat: 0.2
+    },
+    ...overrides
+  };
+};
 
 const app = express();
 app.use(express.json());
@@ -160,6 +163,14 @@ describe('Food Routes', () => {
     test('should get food categories', async () => {
       const token = await getAuthToken();
 
+      // Create some test food items with different sources
+      await FoodItem.create([
+        createFoodItemData({ name: 'Test Apple', source: 'USDA' }),
+        createFoodItemData({ name: 'Test Banana', source: 'USDA' }),
+        createFoodItemData({ name: 'Test Bread', source: 'OpenFoodFacts' }),
+        createFoodItemData({ name: 'Test Milk', source: 'IFCT' })
+      ]);
+
       const response = await request(app)
         .get('/api/food/categories')
         .set('Authorization', `Bearer ${token}`);
@@ -168,6 +179,7 @@ describe('Food Routes', () => {
       expect(response.body.message).toBe('Categories found');
       expect(response.body.categories).toBeDefined();
       expect(Array.isArray(response.body.categories)).toBe(true);
+      expect(response.body.categories.length).toBeGreaterThan(0);
     });
   });
 

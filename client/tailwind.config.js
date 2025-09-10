@@ -158,6 +158,10 @@ module.exports = {
         64: '16rem',    // 256px
       },
       
+      gridTemplateColumns: {
+        '53': 'repeat(53, minmax(0, 1fr))', // For year view grid (53 weeks)
+      },
+      
       borderRadius: {
         'none': '0',
         'sm': '0.125rem',   // 2px
@@ -214,6 +218,7 @@ module.exports = {
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
         'fade-out': 'fadeOut 0.2s ease-out',
+        'fade-in-delayed': 'fadeIn 0.4s ease-out 0.1s both',
         'slide-up': 'slideUp 0.3s ease-out',
         'slide-down': 'slideDown 0.3s ease-out',
         'slide-left': 'slideLeft 0.3s ease-out',
@@ -221,6 +226,8 @@ module.exports = {
         'scale-in': 'scaleIn 0.2s ease-out',
         'scale-out': 'scaleOut 0.2s ease-out',
         'bounce-subtle': 'bounceSubtle 0.6s ease-in-out',
+        'float': 'float 3s ease-in-out infinite',
+        'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
       },
       
       keyframes: {
@@ -259,6 +266,14 @@ module.exports = {
         bounceSubtle: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-4px)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        pulseGlow: {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(30, 73, 201, 0.3)' },
+          '50%': { boxShadow: '0 0 30px rgba(30, 73, 201, 0.6)' },
         },
       },
       

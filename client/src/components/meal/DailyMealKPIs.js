@@ -294,9 +294,6 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
   if (loading) {
     return (
       <Card
-        title="DAILY MEAL KPIs"
-        subtitle="Nutrition tracking & insights"
-        icon={<Utensils className="h-5 w-5 text-accent" />}
       >
         <div className="animate-pulse">
           <div className="h-4 bg-background-tertiary rounded w-1/4 mb-4"></div>
@@ -314,9 +311,6 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
   if (error) {
     return (
       <Card
-        title="DAILY MEAL KPIs"
-        subtitle="Nutrition tracking & insights"
-        icon={<Utensils className="h-5 w-5 text-accent" />}
       >
         <div className="text-center">
           <p className="font-jakarta text-sm text-accent mb-4">Error loading meals: {error}</p>
@@ -334,9 +328,6 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
   if (!currentMeals.length) {
     return (
       <Card
-        title="DAILY MEAL KPIs"
-        subtitle="Nutrition tracking & insights"
-        icon={<Utensils className="h-5 w-5 text-accent" />}
       >
         <div className="text-center text-text-secondary">
           No meals {activeTab === 'day' ? 'today' : 'this month'}
@@ -346,11 +337,7 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
   }
 
   return (
-    <Card
-      title="DAILY MEAL KPIs"
-      subtitle="Nutrition tracking & insights"
-      icon={<Utensils className="h-5 w-5 text-accent" />}
-    >
+    <Card>
       {/* Tab Selector */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">

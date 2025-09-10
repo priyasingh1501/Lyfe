@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('../models/Task');
+const Goal = require('../models/Goal');
 const auth = require('../middleware/auth');
 
 // Get all tasks
@@ -29,7 +30,7 @@ router.get('/', auth, async (req, res) => {
       };
     }
     
-    const tasks = await Task.find(query).populate('goalIds');
+    const tasks = await Task.find(query);
     res.json({ success: true, tasks });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -74,7 +75,7 @@ router.get('/stats', auth, async (req, res) => {
 // Get task by ID
 router.get('/:id', auth, async (req, res) => {
   try {
-    const task = await Task.findOne({ _id: req.params.id, userId: req.user.userId }).populate('goalIds');
+    const task = await Task.findOne({ _id: req.params.id, userId: req.user.userId });
     
     if (!task) {
       return res.status(404).json({ success: false, message: 'Task not found' });
@@ -102,7 +103,6 @@ router.post('/', auth, async (req, res) => {
     
     // Validate goal IDs if provided
     if (goalIds && goalIds.length > 0) {
-      const Goal = require('../models/Goal');
       const validGoals = await Goal.find({ _id: { $in: goalIds }, userId: req.user.userId });
       console.log('Valid goals found:', validGoals.length, 'out of', goalIds.length);
       if (validGoals.length !== goalIds.length) {

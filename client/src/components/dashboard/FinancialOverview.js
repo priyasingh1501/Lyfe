@@ -62,11 +62,7 @@ const FinancialOverview = () => {
 
   if (loading) {
     return (
-      <Card
-        title="FINANCIAL OVERVIEW"
-        subtitle="Budget & spending insights"
-        icon={<DollarSign className="h-5 w-5 text-[#1E49C9]" />}
-      >
+      <Card>
         <div className="animate-pulse">
           <div className="h-4 bg-[#2A313A] rounded w-1/3 mb-4"></div>
           <div className="space-y-3">
@@ -82,11 +78,7 @@ const FinancialOverview = () => {
   const isOverBudget = budgetAdherence < 0;
 
   return (
-    <Card
-      title="FINANCIAL OVERVIEW"
-      subtitle="Budget & spending insights"
-      icon={<DollarSign className="h-5 w-5 text-[#1E49C9]" />}
-    >
+    <Card>
       {/* Header Action */}
       <div className="flex justify-end mb-4">
         <a 
@@ -151,10 +143,6 @@ const FinancialOverview = () => {
         {/* Financial Goals */}
         {financialData.goals.length > 0 && (
           <div className="space-y-2">
-            <h4 className="font-jakarta text-2xl leading-normal text-text-primary font-bold tracking-wide flex items-center">
-              <Target className="h-4 w-4 mr-2 text-[#1E49C9]" />
-              Active Goals
-            </h4>
             <div className="space-y-2">
               {financialData.goals.slice(0, 2).map((goal, index) => (
                 <div key={index} className="p-2 bg-[#0A0C0F] rounded border border-[#2A313A]">

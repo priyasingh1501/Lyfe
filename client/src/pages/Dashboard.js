@@ -15,8 +15,7 @@ import JournalTrends from '../components/journal/JournalTrends';
 import {
   FinancialOverview,
   QuickActions,
-  MindfulnessScore,
-  RecentActivity
+  MindfulnessScore
 } from '../components/dashboard';
 import { Button, Card } from '../components/ui';
 
@@ -29,12 +28,49 @@ const Dashboard = () => {
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [dashboardQuotes, setDashboardQuotes] = useState([]);
   const [quotesLoading, setQuotesLoading] = useState(true);
-  const [musicLink, setMusicLink] = useState('');
+  const [musicLink, setMusicLink] = useState('https://youtu.be/w0o8JCxjjpM?si=OCQ4TjYlkC8sTpcy');
   const [showMusicInput, setShowMusicInput] = useState(false);
-  const [musicPlatform, setMusicPlatform] = useState('spotify');
+  const [musicPlatform, setMusicPlatform] = useState('youtube');
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  
+  // Image gallery state
+  const [imageGallery, setImageGallery] = useState([
+    {
+      id: 'nature',
+      src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+      title: "Nature's Wisdom",
+      subtitle: "Find peace in simplicity",
+      color: '#3CCB7F'
+    },
+    {
+      id: 'abstract',
+      src: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+      title: "Creative Flow",
+      subtitle: "Embrace the unknown",
+      color: '#FFD200'
+    },
+    {
+      id: 'minimalist',
+      src: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+      title: "Less is More",
+      subtitle: "Simplicity breeds clarity",
+      color: '#1E49C9'
+    },
+    {
+      id: 'urban',
+      src: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+      title: "Urban Energy",
+      subtitle: "Thrive in the chaos",
+      color: '#3EA6FF'
+    },
+    {
+      id: 'zen',
+      src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+      title: "Inner Peace",
+      subtitle: "Find your center",
+      color: '#3CCB7F'
+    }
+  ]);
   
   // Debug: Log state changes
   useEffect(() => {
@@ -44,7 +80,35 @@ const Dashboard = () => {
   useEffect(() => {
     fetchData();
     fetchDashboardQuotes();
+    loadSavedMusicLink();
   }, []);
+
+  const loadSavedMusicLink = () => {
+    const savedLink = localStorage.getItem('dashboardMusicLink');
+    
+    if (savedLink) {
+      setMusicLink(savedLink);
+      
+      // Detect platform from the saved link
+      const link = savedLink.trim();
+      if (link.includes('youtube.com') || link.includes('youtu.be')) {
+        setMusicPlatform('youtube');
+      } else if (link.includes('spotify.com')) {
+        setMusicPlatform('spotify');
+      } else if (link.includes('music.apple.com')) {
+        setMusicPlatform('apple');
+      } else {
+        setMusicPlatform('spotify'); // Default fallback
+      }
+      
+      setShowMusicInput(false); // Show the player instead of input
+    } else {
+      // If no saved music, save the default music to localStorage
+      const defaultLink = 'https://youtu.be/w0o8JCxjjpM?si=OCQ4TjYlkC8sTpcy';
+      localStorage.setItem('dashboardMusicLink', defaultLink);
+      localStorage.setItem('dashboardMusicPlatform', 'youtube');
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -221,46 +285,7 @@ const Dashboard = () => {
     }
   };
 
-  const extractYouTubeId = (url) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
 
-  const extractSpotifyId = (url) => {
-    const match = url.match(/spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]+)/);
-    return match ? { type: match[1], id: match[2] } : null;
-  };
-
-  const extractAppleMusicId = (url) => {
-    const match = url.match(/music\.apple\.com\/.*\/(album|song)\/.*\/(\d+)/);
-    return match ? { type: match[1], id: match[2] } : null;
-  };
-
-  const getEmbedUrl = () => {
-    if (!musicLink) return null;
-    
-    const link = musicLink.trim();
-    
-    if (link.includes('youtube.com') || link.includes('youtu.be')) {
-      const videoId = extractYouTubeId(link);
-      if (videoId) {
-        return `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&showinfo=0&rel=0`;
-      }
-    } else if (link.includes('spotify.com')) {
-      const spotifyData = extractSpotifyId(link);
-      if (spotifyData) {
-        return `https://open.spotify.com/embed/${spotifyData.type}/${spotifyData.id}`;
-      }
-    } else if (link.includes('music.apple.com')) {
-      const appleData = extractAppleMusicId(link);
-      if (appleData) {
-        return `https://embed.music.apple.com/us/album/${appleData.id}`;
-      }
-    }
-    
-    return null;
-  };
 
   const handleMusicLinkSubmit = () => {
     if (musicLink.trim()) {
@@ -279,14 +304,109 @@ const Dashboard = () => {
         toast.error('Please enter a valid YouTube, Spotify, or Apple Music link');
         return;
       }
+      
+      // Save to localStorage
+      localStorage.setItem('dashboardMusicLink', link);
+      localStorage.setItem('dashboardMusicPlatform', musicPlatform);
+      
       setShowMusicInput(false);
       toast.success('Music link updated successfully!');
     }
   };
 
+  const handleChangeMusic = () => {
+    setShowMusicInput(true);
+    setMusicLink(''); // Clear the current link when changing
+  };
+
+  const handleRemoveMusic = () => {
+    setMusicLink('');
+    setShowMusicInput(true);
+    localStorage.removeItem('dashboardMusicLink');
+    localStorage.removeItem('dashboardMusicPlatform');
+    toast.success('Music link removed!');
+  };
+
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying);
   };
+
+
+  const handleOpenInNewTab = () => {
+    if (musicLink) {
+      window.open(musicLink, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const getEmbedUrl = () => {
+    if (!musicLink) return null;
+    
+    const link = musicLink.trim();
+    console.log('Current music link:', link);
+    
+    if (link.includes('youtube.com') || link.includes('youtu.be')) {
+      const videoId = extractYouTubeId(link);
+      console.log('Extracted video ID:', videoId);
+      if (videoId) {
+        const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&showinfo=0&rel=0&modestbranding=1&loop=1&playlist=${videoId}&enablejsapi=1`;
+        console.log('Generated embed URL:', embedUrl);
+        return embedUrl;
+      }
+    } else if (link.includes('spotify.com')) {
+      const spotifyData = extractSpotifyId(link);
+      if (spotifyData) {
+        return `https://open.spotify.com/embed/${spotifyData.type}/${spotifyData.id}`;
+      }
+    } else if (link.includes('music.apple.com')) {
+      const appleData = extractAppleMusicId(link);
+      if (appleData) {
+        return `https://embed.music.apple.com/us/album/${appleData.id}`;
+      }
+    }
+    
+    return null;
+  };
+
+  const extractYouTubeId = (url) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const extractSpotifyId = (url) => {
+    const match = url.match(/spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]+)/);
+    return match ? { type: match[1], id: match[2] } : null;
+  };
+
+  const extractAppleMusicId = (url) => {
+    const match = url.match(/music\.apple\.com\/.*\/(album|song)\/.*\/(\d+)/);
+    return match ? { type: match[1], id: match[2] } : null;
+  };
+
+  // Image card component
+  const ImageCard = ({ image, className = "", animationClass = "" }) => (
+    <div className={`col-span-1 ${className} ${animationClass}`}>
+      <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+        <div className="relative h-full bg-gradient-to-br from-[#3CCB7F]/20 to-[#3EA6FF]/20">
+          <img 
+            src={image.src}
+            alt={image.title}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
+            <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+              <h3 className="font-jakarta text-lg font-semibold mb-1">{image.title}</h3>
+              <p className="text-sm opacity-90">{image.subtitle}</p>
+            </div>
+          </div>
+          <div 
+            className="absolute top-4 right-4 w-3 h-3 rounded-full animate-pulse-glow"
+            style={{ backgroundColor: image.color }}
+          ></div>
+        </div>
+      </Card>
+    </div>
+  );
 
   const getPlatformIcon = () => {
     switch (musicPlatform) {
@@ -318,18 +438,22 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-8 p-6 lg:p-6">
-      {/* Welcome Header - Alfred Bar */}
-      <Card>
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-          {/* Left side - Image first, then greetings */}
-          <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-6">
+    <div className="p-6">
+      {/* Bento Grid Layout - Pinterest Style */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-[minmax(200px,auto)] [&>*:nth-child(odd)]:animate-fade-in [&>*:nth-child(even)]:animate-fade-in-delayed">
+        
+        {/* Welcome Card - 2x1 on large screens */}
+        <div className="md:col-span-2 lg:col-span-2 xl:col-span-2">
+          <Card className="h-full">
+            <div className="flex flex-col items-center justify-center h-full">
+              {/* Image and greetings - stacked vertically */}
+              <div className="flex flex-col items-center space-y-4">
             {/* Image */}
-            <div className="flex-shrink-0 mb-4 lg:mb-0 relative group self-center">
+                <div className="flex-shrink-0 relative group self-center">
               <img 
                 src={welcomeImage} 
                 alt="Welcome illustration" 
-                className="w-20 h-20 lg:w-24 lg:h-24 object-cover rounded-lg border-2 border-[#2A313A] shadow-lg cursor-pointer transition-all duration-200 group-hover:border-[#1E49C9] group-hover:shadow-[#1E49C9]/20"
+                    className="w-24 h-24 object-cover rounded-lg border-2 border-[#2A313A] shadow-lg cursor-pointer transition-all duration-200 group-hover:border-[#1E49C9] group-hover:shadow-[#1E49C9]/20"
                 onClick={() => {
                   console.log('Dashboard image clicked, setting showImageUpload to true');
                   setShowImageUpload(true);
@@ -352,11 +476,11 @@ const Dashboard = () => {
             </div>
 
             {/* Greetings */}
-            <div className="flex items-center space-x-3">
+                <div className="flex flex-col items-center space-y-2">
               <div className="p-2 bg-[#1E49C9] bg-opacity-20 rounded-lg">
                 <Upload className="h-5 w-5 text-[#1E49C9]" />
               </div>
-              <div>
+                  <div className="text-center">
                 <h3 className="font-jakarta text-2xl leading-normal text-text-primary font-bold tracking-wide">
                   Welcome back, {user?.firstName || 'User'}!
                 </h3>
@@ -365,11 +489,15 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
+              </div>
+            </div>
+          </Card>
           </div>
 
-          {/* Right side music player */}
-          <div className="flex-1 lg:ml-6 flex justify-center lg:justify-end">
-            <div className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] rounded-xl p-4 backdrop-blur-[28px] backdrop-saturate-[140%] shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_4px_6px_-1px_rgba(0,0,0,0.1)] w-full max-w-2xl">
+         {/* Music Card - 1x1 */}
+         <div className="col-span-1">
+           <Card className="h-full group relative">
+        <div className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] rounded-xl p-4 backdrop-blur-[28px] backdrop-saturate-[140%] shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_4px_6px_-1px_rgba(0,0,0,0.1)]">
               {/* Music Link Input */}
               {showMusicInput ? (
                 <div className="space-y-3">
@@ -379,300 +507,299 @@ const Dashboard = () => {
                     </div>
                     <h4 className="font-jakarta text-sm font-semibold text-text-primary">Add Music Link</h4>
                   </div>
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      placeholder="Paste YouTube, Spotify, or Apple Music link..."
-                      value={musicLink}
-                      onChange={(e) => setMusicLink(e.target.value)}
-                      className="flex-1 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-secondary focus:border-[#1E49C9] focus:outline-none"
-                    />
-                    <button
-                      onClick={handleMusicLinkSubmit}
-                      className="px-4 py-2 bg-[#1E49C9] text-white rounded-lg hover:bg-[#1E49C9]/80 transition-colors text-sm font-medium"
-                    >
-                      Add
-                    </button>
-                    <button
-                      onClick={() => setShowMusicInput(false)}
-                      className="px-4 py-2 bg-[rgba(255,255,255,0.1)] text-text-secondary rounded-lg hover:bg-[rgba(255,255,255,0.2)] transition-colors text-sm"
-                    >
-                      Cancel
-                    </button>
+                  <div className="space-y-2">
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        placeholder="Paste YouTube, Spotify, or Apple Music link..."
+                        value={musicLink}
+                        onChange={(e) => setMusicLink(e.target.value)}
+                        className="flex-1 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-secondary focus:border-[#1E49C9] focus:outline-none"
+                      />
+                      <button
+                        onClick={handleMusicLinkSubmit}
+                        className="px-4 py-2 bg-[#1E49C9] text-white rounded-lg hover:bg-[#1E49C9]/80 transition-colors text-sm font-medium"
+                      >
+                        Add
+                      </button>
+                      <button
+                        onClick={() => setShowMusicInput(false)}
+                        className="px-4 py-2 bg-[rgba(255,255,255,0.1)] text-text-secondary rounded-lg hover:bg-[rgba(255,255,255,0.2)] transition-colors text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <div className="text-xs text-text-secondary bg-background-secondary/50 rounded-lg p-2">
+                      <strong>Note:</strong> Music links will be displayed as track information. Click "Open" to play the track in the original platform.
+                    </div>
                   </div>
                 </div>
               ) : (
                 <div>
-                  {/* Embedded Player */}
-                  {musicLink && getEmbedUrl() && (
+                  {/* Custom Track Display */}
+                  {musicLink && (
                     <div className="mb-4">
-                      <div className="flex items-center space-x-2 mb-2">
+                      <div className="flex items-center space-x-2 mb-4">
                         <div className="p-1 bg-[#1E49C9] bg-opacity-20 rounded">
                           {getPlatformIcon()}
                         </div>
                         <h4 className="font-jakarta text-sm font-semibold text-text-primary">
-                          Now Playing
+                      Now Playing
                         </h4>
                       </div>
-                      <div className="relative">
-                        {musicPlatform === 'youtube' ? (
-                          <iframe
-                            src={getEmbedUrl()}
-                            className="w-full h-20 rounded-lg"
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          ></iframe>
-                        ) : musicPlatform === 'spotify' ? (
-                          <iframe
-                            src={getEmbedUrl()}
-                            className="w-full h-20 rounded-lg"
-                            frameBorder="0"
-                            allowtransparency="true"
-                            allow="encrypted-media"
-                          ></iframe>
-                        ) : musicPlatform === 'apple' ? (
-                          <iframe
-                            src={getEmbedUrl()}
-                            className="w-full h-20 rounded-lg"
-                            frameBorder="0"
-                            allow="autoplay"
-                          ></iframe>
-                        ) : null}
-                      </div>
+                      
+                   {/* Gramophone Player */}
+                   <div className="flex flex-col items-center justify-center py-8">
+                     {/* Hidden YouTube Player for Audio */}
+                     {musicPlatform === 'youtube' && (
+                       <iframe
+                         src={getEmbedUrl()}
+                         className="absolute opacity-0 pointer-events-none w-1 h-1"
+                         frameBorder="0"
+                         allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                         allowFullScreen
+                         title="Hidden YouTube Audio Player"
+                       ></iframe>
+                     )}
+                     
+                     {/* Gramophone Base */}
+                     <div className="relative">
+                       
+                       {/* Gramophone Visual */}
+                       <div className="relative w-32 h-32 mx-auto">
+                         {/* Gramophone Base */}
+                         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-16 bg-gradient-to-t from-amber-800 to-amber-600 rounded-t-full shadow-lg">
+                           <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-20 h-2 bg-amber-700 rounded-full"></div>
+                         </div>
+                         
+                         {/* Horn */}
+                         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[40px] border-b-amber-600"></div>
+                         
+                         {/* Record */}
+                         <div className={`absolute top-8 left-1/2 transform -translate-x-1/2 w-20 h-20 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full shadow-lg border-4 border-gray-700 ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }}>
+                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-gray-900 rounded-full"></div>
+                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-gray-700 rounded-full"></div>
+                           {/* Grooves */}
+                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-gray-500 rounded-full opacity-30"></div>
+                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 border border-gray-500 rounded-full opacity-20"></div>
+                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 border border-gray-500 rounded-full opacity-10"></div>
+                         </div>
+                         
+                         {/* Tonearm */}
+                         <div className={`absolute top-12 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-amber-800 rounded-full origin-left ${isPlaying ? 'animate-pulse' : ''}`} style={{ transform: 'translateX(-50%) rotate(-15deg)' }}>
+                           <div className="absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-2 h-2 bg-amber-600 rounded-full"></div>
+                         </div>
+                         
+                         {/* Sound Waves */}
+                         {isPlaying && (
+                           <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                             <div className="flex space-x-1">
+                               <div className="w-1 h-4 bg-amber-400 rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
+                               <div className="w-1 h-6 bg-amber-400 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                               <div className="w-1 h-3 bg-amber-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                               <div className="w-1 h-5 bg-amber-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+                               <div className="w-1 h-2 bg-amber-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                             </div>
+                           </div>
+                         )}
+                       </div>
+                       
+                       {/* Play/Pause Button */}
+                       <button
+                         onClick={handlePlayPause}
+                         className="mt-6 w-12 h-12 bg-[#1E49C9] rounded-full flex items-center justify-center text-white hover:bg-[#1E49C9]/80 transition-colors shadow-lg"
+                       >
+                         {isPlaying ? (
+                           <div className="flex space-x-1">
+                             <div className="w-1 h-4 bg-white rounded"></div>
+                             <div className="w-1 h-4 bg-white rounded"></div>
+                           </div>
+                         ) : (
+                           <div className="w-0 h-0 border-l-[6px] border-l-white border-y-[4px] border-y-transparent ml-1"></div>
+                         )}
+                       </button>
+                       
+                       {/* Track Info */}
+                       <div className="mt-4 text-center">
+                         <h4 className="font-jakarta text-sm font-semibold text-text-primary">
+                           {musicPlatform === 'youtube' ? 'YouTube Music' : 
+                            musicPlatform === 'spotify' ? 'Spotify' : 
+                            musicPlatform === 'apple' ? 'Apple Music' : 'Custom Track'}
+                         </h4>
+                         <p className="font-jakarta text-xs text-text-secondary">
+                           {isPlaying ? 'Now Playing' : 'Paused'}
+                         </p>
+                       </div>
+                     </div>
+                   </div>
                     </div>
                   )}
                   
-                  {/* Music Player Controls */}
-                  <div className="flex items-center space-x-4">
-                    {/* Album Art */}
-                    <div className="relative group flex-shrink-0">
-                      <img 
-                        src="/welcome.png" 
-                        alt="Album cover" 
-                        className="w-16 h-16 object-cover rounded-lg border-2 border-[#2A313A] shadow-lg cursor-pointer transition-all duration-200 group-hover:border-[#1E49C9] group-hover:shadow-[#1E49C9]/20"
-                      />
-                      {/* Play button overlay */}
-                      <div className="absolute inset-0 bg-black/40 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                        <div className="w-6 h-6 bg-[#1E49C9] rounded-full flex items-center justify-center">
-                          <div className="w-0 h-0 border-l-[4px] border-l-white border-y-[3px] border-y-transparent ml-0.5"></div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Track Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <div className="p-1 bg-[#1E49C9] bg-opacity-20 rounded">
-                          {getPlatformIcon()}
-                        </div>
-                        <h4 className="font-jakarta text-sm font-semibold text-text-primary truncate">
-                          {musicLink ? 'Custom Track' : 'Welcome Track'}
-                        </h4>
-                      </div>
-                      <p className="font-jakarta text-xs text-text-secondary mb-2">
-                        {musicPlatform === 'youtube' ? 'YouTube Music' : 
-                         musicPlatform === 'spotify' ? 'Spotify' : 
-                         musicPlatform === 'apple' ? 'Apple Music' : 'Ambient Focus'}
-                      </p>
-                      
-                      {/* Progress Bar */}
-                      <div className="mb-2">
-                        <div className="w-full bg-[rgba(255,255,255,0.1)] rounded-full h-1">
-                          <div className="bg-[#1E49C9] h-1 rounded-full w-1/3"></div>
-                        </div>
-                        <div className="flex justify-between mt-1">
-                          <span className="font-jakarta text-xs text-text-secondary">1:23</span>
-                          <span className="font-jakarta text-xs text-text-secondary">4:12</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Controls */}
-                    <div className="flex items-center space-x-2">
-                      <button className="text-text-secondary hover:text-text-primary transition-colors p-1">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/>
+               {/* Music Controls - Hover Icons */}
+               {musicLink && (
+                 <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                   <button
+                     onClick={handleChangeMusic}
+                     className="w-8 h-8 bg-[#1E49C9] text-white rounded-full flex items-center justify-center hover:bg-[#1E49C9]/80 transition-colors shadow-lg"
+                     title="Change Music"
+                   >
+                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                       <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 01-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/>
+                     </svg>
+                   </button>
+                   <button 
+                     onClick={handleRemoveMusic}
+                     className="w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors shadow-lg"
+                     title="Remove Music"
+                   >
+                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                       <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd"/>
+                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+                     </svg>
+                   </button>
+                 </div>
+               )}
+              
+              {/* No Music State */}
+              {!musicLink && (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-[#2A313A] rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <svg className="h-8 w-8 text-[#C9D1D9]" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.369 4.369 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/>
                         </svg>
-                      </button>
-                      <button 
-                        onClick={handlePlayPause}
-                        className="w-8 h-8 bg-[#1E49C9] rounded-full flex items-center justify-center text-white hover:bg-[#1E49C9]/80 transition-colors"
-                      >
-                        {isPlaying ? (
-                          <div className="flex space-x-0.5">
-                            <div className="w-1 h-3 bg-white rounded"></div>
-                            <div className="w-1 h-3 bg-white rounded"></div>
-                          </div>
-                        ) : (
-                          <div className="w-0 h-0 border-l-[4px] border-l-white border-y-[3px] border-y-transparent ml-0.5"></div>
-                        )}
-                      </button>
-                      <button className="text-text-secondary hover:text-text-primary transition-colors p-1">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798l-5.445-3.63z"/>
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => setShowMusicInput(true)}
-                        className="text-text-secondary hover:text-text-primary transition-colors p-1"
-                        title="Add music link"
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd"/>
-                        </svg>
-                      </button>
-                    </div>
                   </div>
+                  <h3 className="font-jakarta text-lg font-semibold text-text-primary mb-2">No Music Added</h3>
+                  <p className="font-jakarta text-text-secondary mb-4">Add your favorite music to get started</p>
+                      <button
+                    onClick={() => setShowMusicInput(true)}
+                    className="px-4 py-2 bg-[#1E49C9] text-white text-sm rounded-lg hover:bg-[#1E49C9]/80 transition-colors"
+                      >
+                    ADD MUSIC
+                      </button>
+                    </div>
+              )}
                 </div>
               )}
-            </div>
-          </div>
         </div>
       </Card>
+         </div>
 
-      {/* Image Upload Modal */}
-      {console.log('Dashboard showImageUpload state:', showImageUpload)}
-      <AnimatePresence>
-        {showImageUpload && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowImageUpload(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 max-w-md w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="font-jakarta text-lg font-semibold text-text-primary mb-4 leading-relaxed tracking-wider">
-                Update Welcome Image
-              </h3>
-              
-              <div className="space-y-4">
-                <div className="text-center">
-                  <label 
-                    htmlFor="welcome-image-upload-dashboard"
-                    className="inline-flex items-center cursor-pointer"
-                  >
-                    <Button
-                      variant="primary"
-                      className="inline-flex items-center"
-                    >
-                      <Upload className="h-5 w-5 mr-2" />
-                      Choose Image
-                    </Button>
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="welcome-image-upload-dashboard"
-                  />
-                </div>
-                
-                <p className="text-sm text-[#C9D1D9] text-center">
-                  Click the button above to select a new image. The image will be displayed in the welcome banner.
-                </p>
-              </div>
-              
-              <div className="mt-6 flex justify-end">
-                <Button
-                  onClick={() => setShowImageUpload(false)}
-                  variant="ghost"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Quote of the Day - Mission Card */}
-      <Card
-        title="MISSION BRIEFING"
-        subtitle="Daily inspiration and motivation"
-        icon={<RefreshCw className="h-5 w-5 text-[#1E49C9]" />}
-      >
-        <div className="text-center relative">
-          <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
+        {/* Quote Card - 1x1 */}
+        <div className="col-span-1">
+          <Card className="h-full group">
+        <div className="text-center relative h-full flex flex-col justify-center items-center">
+          {/* Refresh Button - Only visible on hover */}
+          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
             <button
               onClick={refreshQuote}
-              className="p-1 text-[#1E49C9] hover:text-[#1E49C9]/80 hover:bg-[#2A313A] rounded transition-all duration-200 group"
+              className="p-1.5 text-[#1E49C9] hover:text-[#1E49C9]/80 hover:bg-[#2A313A] rounded-full transition-all duration-200"
               title="Get a new quote"
             >
-              <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" />
+              <RefreshCw size={14} className="hover:rotate-180 transition-transform duration-500" />
             </button>
-            <button
-              onClick={fetchDashboardQuotes}
-              className="p-1 text-[#1E49C9] hover:text-[#1E49C9]/80 hover:bg-[#2A313A] rounded transition-all duration-200 group"
-              title="Refresh quotes from API"
-            >
-              <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" />
-            </button>
-            <span className="font-jakarta text-xs text-text-secondary">
-              {getCurrentQuoteNumber()}/{dashboardQuotes.length > 0 ? dashboardQuotes.length : quotes.length}
-            </span>
           </div>
+          
           {quotesLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1E49C9]"></div>
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E49C9]"></div>
             </div>
           ) : (
-            <>
-              <blockquote className="font-jakarta text-base lg:text-lg font-medium text-text-primary mb-3 italic leading-relaxed">
+            <div className="space-y-4 pr-8 w-full">
+              {/* Quote - Major Emphasis */}
+              <blockquote className="font-jakarta text-lg lg:text-xl font-medium text-text-primary italic leading-relaxed px-4">
                 "{getQuoteOfTheDay()}"
               </blockquote>
+              
+              {/* Author - Secondary Emphasis */}
               <cite className="font-jakarta text-sm text-[#1E49C9] font-medium leading-relaxed tracking-wider">
                 — {getQuoteAuthor()}
               </cite>
+              
+              {/* Source - Tertiary Emphasis */}
               {dashboardQuotes.length > 0 && getQuoteSource() && (
-                <p className="font-jakarta text-xs text-text-secondary mt-2">
+                <p className="font-jakarta text-xs text-text-secondary">
                   from <span className="text-[#1E49C9] font-medium">{getQuoteSource()}</span>
                 </p>
               )}
+              
+              
+              {/* Add Quotes Hint - Least Emphasis */}
               {dashboardQuotes.length === 0 && !quotesLoading && (
-                <p className="font-jakarta text-xs text-text-secondary mt-2">
+                <p className="font-jakarta text-xs text-text-secondary opacity-40 mt-2">
                   Add quotes in Content tab to see them here
                 </p>
               )}
-              {/* Debug info - remove in production */}
-              <div className="font-jakarta text-xs text-text-secondary mt-2 opacity-60">
-                Debug: {dashboardQuotes.length} quotes loaded, {quotesLoading ? 'loading' : 'ready'}
-              </div>
-            </>
+            </div>
           )}
         </div>
       </Card>
+        </div>
 
-      {/* New Dashboard Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Mission Status - Left Column */}
-        <Card
-          title="MISSION STATUS"
-          subtitle="24-hour breakdown of your daily activities"
-          icon={<ArrowRight className="h-5 w-5 text-[#1E49C9]" />}
-        >
+        {/* Random Image Card 1 - Nature */}
+        <div className="col-span-1 lg:row-span-2 animate-fade-in">
+          <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+            <div className="relative h-full bg-gradient-to-br from-[#3CCB7F]/20 to-[#3EA6FF]/20">
+              <img 
+                src="/images/dashboard/nature.jpg"
+                alt="Nature Inspiration"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
+                <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                  <h3 className="font-jakarta text-lg font-semibold mb-1">Nature's Wisdom</h3>
+                  <p className="text-sm opacity-90">Find peace in simplicity</p>
+                </div>
+              </div>
+              <div className="absolute top-4 right-4 w-3 h-3 bg-[#3CCB7F] rounded-full animate-pulse-glow"></div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Financial Overview - 1x1 */}
+        <div className="col-span-1">
+          <div className="h-full">
+            <FinancialOverview />
+          </div>
+        </div>
+
+        {/* Random Image Card 2 - Abstract */}
+        <div className="col-span-1 animate-fade-in-delayed">
+          <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+            <div className="relative h-full bg-gradient-to-br from-[#FFD200]/20 to-[#D64545]/20">
+              <img 
+                src="/images/dashboard/abstract.jpg"
+                alt="Abstract Art"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
+                <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                  <h3 className="font-jakarta text-lg font-semibold mb-1">Creative Flow</h3>
+                  <p className="text-sm opacity-90">Embrace the unknown</p>
+                </div>
+              </div>
+              <div className="absolute top-4 right-4 w-3 h-3 bg-[#FFD200] rounded-full animate-pulse-glow"></div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Mission Status - 2x1 */}
+        <div className="md:col-span-2 lg:col-span-2 xl:col-span-2">
+          <Card className="h-full flex flex-col">
           <div className="flex justify-end mb-6">
             <a href="/goal-aligned-day" className="font-jakarta text-sm text-[#1E49C9] hover:text-[#1E49C9]/80 font-medium flex items-center justify-center leading-relaxed tracking-wider border border-[#2A313A] px-3 py-2 rounded hover:bg-[#2A313A] transition-all duration-200">
               VIEW DETAILS <ArrowRight size={16} className="ml-1" />
             </a>
           </div>
           
+          <div className="flex-1 flex flex-col">
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
           ) : todayTasks.length > 0 ? (
-            <div className="space-y-4">
+              <div className="space-y-4 flex-1">
               {/* Day Summary Stats - Chore Chips */}
-              <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-6">
+                <div className="grid grid-cols-2 gap-2 mb-6">
                 <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3CCB7F] rounded-lg relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1 bg-[#3CCB7F]"></div>
                   <p className="text-base lg:text-lg font-bold text-[#3CCB7F] font-mono">
@@ -794,7 +921,7 @@ const Dashboard = () => {
               </div>
               
               {/* Legend */}
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 lg:gap-3 text-sm max-w-4xl mx-auto">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 text-sm max-w-4xl mx-auto">
                 <div className="flex items-center space-x-2 justify-center">
                   <div className="w-3 h-3 rounded-sm bg-[#3CCB7F]"></div>
                   <span className="text-[#C9D1D9] text-xs">Goal + Mindful</span>
@@ -818,7 +945,7 @@ const Dashboard = () => {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8">
+              <div className="text-center py-8 flex-1 flex flex-col justify-center">
               <div className="w-16 h-16 bg-[#2A313A] rounded-full mx-auto mb-4 flex items-center justify-center">
                 <Clock className="text-[#C9D1D9]" size={24} />
               </div>
@@ -833,35 +960,161 @@ const Dashboard = () => {
               </Button>
             </div>
           )}
-        </Card>
+          </div>
+          </Card>
+        </div>
 
-        {/* Financial Overview - Right Column */}
-        <FinancialOverview />
-      </div>
+        {/* Random Image Card 3 - Minimalist */}
+        <div className="col-span-1 animate-fade-in">
+          <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+            <div className="relative h-full bg-gradient-to-br from-[#1E49C9]/20 to-[#3CCB7F]/20">
+              <img 
+                src="/images/dashboard/minimalist.jpg"
+                alt="Minimalist Design"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
+                <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                  <h3 className="font-jakarta text-lg font-semibold mb-1">Less is More</h3>
+                  <p className="text-sm opacity-90">Simplicity breeds clarity</p>
+                </div>
+              </div>
+              <div className="absolute top-4 right-4 w-3 h-3 bg-[#1E49C9] rounded-full animate-pulse-glow"></div>
+            </div>
+          </Card>
+        </div>
 
-      {/* Second Row - Three Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Daily Meal KPIs */}
+        {/* Daily Meal KPIs - 1x1 */}
+        <div className="col-span-1">
+          <div className="h-full">
         <DailyMealKPIs />
+          </div>
+        </div>
         
-        {/* Journal Trends */}
+        {/* Journal Trends - 1x1 */}
+        <div className="col-span-1">
+          <div className="h-full">
         <JournalTrends />
-        
-        {/* Quick Actions */}
+          </div>
+        </div>
+
+        {/* Random Image Card 4 - Urban */}
+        <div className="col-span-1 lg:row-span-2 animate-fade-in-delayed">
+          <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+            <div className="relative h-full bg-gradient-to-br from-[#3EA6FF]/20 to-[#FFD200]/20">
+              <img 
+                src="/images/dashboard/urban.jpg"
+                alt="Urban Landscape"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
+                <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                  <h3 className="font-jakarta text-lg font-semibold mb-1">Urban Energy</h3>
+                  <p className="text-sm opacity-90">Thrive in the chaos</p>
+                </div>
+              </div>
+              <div className="absolute top-4 right-4 w-3 h-3 bg-[#3EA6FF] rounded-full animate-pulse-glow"></div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Quick Actions - 1x1 */}
+        <div className="col-span-1">
+          <div className="h-full">
         <QuickActions />
+          </div>
       </div>
 
-      {/* Third Row - Single Column */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* Mindfulness Score */}
+        {/* Mindfulness Score - 2x1 */}
+        <div className="md:col-span-2 lg:col-span-2 xl:col-span-2">
+          <div className="h-full">
         <MindfulnessScore />
+          </div>
       </div>
 
-      {/* Fourth Row - Single Column */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* Recent Activity */}
-        <RecentActivity />
+        {/* Random Image Card 5 - Zen */}
+        <div className="col-span-1 animate-fade-in">
+          <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+            <div className="relative h-full bg-gradient-to-br from-[#3CCB7F]/20 to-[#1E49C9]/20">
+              <img 
+                src="/images/dashboard/zen.jpg"
+                alt="Zen Garden"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
+                <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                  <h3 className="font-jakarta text-lg font-semibold mb-1">Inner Peace</h3>
+                  <p className="text-sm opacity-90">Find your center</p>
+                </div>
+              </div>
+              <div className="absolute top-4 right-4 w-3 h-3 bg-[#3CCB7F] rounded-full animate-pulse-glow"></div>
+            </div>
+          </Card>
+        </div>
       </div>
+
+      {/* Image Upload Modal */}
+      {console.log('Dashboard showImageUpload state:', showImageUpload)}
+      <AnimatePresence>
+        {showImageUpload && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowImageUpload(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="font-jakarta text-lg font-semibold text-text-primary mb-4 leading-relaxed tracking-wider">
+                Update Welcome Image
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="text-center">
+                  <label 
+                    htmlFor="welcome-image-upload-dashboard"
+                    className="inline-flex items-center cursor-pointer"
+                  >
+                    <Button
+                      variant="primary"
+                      className="inline-flex items-center"
+                    >
+                      <Upload className="h-5 w-5 mr-2" />
+                      Choose Image
+                    </Button>
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="welcome-image-upload-dashboard"
+                  />
+                </div>
+                
+                <p className="text-sm text-[#C9D1D9] text-center">
+                  Click the button above to select a new image. The image will be displayed in the welcome banner.
+                </p>
+              </div>
+              
+              <div className="mt-6 flex justify-end">
+                <Button
+                  onClick={() => setShowImageUpload(false)}
+                  variant="ghost"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

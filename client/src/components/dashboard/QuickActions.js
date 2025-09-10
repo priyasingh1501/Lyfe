@@ -71,11 +71,7 @@ const QuickActions = () => {
   ];
 
   return (
-    <Card
-      title="QUICK ACTIONS"
-      subtitle="Fast access to common tasks"
-      icon={<Plus className="h-5 w-5 text-[#1E49C9]" />}
-    >
+    <Card>
 
       {/* Actions Grid */}
       <div className="grid grid-cols-2 gap-6">

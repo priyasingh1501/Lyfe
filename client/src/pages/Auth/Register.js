@@ -93,13 +93,15 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0C0F] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-md w-full space-y-8"
-      >
+    <div className="min-h-screen bg-background-primary flex">
+      {/* Left Half - Register Form */}
+      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-md w-full space-y-8"
+        >
         {/* Header */}
         <div className="text-center">
           <motion.div
@@ -397,7 +399,32 @@ const Register = () => {
             </a>
           </p>
         </motion.div>
-      </motion.div>
+        </motion.div>
+      </div>
+
+      {/* Right Half - Video */}
+      <div className="hidden lg:flex lg:flex-1 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-accent-green/20 via-accent-teal/20 to-accent-yellow/20"></div>
+        <video
+          className="w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+        >
+          <source src="/videos/auth-background.mp4" type="video/mp4" />
+          {/* Fallback content if video doesn't load */}
+          <div className="flex items-center justify-center h-full bg-gradient-to-br from-accent-green via-accent-teal to-accent-yellow">
+            <div className="text-center text-text-inverse">
+              <div className="w-32 h-32 bg-text-inverse/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-6xl font-bold">U</span>
+              </div>
+              <h2 className="text-3xl font-bold mb-4">Join Untangle</h2>
+              <p className="text-lg opacity-90">Start your journey to a better lifestyle today</p>
+            </div>
+          </div>
+        </video>
+      </div>
     </div>
   );
 };

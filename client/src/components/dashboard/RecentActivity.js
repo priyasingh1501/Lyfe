@@ -155,11 +155,7 @@ const RecentActivity = () => {
 
   if (loading) {
     return (
-      <Card
-        title="RECENT ACTIVITY"
-        subtitle="Your latest actions"
-        icon={<Clock className="h-5 w-5 text-[#1E49C9]" />}
-      >
+      <Card>
         <div className="animate-pulse">
           <div className="h-4 bg-[#2A313A] rounded w-1/3 mb-4"></div>
           <div className="space-y-3">
@@ -173,11 +169,7 @@ const RecentActivity = () => {
   }
 
   return (
-    <Card
-      title="RECENT ACTIVITY"
-      subtitle="Your latest actions"
-      icon={<Clock className="h-5 w-5 text-[#1E49C9]" />}
-    >
+    <Card>
       {/* Header Action */}
       <div className="flex justify-end mb-4">
         <button

@@ -79,9 +79,6 @@ const JournalTrends = () => {
   if (!trends) {
   return (
     <Card
-      title="JOURNAL TRENDS"
-      subtitle="Analyze patterns in your journal entries"
-      icon={<Brain className="h-5 w-5 text-primary-500" />}
     >
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
@@ -101,9 +98,6 @@ const JournalTrends = () => {
 
   return (
     <Card
-      title="ALFRED'S TREND ANALYSIS"
-      subtitle="Insights from your journal patterns"
-      icon={<Brain className="h-5 w-5 text-primary-500" />}
     >
       {/* Header Action */}
       <div className="flex justify-end mb-6">

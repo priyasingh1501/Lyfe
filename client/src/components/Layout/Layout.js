@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { componentStyles, colors, typography } from '../../styles/designTokens';
-import { Logo } from '../ui';
+import { Logo, Tooltip } from '../ui';
 
 const ConsistentPopup = ({ isOpen, onClose, title, children, maxWidth = "md", showReasonStrip = true, reasonStripColor = "from-accent-yellow to-accent-green" }) => {
   if (!isOpen) return null;
@@ -248,17 +248,25 @@ const Layout = () => {
               isMobile ? 'justify-between' : sidebarCollapsed ? 'justify-center' : 'space-x-3'
             )}>
               {!isMobile && (
-                <button
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className="w-full flex items-center rounded-xl transition-all duration-200 text-white hover:text-gray-200 px-2 py-3"
-                  title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                <Tooltip
+                  content={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  position="right"
+                  delay={300}
+                  disabled={!sidebarCollapsed}
                 >
-                  {sidebarCollapsed ? (
-                    <ChevronRight className="w-5 h-5" />
-                  ) : (
-                    <ChevronLeft className="w-5 h-5" />
-                  )}
-                </button>
+                  <div className="w-full">
+                    <button
+                      onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                      className="w-full flex items-center rounded-xl transition-all duration-200 bg-black text-white hover:text-gray-200 hover:bg-gray-800 px-2 py-3"
+                    >
+                      {sidebarCollapsed ? (
+                        <ChevronRight className="w-5 h-5" />
+                      ) : (
+                        <ChevronLeft className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </Tooltip>
               )}
               <div className={cn(
                 "flex items-center space-x-2 transition-all duration-300",
@@ -285,7 +293,7 @@ const Layout = () => {
             <div className="p-4 border-b border-[rgba(255,255,255,0.2)] relative z-10">
               <button
                 onClick={() => setMobileSidebarOpen(true)}
-                className="w-full flex items-center justify-center space-x-2 text-text-muted hover:text-text-primary transition-colors px-4 py-3 rounded-xl hover:bg-[rgba(255,255,255,0.05)] hover:border hover:border-[rgba(255,255,255,0.15)]"
+                className="w-full flex items-center justify-center space-x-2 bg-black text-text-muted hover:text-text-primary hover:bg-gray-800 transition-colors px-4 py-3 rounded-xl"
                 aria-label="Open menu"
               >
                 <Menu size={20} />
@@ -308,59 +316,75 @@ const Layout = () => {
                 const isActive = location.pathname === item.href;
                 
                 return (
-                  <a
+                  <Tooltip
                     key={item.name}
-                    href={item.href}
-                    onClick={() => isMobile && setMobileSidebarOpen(false)}
-                    className={cn(
-                      "w-full flex items-center rounded-xl transition-all duration-200",
-                      isMobile 
-                        ? "justify-start space-x-3 px-4 py-3" 
-                        : sidebarCollapsed 
-                          ? "justify-center px-2 py-3" 
-                          : "justify-start space-x-3 px-4 py-3",
-                      isActive
-                        ? "bg-accent-green/20 text-accent-green border border-accent-green/30"
-                        : "text-text-secondary hover:text-text-primary hover:bg-background-tertiary"
-                    )}
-                    title={sidebarCollapsed && !isMobile ? item.name : ''}
+                    content={item.name}
+                    position="right"
+                    delay={300}
+                    disabled={!sidebarCollapsed || isMobile}
                   >
-                    <Icon size={20} />
-                    <span className={cn(
-                      "font-medium transition-all duration-300",
-                      isMobile ? 'opacity-100' : sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
-                    )}>
-                      {item.name}
-                    </span>
-                  </a>
+                    <div className="w-full">
+                      <a
+                        href={item.href}
+                        onClick={() => isMobile && setMobileSidebarOpen(false)}
+                        className={cn(
+                          "w-full flex items-center rounded-xl transition-all duration-200 bg-black",
+                          isMobile 
+                            ? "justify-start space-x-3 px-4 py-3" 
+                            : sidebarCollapsed 
+                              ? "justify-center px-2 py-3" 
+                              : "justify-start space-x-3 px-4 py-3",
+                          isActive
+                            ? "text-accent-green border border-accent-green/30"
+                            : "text-text-secondary hover:text-text-primary hover:bg-gray-800"
+                        )}
+                      >
+                        <Icon size={20} />
+                        <span className={cn(
+                          "font-medium transition-all duration-300",
+                          isMobile ? 'opacity-100' : sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                        )}>
+                          {item.name}
+                        </span>
+                      </a>
+                    </div>
+                  </Tooltip>
                 );
               })}
             </div>
           </nav>
 
-          {/* Chat with Alfred Button */}
-          <div className={cn(
-            "border-t border-[rgba(255,255,255,0.2)] transition-all duration-300 relative z-10",
-            isMobile ? 'p-4' : sidebarCollapsed ? 'p-2' : 'p-4'
-          )}>
-            <button
-              onClick={() => setAiChatOpen(true)}
-              className={cn(
-                "w-full flex items-center space-x-2 bg-accent-green text-text-inverse rounded-lg hover:bg-accent-green/90 transition-all duration-200 font-medium",
-                isMobile ? 'px-4 py-3' : sidebarCollapsed ? 'justify-center px-2 py-3' : 'px-4 py-3'
-              )}
-              aria-label="Chat with Alfred"
-              title={sidebarCollapsed && !isMobile ? 'Chat with Alfred' : ''}
-            >
-              <Brain size={isMobile ? 16 : 18} />
-              <span className={cn(
-                "transition-all duration-300",
-                isMobile ? 'opacity-100' : sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
-              )}>
-                Chat with Alfred
-              </span>
-            </button>
-          </div>
+          {/* Chat with Alfred Button - Hidden for now */}
+          {false && (
+            <div className={cn(
+              "border-t border-[rgba(255,255,255,0.2)] transition-all duration-300 relative z-10",
+              isMobile ? 'p-4' : sidebarCollapsed ? 'p-2' : 'p-4'
+            )}>
+              <Tooltip
+                content="Chat with Alfred"
+                position="right"
+                delay={300}
+                disabled={!sidebarCollapsed || isMobile}
+              >
+                <button
+                  onClick={() => setAiChatOpen(true)}
+                  className={cn(
+                    "w-full flex items-center space-x-2 bg-accent-green text-text-inverse rounded-lg hover:bg-accent-green/90 transition-all duration-200 font-medium",
+                    isMobile ? 'px-4 py-3' : sidebarCollapsed ? 'justify-center px-2 py-3' : 'px-4 py-3'
+                  )}
+                  aria-label="Chat with Alfred"
+                >
+                  <Brain size={isMobile ? 16 : 18} />
+                  <span className={cn(
+                    "transition-all duration-300",
+                    isMobile ? 'opacity-100' : sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                  )}>
+                    Chat with Alfred
+                  </span>
+                </button>
+              </Tooltip>
+            </div>
+          )}
 
           {/* User Section */}
           <div className={cn(
@@ -384,17 +408,25 @@ const Layout = () => {
                   {user?.email || 'User'}
                 </p>
               </div>
-              <button
-                onClick={handleLogout}
-                className={cn(
-                  "text-text-muted hover:text-text-primary transition-colors transition-all duration-300",
-                  isMobile ? 'opacity-100' : sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
-                )}
-                aria-label="Logout"
-                title={sidebarCollapsed && !isMobile ? 'Logout' : ''}
+              <Tooltip
+                content="Logout"
+                position="right"
+                delay={300}
+                disabled={!sidebarCollapsed || isMobile}
               >
-                <LogOut size={16} />
-              </button>
+                <div>
+                  <button
+                    onClick={handleLogout}
+                    className={cn(
+                      "bg-black text-text-muted hover:text-text-primary hover:bg-gray-800 transition-colors transition-all duration-300 rounded-lg p-2",
+                      isMobile ? 'opacity-100' : sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                    )}
+                    aria-label="Logout"
+                  >
+                    <LogOut size={16} />
+                  </button>
+                </div>
+              </Tooltip>
             </div>
           </div>
         </div>
