@@ -402,28 +402,290 @@ const Register = () => {
         </motion.div>
       </div>
 
-      {/* Right Half - Video */}
-      <div className="hidden lg:flex lg:flex-1 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-accent-green/20 via-accent-teal/20 to-accent-yellow/20"></div>
-        <video
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-        >
-          <source src="/videos/auth-background.mp4" type="video/mp4" />
-          {/* Fallback content if video doesn't load */}
-          <div className="flex items-center justify-center h-full bg-gradient-to-br from-accent-green via-accent-teal to-accent-yellow">
-            <div className="text-center text-text-inverse">
-              <div className="w-32 h-32 bg-text-inverse/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-6xl font-bold">U</span>
+      {/* Right Half - Masonry Video Cards */}
+      <div className="hidden lg:flex lg:flex-1 relative bg-background-primary p-6 overflow-y-auto">
+        <div className="absolute inset-0 bg-gradient-to-br from-accent-green/5 via-accent-teal/5 to-accent-yellow/5"></div>
+        
+        {/* Masonry Grid Container - 50% width and height, centered */}
+        <div className="relative w-1/2 h-1/2 mx-auto my-auto columns-2 gap-3 space-y-3">
+          {/* Video Card 1 - Extra Small */}
+          <div className="break-inside-avoid mb-3">
+            <div className="relative group rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:scale-110 hover:rotate-2">
+              <video
+                className="w-full h-28 object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const fallbackDiv = e.target.parentElement.querySelector('.video-fallback');
+                  if (fallbackDiv) {
+                    fallbackDiv.style.display = 'flex';
+                  }
+                }}
+              >
+                <source src="/videos/welcome-video.mp4" type="video/mp4" />
+              </video>
+              <div className="video-fallback hidden absolute inset-0 bg-gradient-to-br from-accent-yellow via-accent-green to-accent-teal items-center justify-center">
+                <div className="text-center text-text-inverse">
+                  <div className="w-6 h-6 bg-text-inverse/20 rounded-full flex items-center justify-center mx-auto">
+                    <span className="text-xs font-bold">U</span>
+                  </div>
+                </div>
               </div>
-              <h2 className="text-3xl font-bold mb-4">Join Untangle</h2>
-              <p className="text-lg opacity-90">Start your journey to a better lifestyle today</p>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute bottom-1 left-1 text-text-inverse opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0">
+                <h3 className="font-bold text-xs">Join</h3>
+              </div>
             </div>
           </div>
-        </video>
+
+          {/* Video Card 2 - Large */}
+          <div className="break-inside-avoid mb-3">
+            <div className="relative group rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-rotate-0.5">
+              <video
+                className="w-full h-72 object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const fallbackDiv = e.target.parentElement.querySelector('.video-fallback');
+                  if (fallbackDiv) {
+                    fallbackDiv.style.display = 'flex';
+                  }
+                }}
+              >
+                <source src="/videos/join-community.mp4" type="video/mp4" />
+              </video>
+              <div className="video-fallback hidden absolute inset-0 bg-gradient-to-br from-accent-green via-accent-teal to-accent-yellow items-center justify-center">
+                <div className="text-center text-text-inverse">
+                  <div className="w-18 h-18 bg-text-inverse/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl font-bold">U</span>
+                  </div>
+                  <h3 className="text-lg font-bold">Create</h3>
+                </div>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute bottom-5 left-5 text-text-inverse opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-5 group-hover:translate-y-0">
+                <h3 className="font-bold text-lg">Create Account</h3>
+                <p className="text-sm opacity-90">Get started today</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Video Card 3 - Medium */}
+          <div className="break-inside-avoid mb-3">
+            <div className="relative group rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-400 transform hover:scale-105 hover:rotate-1">
+              <video
+                className="w-full h-48 object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const fallbackDiv = e.target.parentElement.querySelector('.video-fallback');
+                  if (fallbackDiv) {
+                    fallbackDiv.style.display = 'flex';
+                  }
+                }}
+              >
+                <source src="/videos/start-journey.mp4" type="video/mp4" />
+              </video>
+              <div className="video-fallback hidden absolute inset-0 bg-gradient-to-br from-accent-teal via-accent-yellow to-accent-green items-center justify-center">
+                <div className="text-center text-text-inverse">
+                  <div className="w-12 h-12 bg-text-inverse/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-lg font-bold">U</span>
+                  </div>
+                  <h3 className="text-sm font-bold">Connect</h3>
+                </div>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400"></div>
+              <div className="absolute bottom-3 left-3 text-text-inverse opacity-0 group-hover:opacity-100 transition-all duration-400 transform translate-y-3 group-hover:translate-y-0">
+                <h3 className="font-bold text-sm">Connect & Share</h3>
+                <p className="text-xs opacity-90">Build connections</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Video Card 4 - Small */}
+          <div className="break-inside-avoid mb-3">
+            <div className="relative group rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-350 transform hover:scale-110 hover:-rotate-1">
+              <video
+                className="w-full h-36 object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const fallbackDiv = e.target.parentElement.querySelector('.video-fallback');
+                  if (fallbackDiv) {
+                    fallbackDiv.style.display = 'flex';
+                  }
+                }}
+              >
+                <source src="/videos/transform-life.mp4" type="video/mp4" />
+              </video>
+              <div className="video-fallback hidden absolute inset-0 bg-gradient-to-br from-accent-green via-accent-teal to-accent-yellow items-center justify-center">
+                <div className="text-center text-text-inverse">
+                  <div className="w-10 h-10 bg-text-inverse/20 rounded-full flex items-center justify-center mx-auto mb-1">
+                    <span className="text-lg font-bold">U</span>
+                  </div>
+                  <h3 className="text-xs font-bold">Discover</h3>
+                </div>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-350"></div>
+              <div className="absolute bottom-2 left-2 text-text-inverse opacity-0 group-hover:opacity-100 transition-all duration-350 transform translate-y-2 group-hover:translate-y-0">
+                <h3 className="font-bold text-xs">Discover</h3>
+                <p className="text-xs opacity-90">Explore</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Video Card 5 - Extra Large */}
+          <div className="break-inside-avoid mb-3">
+            <div className="relative group rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:rotate-0.5">
+              <video
+                className="w-full h-80 object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const fallbackDiv = e.target.parentElement.querySelector('.video-fallback');
+                  if (fallbackDiv) {
+                    fallbackDiv.style.display = 'flex';
+                  }
+                }}
+              >
+                <source src="/videos/grow-daily.mp4" type="video/mp4" />
+              </video>
+              <div className="video-fallback hidden absolute inset-0 bg-gradient-to-br from-accent-yellow via-accent-green to-accent-teal items-center justify-center">
+                <div className="text-center text-text-inverse">
+                  <div className="w-20 h-20 bg-text-inverse/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-3xl font-bold">U</span>
+                  </div>
+                  <h3 className="text-xl font-bold">Learn</h3>
+                </div>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute bottom-6 left-6 text-text-inverse opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+                <h3 className="font-bold text-xl">Learn & Grow</h3>
+                <p className="text-sm opacity-90 mt-1">Continuous learning</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Video Card 6 - Medium */}
+          <div className="break-inside-avoid mb-3">
+            <div className="relative group rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-450 transform hover:scale-105 hover:-rotate-1">
+              <video
+                className="w-full h-52 object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const fallbackDiv = e.target.parentElement.querySelector('.video-fallback');
+                  if (fallbackDiv) {
+                    fallbackDiv.style.display = 'flex';
+                  }
+                }}
+              >
+                <source src="/videos/achieve-goals.mp4" type="video/mp4" />
+              </video>
+              <div className="video-fallback hidden absolute inset-0 bg-gradient-to-br from-accent-teal via-accent-yellow to-accent-green items-center justify-center">
+                <div className="text-center text-text-inverse">
+                  <div className="w-14 h-14 bg-text-inverse/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-xl font-bold">U</span>
+                  </div>
+                  <h3 className="text-sm font-bold">Succeed</h3>
+                </div>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-450"></div>
+              <div className="absolute bottom-3 left-3 text-text-inverse opacity-0 group-hover:opacity-100 transition-all duration-450 transform translate-y-3 group-hover:translate-y-0">
+                <h3 className="font-bold text-sm">Succeed Together</h3>
+                <p className="text-xs opacity-90">Achieve goals</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Video Card 7 - Small */}
+          <div className="break-inside-avoid mb-3">
+            <div className="relative group rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-350 transform hover:scale-110 hover:rotate-1">
+              <video
+                className="w-full h-32 object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const fallbackDiv = e.target.parentElement.querySelector('.video-fallback');
+                  if (fallbackDiv) {
+                    fallbackDiv.style.display = 'flex';
+                  }
+                }}
+              >
+                <source src="/videos/grow-daily.mp4" type="video/mp4" />
+              </video>
+              <div className="video-fallback hidden absolute inset-0 bg-gradient-to-br from-accent-green via-accent-teal to-accent-yellow items-center justify-center">
+                <div className="text-center text-text-inverse">
+                  <div className="w-8 h-8 bg-text-inverse/20 rounded-full flex items-center justify-center mx-auto mb-1">
+                    <span className="text-sm font-bold">U</span>
+                  </div>
+                  <h3 className="text-xs font-bold">Grow</h3>
+                </div>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-350"></div>
+              <div className="absolute bottom-2 left-2 text-text-inverse opacity-0 group-hover:opacity-100 transition-all duration-350 transform translate-y-2 group-hover:translate-y-0">
+                <h3 className="font-bold text-xs">Grow</h3>
+                <p className="text-xs opacity-90">Improve</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Video Card 8 - Large */}
+          <div className="break-inside-avoid mb-3">
+            <div className="relative group rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:rotate-0.5">
+              <video
+                className="w-full h-64 object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const fallbackDiv = e.target.parentElement.querySelector('.video-fallback');
+                  if (fallbackDiv) {
+                    fallbackDiv.style.display = 'flex';
+                  }
+                }}
+              >
+                <source src="/videos/achieve-goals.mp4" type="video/mp4" />
+              </video>
+              <div className="video-fallback hidden absolute inset-0 bg-gradient-to-br from-accent-yellow via-accent-green to-accent-teal items-center justify-center">
+                <div className="text-center text-text-inverse">
+                  <div className="w-16 h-16 bg-text-inverse/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl font-bold">U</span>
+                  </div>
+                  <h3 className="text-lg font-bold">Achieve</h3>
+                </div>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute bottom-4 left-4 text-text-inverse opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+                <h3 className="font-bold text-lg">Achieve Dreams</h3>
+                <p className="text-sm opacity-90">Make it happen</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

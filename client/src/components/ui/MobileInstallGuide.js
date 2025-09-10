@@ -31,7 +31,7 @@ const MobileInstallGuide = () => {
       {/* Install Button */}
       <button
         onClick={handleInstallClick}
-        className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-gradient-to-r from-[#8B5CF6] to-[#A855F7] rounded-full shadow-lg flex items-center justify-center text-white hover:from-[#8B5CF6]/90 hover:to-[#A855F7]/90 transition-all duration-300"
+        className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-white/20 hover:border-white/30 transition-all duration-300"
         title="Install App"
       >
         <Download size={24} />

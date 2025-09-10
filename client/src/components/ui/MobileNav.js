@@ -29,7 +29,7 @@ const MobileNav = () => {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 z-50 w-14 h-14 bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] rounded-full shadow-lg flex items-center justify-center text-white hover:from-[#3CCB7F]/90 hover:to-[#4ECDC4]/90 transition-all duration-300"
+        className="fixed bottom-4 right-4 z-50 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-white/20 hover:border-white/30 transition-all duration-300"
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
