@@ -4,6 +4,7 @@ import { Search, Save } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { buildApiUrl } from '../../config';
 import toast from 'react-hot-toast';
+import { Card, Button } from '../ui';
 import FoodSearch from './FoodSearch';
 import MealItems from './MealItems';
 import MealContext from './MealContext';
@@ -295,6 +296,9 @@ const MealBuilder = ({ onMealSaved }) => {
 
       console.log('MealBuilder: Sending meal data:', mealData);
       console.log('MealBuilder: Token exists:', !!token);
+      
+      // Show initial loading message
+      toast.loading('Processing meal data...', { id: 'meal-saving' });
 
       const response = await fetch(buildApiUrl('/api/meals'), {
         method: 'POST',
@@ -307,6 +311,7 @@ const MealBuilder = ({ onMealSaved }) => {
 
       if (response.ok) {
         await response.json();
+        toast.dismiss('meal-saving');
         toast.success('Meal saved successfully!');
         
         // Clear form
@@ -327,10 +332,12 @@ const MealBuilder = ({ onMealSaved }) => {
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('Failed to save meal:', response.status, errorData);
+        toast.dismiss('meal-saving');
         toast.error(`Failed to save meal: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error saving meal:', error);
+      toast.dismiss('meal-saving');
       toast.error(`Error saving meal: ${error.message}`);
     } finally {
       setIsSaving(false);
@@ -372,11 +379,11 @@ const MealBuilder = ({ onMealSaved }) => {
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="bg-background-secondary border border-border-primary rounded-xl p-6"
         >
-          <h2 className="font-jakarta text-2xl leading-normal text-text-primary font-bold mb-4">
-            Search & Add Foods
-          </h2>
+          <Card
+            title="Search & Add Foods"
+            className="h-full"
+          >
               
               <form onSubmit={handleSearchSubmit} className="mb-4">
                 <div className="flex gap-2">
@@ -416,25 +423,26 @@ const MealBuilder = ({ onMealSaved }) => {
                 hasSearched={hasSearched}
                 onAddFood={addFoodToMeal}
               />
-            </motion.div>
+          </Card>
+        </motion.div>
 
         {/* Right Column - Meal Items */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-background-secondary border border-border-primary rounded-xl p-6"
         >
-          <h2 className="font-jakarta text-2xl leading-normal text-text-primary font-bold mb-4">
-            Meal Items
-          </h2>
-              
-              <MealItems
-                items={mealItems}
-                onRemoveFood={removeFoodFromMeal}
-                onUpdatePortion={updateFoodPortion}
-              />
-            </motion.div>
+          <Card
+            title="Meal Items"
+            className="h-full"
+          >
+            <MealItems
+              items={mealItems}
+              onRemoveFood={removeFoodFromMeal}
+              onUpdatePortion={updateFoodPortion}
+            />
+          </Card>
+        </motion.div>
           </div>
 
       {/* Full-width sections below */}
@@ -444,17 +452,16 @@ const MealBuilder = ({ onMealSaved }) => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-background-secondary border border-border-primary rounded-xl p-6"
         >
-          <h2 className="font-jakarta text-2xl leading-normal text-text-primary font-bold mb-4">
-            Meal Context
-          </h2>
-              
-              <MealContext
-                context={context}
-                setContext={setContext}
-              />
-            </motion.div>
+          <Card
+            title="Meal Context"
+          >
+            <MealContext
+              context={context}
+              setContext={setContext}
+            />
+          </Card>
+        </motion.div>
 
         {/* Save Button */}
         <motion.div
@@ -463,14 +470,15 @@ const MealBuilder = ({ onMealSaved }) => {
           transition={{ delay: 0.3 }}
           className="text-center"
         >
-          <button
+          <Button
             onClick={saveMeal}
             disabled={isSaving || mealItems.length === 0}
-            className="inline-flex items-center px-8 py-4 bg-accent text-white rounded-xl hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-jakarta text-lg font-semibold shadow-lg hover:shadow-xl"
+            variant="primary"
+            className="inline-flex items-center px-8 py-4 text-lg font-semibold"
           >
             <Save className="h-5 w-5 mr-2" />
             {isSaving ? 'Saving...' : 'Save Meal'}
-          </button>
+          </Button>
         </motion.div>
 
         {/* Data Source Footnote */}

@@ -60,6 +60,10 @@ const expenseSchema = new mongoose.Schema({
     enum: ['daily', 'weekly', 'monthly', 'yearly']
   },
   notes: String,
+  impulseBuy: {
+    type: Boolean,
+    default: false
+  },
   status: {
     type: String,
     enum: ['pending', 'completed', 'cancelled'],

@@ -5,9 +5,19 @@ const MonthGrid = ({
   habits = [], 
   goals = [], 
   mindfulnessCheckins = [],
+  tasks = [],
+  meals = [],
+  expenses = [],
   onDateSelect,
   onMonthChange
 }) => {
+  // Ensure all props are arrays with fallbacks
+  const safeHabits = Array.isArray(habits) ? habits : [];
+  const safeGoals = Array.isArray(goals) ? goals : [];
+  const safeMindfulnessCheckins = Array.isArray(mindfulnessCheckins) ? mindfulnessCheckins : [];
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const safeMeals = Array.isArray(meals) ? meals : [];
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
   try {
     // Input validation to prevent React error #137
     if (!selectedDate || !(selectedDate instanceof Date) || isNaN(selectedDate.getTime())) {
@@ -19,43 +29,26 @@ const MonthGrid = ({
       );
     }
 
-    if (!Array.isArray(mindfulnessCheckins)) {
-      console.error('MonthGrid: mindfulnessCheckins must be an array', mindfulnessCheckins);
-      return (
-        <div className="w-full p-4 text-center text-red-500">
-          Error: mindfulnessCheckins must be an array
-        </div>
-      );
-    }
-
-    if (!Array.isArray(habits)) {
-      console.error('MonthGrid: habits must be an array', habits);
-      return (
-        <div className="w-full p-4 text-center text-red-500">
-          Error: habits must be an array
-        </div>
-      );
-    }
-
-    if (!Array.isArray(goals)) {
-      console.error('MonthGrid: goals must be an array', goals);
-      return (
-        <div className="w-full p-4 text-center text-red-500">
-          Error: goals must be an array
-        </div>
-      );
-    }
+    // Debug logging for data loading
+    console.log('MonthGrid: Data received:', {
+      habits: safeHabits.length,
+      goals: safeGoals.length,
+      mindfulnessCheckins: safeMindfulnessCheckins.length,
+      tasks: safeTasks.length,
+      meals: safeMeals.length,
+      expenses: safeExpenses.length
+    });
 
     console.log('🔍 MonthGrid rendered with props:');
-    console.log('🔍 mindfulnessCheckins:', mindfulnessCheckins);
-    console.log('🔍 mindfulnessCheckins.length:', mindfulnessCheckins.length);
-    console.log('🔍 mindfulnessCheckins type:', typeof mindfulnessCheckins);
-    console.log('🔍 Is array:', Array.isArray(mindfulnessCheckins));
+    console.log('🔍 mindfulnessCheckins:', safeMindfulnessCheckins);
+    console.log('🔍 mindfulnessCheckins.length:', safeMindfulnessCheckins.length);
+    console.log('🔍 mindfulnessCheckins type:', typeof safeMindfulnessCheckins);
+    console.log('🔍 Is array:', Array.isArray(safeMindfulnessCheckins));
     
-    if (mindfulnessCheckins.length > 0) {
-      console.log('🔍 First checkin:', mindfulnessCheckins[0]);
-      console.log('🔍 First checkin date:', mindfulnessCheckins[0].date);
-      console.log('🔍 First checkin totalScore:', mindfulnessCheckins[0].totalScore);
+    if (safeMindfulnessCheckins.length > 0) {
+      console.log('🔍 First checkin:', safeMindfulnessCheckins[0]);
+      console.log('🔍 First checkin date:', safeMindfulnessCheckins[0].date);
+      console.log('🔍 First checkin totalScore:', safeMindfulnessCheckins[0].totalScore);
     }
 
     // Get the current date and calculate the start date (12 months ago)
@@ -77,10 +70,11 @@ const MonthGrid = ({
     console.log('🔍 currentDate.getMonth():', currentDate.getMonth());
     console.log('🔍 currentDate.getDate():', currentDate.getDate());
     console.log('🔍 Month name:', currentDate.toLocaleDateString('en-US', { month: 'long' }));
+    console.log('🔍 Showing current year from January to current month');
     
-    // Fix: Calculate start date to include exactly 12 months of data
-    // We want to show the last 12 months, so go back 12 months from current month
-    const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 12, 1);
+    // Calculate start date to show current year from January to current month
+    // We want to show from January 1st of current year to current month
+    const startDate = new Date(currentDate.getFullYear(), 0, 1); // January 1st of current year
     
     // Validate startDate
     if (isNaN(startDate.getTime())) {
@@ -92,8 +86,8 @@ const MonthGrid = ({
       );
     }
     
-    // Ensure we include the current date by setting end date to end of current day
-    const endDate = new Date(currentDate);
+    // Set end date to the last day of the current month
+    const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
     endDate.setHours(23, 59, 59, 999);
     
     // Validate endDate
@@ -109,87 +103,123 @@ const MonthGrid = ({
     console.log('🔍 Date calculations:');
     console.log('🔍 currentDate:', currentDate);
     console.log('🔍 currentDate.toISOString():', currentDate.toISOString());
-    console.log('🔍 startDate:', startDate);
+    console.log('🔍 startDate (Jan 1st):', startDate);
     console.log('🔍 startDate.toISOString():', startDate.toISOString());
-    console.log('🔍 endDate:', endDate);
+    console.log('🔍 endDate (end of current month):', endDate);
     console.log('🔍 endDate.toISOString():', endDate.toISOString());
     console.log('🔍 startDate <= endDate:', startDate <= endDate);
     
     // Debug: Let's verify the month calculation
     console.log('🔍 Month calculation debug:');
-    console.log('🔍 currentDate.getMonth() - 12 =', currentDate.getMonth() - 12);
-    console.log('🔍 Expected start month:', new Date(currentDate.getFullYear(), currentDate.getMonth() - 12, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
+    console.log('🔍 Showing months from January to current month');
+    console.log('🔍 Expected start month:', startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
+    console.log('🔍 Expected end month:', endDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
     
-    // Get mindfulness score for a specific date
-    const getMindfulnessScoreForDate = (date) => {
+    // Get comprehensive daily score for a specific date
+    const getComprehensiveDailyScore = (date) => {
       // Validate date input
       if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-        console.error('getMindfulnessScoreForDate: Invalid date input', date);
-        return 0;
+        console.error('getComprehensiveDailyScore: Invalid date input', date);
+        return {
+          totalScore: 0,
+          breakdown: {
+            mindfulness: 0,
+            goalProgress: 0,
+            habitCompletion: 0,
+            mealEffects: 0,
+            impulseBuyPenalty: 0
+          }
+        };
       }
 
-      // Use local date string to avoid timezone issues
       const dateStr = date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
       
-      console.log(`🔍 Looking for mindfulness data for date: ${dateStr}`);
-      console.log(`🔍 Available checkins:`, mindfulnessCheckins);
+      // 1. Mindfulness Score (0-25 points)
+      const mindfulnessScore = getMindfulnessScoreForDate(date);
       
-      const checkin = mindfulnessCheckins.find(checkin => {
-        if (!checkin || !checkin.date) {
-          console.log(`❌ Checkin missing date:`, checkin);
-          return false;
+      // 2. Goal Progress Score (0-20 points)
+      const goalProgressScore = getGoalProgressScoreForDate(date);
+      
+      // 3. Habit Completion Score (0-15 points)
+      const habitCompletionScore = getHabitCompletionScoreForDate(date);
+      
+      // 4. Meal Effects Score (0-25 points)
+      const mealEffectsScore = getMealEffectsScoreForDate(date);
+      
+      // 5. Impulse Buy Penalty (0 to -10 points)
+      const impulseBuyPenalty = getImpulseBuyPenaltyForDate(date);
+      
+      const totalScore = Math.max(0, mindfulnessScore + goalProgressScore + habitCompletionScore + mealEffectsScore + impulseBuyPenalty);
+      
+      return {
+        totalScore,
+        breakdown: {
+          mindfulness: mindfulnessScore,
+          goalProgress: goalProgressScore,
+          habitCompletion: habitCompletionScore,
+          mealEffects: mealEffectsScore,
+          impulseBuyPenalty: impulseBuyPenalty
         }
-        
-        // Convert checkin date to local date string to avoid timezone issues
+      };
+    };
+
+    // Get mindfulness score for a specific date (0-25 points)
+    const getMindfulnessScoreForDate = (date) => {
+      const dateStr = date.toLocaleDateString('en-CA');
+      
+      const checkin = safeMindfulnessCheckins.find(checkin => {
+        if (!checkin || !checkin.date) return false;
         const checkinDate = new Date(checkin.date).toLocaleDateString('en-CA');
-        console.log(`🔍 Comparing ${dateStr} with ${checkinDate}`);
-        console.log(`🔍 Original checkin date:`, checkin.date);
-        console.log(`🔍 Checkin date object:`, new Date(checkin.date));
-        
         return dateStr === checkinDate;
       });
 
-      if (!checkin) {
-        console.log(`❌ No checkin found for ${dateStr}`);
-        return 0;
-      }
+      if (!checkin) return 0;
       
-      console.log(`✅ Found checkin for ${dateStr}:`, checkin);
-      
-      // Calculate total score from dimensions
+      // Calculate total score from dimensions (5 dimensions × 0-5 rating each = 0-25)
       const dimensions = checkin.dimensions || {};
-      console.log(`🔍 Dimensions:`, dimensions);
-      
       const totalScore = Object.values(dimensions).reduce((sum, dim) => {
-        const rating = dim.rating || 0;
-        console.log(`🔍 Dimension rating: ${rating}`);
-        return sum + rating;
+        return sum + (dim.rating || 0);
       }, 0);
       
-      console.log(`🎯 Total score for ${dateStr}: ${totalScore}`);
       return totalScore;
     };
 
-    // Get habit completion status for a specific date
-    const getHabitCompletionForDate = (date) => {
-      // Validate date input
-      if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-        console.error('getHabitCompletionForDate: Invalid date input', date);
-        return { completedCount: 0, totalCount: 0 };
+    // Get goal progress score for a specific date (0-20 points)
+    const getGoalProgressScoreForDate = (date) => {
+      const dateStr = date.toLocaleDateString('en-CA');
+      let score = 0;
+      
+      // Check if any tasks for goals were completed on this date
+      const completedTasksForGoals = safeTasks.filter(task => {
+        if (!task.goalIds || task.goalIds.length === 0) return false;
+        if (task.status !== 'completed') return false;
+        
+        const taskDate = new Date(task.completedAt || task.updatedAt).toLocaleDateString('en-CA');
+        return taskDate === dateStr;
+      });
+      
+      // Score based on completed tasks (up to 20 points)
+      if (completedTasksForGoals.length > 0) {
+        // Base score for having any goal progress
+        score += 10;
+        
+        // Additional points for multiple completed tasks
+        if (completedTasksForGoals.length >= 2) score += 5;
+        if (completedTasksForGoals.length >= 3) score += 5;
       }
+      
+      return Math.min(score, 20);
+    };
 
+    // Get habit completion score for a specific date (0-15 points)
+    const getHabitCompletionScoreForDate = (date) => {
       const dateStr = date.toLocaleDateString('en-CA');
       let completedCount = 0;
       let totalCount = 0;
       
-      habits.forEach(habit => {
-        // Validate habit object
-        if (!habit || !habit.startDate || !habit.endDate) {
-          console.log('❌ Invalid habit object:', habit);
-          return;
-        }
+      safeHabits.forEach(habit => {
+        if (!habit || !habit.startDate || !habit.endDate) return;
 
-        // Check if habit is active on this date (within start/end date range)
         const checkDate = new Date(date);
         checkDate.setHours(0, 0, 0, 0);
         
@@ -201,21 +231,97 @@ const MonthGrid = ({
         
         if (habit.isActive && checkDate >= startDate && checkDate <= endDate) {
           totalCount++;
-          // Check if habit has a completed check-in for this date
           const checkin = habit.checkins?.find(c => {
             const checkinDate = new Date(c.date).toLocaleDateString('en-CA');
             return checkinDate === dateStr && c.completed;
           });
-          if (checkin) {
-            completedCount++;
-          }
+          if (checkin) completedCount++;
         }
       });
       
-      return { completedCount, totalCount };
+      if (totalCount === 0) return 0;
+      
+      const completionRate = completedCount / totalCount;
+      return Math.round(completionRate * 15); // 0-15 points based on completion rate
     };
 
-    // Get color based on mindfulness score and habit completion
+    // Get meal effects score for a specific date (0-25 points)
+    const getMealEffectsScoreForDate = (date) => {
+      const dateStr = date.toLocaleDateString('en-CA');
+      const dayMeals = safeMeals.filter(meal => {
+        const mealDate = new Date(meal.ts).toLocaleDateString('en-CA');
+        return mealDate === dateStr;
+      });
+      
+      if (dayMeals.length === 0) return 0;
+      
+      let totalScore = 0;
+      let mealCount = 0;
+      
+      dayMeals.forEach(meal => {
+        if (!meal.computed?.effects) return;
+        
+        const effects = meal.computed.effects;
+        let mealScore = 0;
+        
+        // Positive effects (0-5 points each)
+        const positiveEffects = ['strength', 'antiInflammatory', 'immunity', 'gutFriendly', 'energizing'];
+        positiveEffects.forEach(effect => {
+          if (effects[effect]?.score) {
+            mealScore += Math.round(effects[effect].score / 2); // Convert 0-10 to 0-5
+          }
+        });
+        
+        // Negative effects (penalty)
+        const negativeEffects = ['inflammation', 'fatForming'];
+        negativeEffects.forEach(effect => {
+          if (effects[effect]?.score) {
+            mealScore -= Math.round(effects[effect].score / 2); // Convert 0-10 to 0-5 penalty
+          }
+        });
+        
+        totalScore += Math.max(0, mealScore); // Don't go below 0
+        mealCount++;
+      });
+      
+      // Average score per meal, capped at 5 points per meal
+      const averageScore = mealCount > 0 ? totalScore / mealCount : 0;
+      return Math.min(Math.round(averageScore * dayMeals.length), 25);
+    };
+
+    // Get impulse buy penalty for a specific date (0 to -10 points)
+    const getImpulseBuyPenaltyForDate = (date) => {
+      const dateStr = date.toLocaleDateString('en-CA');
+      
+      // Check for expenses that were explicitly marked as impulse buys by the user
+      const dayExpenses = safeExpenses.filter(expense => {
+        const expenseDate = new Date(expense.date).toLocaleDateString('en-CA');
+        return expenseDate === dateStr;
+      });
+      
+      if (dayExpenses.length === 0) return 0;
+      
+      // Only consider expenses explicitly marked as impulse buys by the user
+      const impulseExpenses = dayExpenses.filter(expense => 
+        expense.impulseBuy === true
+      );
+      
+      if (impulseExpenses.length === 0) return 0;
+      
+      // Calculate penalty based on number and amount of impulse expenses
+      let penalty = 0;
+      impulseExpenses.forEach(expense => {
+        // Penalty based on amount (more expensive = more penalty)
+        if (expense.amount > 1000) penalty += 3;
+        else if (expense.amount > 500) penalty += 2;
+        else if (expense.amount > 100) penalty += 1;
+        else penalty += 0.5;
+      });
+      
+      return Math.min(penalty, 10); // Cap at 10 points penalty
+    };
+
+    // Get color based on comprehensive daily score
     const getDayColor = (date) => {
       // Validate date input
       if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
@@ -223,39 +329,27 @@ const MonthGrid = ({
         return '#0f1419'; // Default dark color for invalid dates
       }
 
-      const mindfulnessScore = getMindfulnessScoreForDate(date);
-      const habitCompletion = getHabitCompletionForDate(date);
+      const dailyScore = getComprehensiveDailyScore(date);
+      const totalScore = dailyScore.totalScore;
       
-      // If we have habits and some are completed, show habit completion color
-      if (habitCompletion.totalCount > 0) {
-        const completionRate = habitCompletion.completedCount / habitCompletion.totalCount;
-        
-        if (completionRate === 0) return '#0f1419'; // No habits completed - very dark
-        if (completionRate <= 0.25) return '#1E49C9'; // Primary blue - low completion
-        if (completionRate <= 0.5) return '#1E49C9'; // Primary blue - medium-low completion
-        if (completionRate <= 0.75) return '#1E49C9'; // Primary blue - medium-high completion
-        if (completionRate <= 0.9) return '#1E49C9'; // Primary blue - high completion
-        return '#1E49C9'; // Primary blue - excellent completion
-      }
-      
-      // Fall back to mindfulness score color if no habits
-      if (mindfulnessScore === 0) return '#0f1419'; // Much darker color for no activity - very visible
-      if (mindfulnessScore <= 2) return '#1E49C9'; // Primary blue
-      if (mindfulnessScore <= 4) return '#1E49C9'; // Primary blue
-      if (mindfulnessScore <= 6) return '#1E49C9'; // Primary blue
-      if (mindfulnessScore <= 8) return '#1E49C9'; // Primary blue
-      if (mindfulnessScore <= 10) return '#1E49C9'; // Primary blue
-      if (mindfulnessScore <= 12) return '#1E49C9'; // Primary blue
-      if (mindfulnessScore <= 14) return '#1E49C9'; // Primary blue
-      if (mindfulnessScore <= 16) return '#1E49C9'; // Primary blue
-      if (mindfulnessScore <= 18) return '#1E49C9'; // Primary blue
-      if (mindfulnessScore <= 20) return '#1E49C9'; // Primary blue
-      if (mindfulnessScore <= 22) return '#1E49C9'; // Primary blue
-      if (mindfulnessScore <= 24) return '#1E49C9'; // Primary blue
-      return '#1E49C9'; // Primary blue for highest scores
+      // Color gradient based on total score (0-85 max possible) - Red to Yellow to Green
+      if (totalScore === 0) return 'transparent'; // No activity - blank (nothing logged)
+      if (totalScore <= 5) return '#ef4444'; // Very low - red
+      if (totalScore <= 10) return '#f87171'; // Low - light red
+      if (totalScore <= 15) return '#fbbf24'; // Medium-low - yellow-orange
+      if (totalScore <= 20) return '#fde047'; // Medium - yellow
+      if (totalScore <= 25) return '#fef08a'; // Medium-high - light yellow
+      if (totalScore <= 30) return '#fef3c7'; // High - very light yellow
+      if (totalScore <= 35) return '#d1fae5'; // Very high - very light green
+      if (totalScore <= 40) return '#a7f3d0'; // Excellent - light green
+      if (totalScore <= 45) return '#6ee7b7'; // Outstanding - medium green
+      if (totalScore <= 50) return '#34d399'; // Exceptional - green
+      if (totalScore <= 60) return '#10b981'; // Amazing - emerald green
+      if (totalScore <= 70) return '#059669'; // Incredible - dark green
+      return '#047857'; // Perfect - darkest green (best)
     };
 
-    // Generate all days for the past 12 months
+    // Generate all days for the current year (January to current month)
     const generateAllDays = () => {
       console.log('🔍 generateAllDays function called!');
       const allDays = [];
@@ -273,7 +367,7 @@ const MonthGrid = ({
       
       const currentDateCopy = new Date(startDate.getTime()); // Create a proper copy
       
-      console.log(`🔍 Generating days from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+      console.log(`🔍 Generating days from ${startDate.toISOString()} (Jan 1st) to ${endDate.toISOString()} (end of current month)`);
       console.log(`🔍 mindfulnessCheckins count: ${mindfulnessCheckins.length}`);
       
       let dayCount = 0;
@@ -289,14 +383,14 @@ const MonthGrid = ({
         const dayDateStr = currentDateCopy.toLocaleDateString('en-CA');
         console.log(`🔍 Day ${dayCount}: Processing ${dayDateStr}`);
         
-        const mindfulnessScore = getMindfulnessScoreForDate(currentDateCopy);
+        const dailyScore = getComprehensiveDailyScore(currentDateCopy);
         
         // Create a new Date object for the day data
         const dayDate = new Date(currentDateCopy.getTime());
         
         allDays.push({
           date: dayDate,
-          mindfulnessScore,
+          dailyScore,
           isToday: dayDate.toDateString() === new Date().toDateString()
         });
         
@@ -375,28 +469,6 @@ const MonthGrid = ({
 
     return (
       <div className="w-full">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-[#E8EEF2]">
-            Mindfulness Activity
-          </h3>
-          <div className="flex gap-2">
-            <button
-              onClick={() => onMonthChange && onMonthChange(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1))}
-              className="p-2 hover:bg-[#2A313A] rounded-md transition-colors text-[#94A3B8] hover:text-[#E8EEF2]"
-              title="Previous Month"
-            >
-              ←
-            </button>
-            <button
-              onClick={() => onMonthChange && onMonthChange(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1))}
-              className="p-2 hover:bg-[#2A313A] rounded-md transition-colors text-[#94A3B8] hover:text-[#E8EEF2]"
-              title="Next Month"
-            >
-              →
-            </button>
-          </div>
-        </div>
 
         {/* GitHub-style Contribution Grid */}
         <div className="flex gap-1">
@@ -423,8 +495,19 @@ const MonthGrid = ({
                 {/* Days Grid for this month */}
                 <div className="grid grid-cols-7 gap-0.5">
                   {monthData.days.map((dayData, dayIndex) => {
-                    const { date, mindfulnessScore, isToday } = dayData;
+                    const { date, dailyScore, isToday } = dayData;
                     const backgroundColor = getDayColor(date);
+                    const { totalScore, breakdown } = dailyScore;
+
+                    const tooltipText = totalScore === 0 
+                      ? `${date.toLocaleDateString()}\nNo activity logged for this day`
+                      : `${date.toLocaleDateString()}
+Total Score: ${totalScore}/85
+• Mindfulness: ${breakdown.mindfulness}/25
+• Goal Progress: ${breakdown.goalProgress}/20
+• Habits: ${breakdown.habitCompletion}/15
+• Meal Effects: ${breakdown.mealEffects}/25
+• Impulse Penalty: ${breakdown.impulseBuyPenalty}`;
 
                     return (
                       <div
@@ -432,9 +515,9 @@ const MonthGrid = ({
                         onClick={() => onDateSelect && onDateSelect(date)}
                         className={`w-2.5 h-2.5 rounded-sm cursor-pointer transition-all duration-200 hover:scale-125 hover:ring-2 hover:ring-blue-400 ${
                           isToday ? 'ring-2 ring-blue-500 ring-offset-1' : ''
-                        } ${mindfulnessScore === 0 ? 'border border-[#2A313A]' : ''}`}
+                        } ${totalScore === 0 ? 'border border-[#2A313A] bg-transparent' : ''}`}
                         style={{ backgroundColor }}
-                        title={`${date.toLocaleDateString()}: Mindfulness Score ${mindfulnessScore}`}
+                        title={tooltipText}
                       />
                     );
                   })}
@@ -445,20 +528,33 @@ const MonthGrid = ({
         </div>
 
         {/* Legend */}
-        <div className="mt-4 flex items-center justify-end gap-3">
-          <span className="text-xs text-[#94A3B8]">Low</span>
-          <div className="flex gap-0.5">
-            <div className="w-2.5 h-2.5 bg-[#0f1419] rounded-sm border border-[#2A313A]" title="No Entry"></div>
-            <div className="w-2.5 h-2.5 bg-[#1e3a8a] rounded-sm border border-[#2A313A]"></div>
-            <div className="w-2.5 h-2.5 bg-[#2563eb] rounded-sm border border-[#2A313A]"></div>
-            <div className="w-2.5 h-2.5 bg-[#60a5fa] rounded-sm border border-[#2A313A]"></div>
-            <div className="w-2.5 h-2.5 bg-[#c7d2fe] rounded-sm border border-[#2A313A]"></div>
-            <div className="w-2.5 h-2.5 bg-[#fef3c7] rounded-sm border border-[#2A313A]"></div>
-            <div className="w-2.5 h-2.5 bg-[#fde68a] rounded-sm border border-[#2A313A]"></div>
-            <div className="w-2.5 h-2.5 bg-[#fbbf24] rounded-sm border border-[#2A313A]"></div>
-            <div className="w-2.5 h-2.5 bg-[#eab308] rounded-sm border border-[#2A313A]"></div>
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-xs text-[#94A3B8]">
+            <div className="font-medium mb-1">Daily Activity Score (0-85)</div>
+            <div className="text-xs opacity-75">
+              Mindfulness (25) + Goals (20) + Habits (15) + Meals (25) - User-marked Impulse Buys (10)
+            </div>
           </div>
-          <span className="text-xs text-[#94A3B8]">High</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-[#94A3B8]">Worst</span>
+            <div className="flex gap-0.5">
+              <div className="w-2.5 h-2.5 bg-transparent rounded-sm border border-[#2A313A]" title="No Activity (0)"></div>
+              <div className="w-2.5 h-2.5 bg-[#ef4444] rounded-sm border border-[#2A313A]" title="Very Low (1-5)"></div>
+              <div className="w-2.5 h-2.5 bg-[#f87171] rounded-sm border border-[#2A313A]" title="Low (6-10)"></div>
+              <div className="w-2.5 h-2.5 bg-[#fbbf24] rounded-sm border border-[#2A313A]" title="Medium-Low (11-15)"></div>
+              <div className="w-2.5 h-2.5 bg-[#fde047] rounded-sm border border-[#2A313A]" title="Medium (16-20)"></div>
+              <div className="w-2.5 h-2.5 bg-[#fef08a] rounded-sm border border-[#2A313A]" title="Medium-High (21-25)"></div>
+              <div className="w-2.5 h-2.5 bg-[#fef3c7] rounded-sm border border-[#2A313A]" title="High (26-30)"></div>
+              <div className="w-2.5 h-2.5 bg-[#d1fae5] rounded-sm border border-[#2A313A]" title="Very High (31-35)"></div>
+              <div className="w-2.5 h-2.5 bg-[#a7f3d0] rounded-sm border border-[#2A313A]" title="Excellent (36-40)"></div>
+              <div className="w-2.5 h-2.5 bg-[#6ee7b7] rounded-sm border border-[#2A313A]" title="Outstanding (41-45)"></div>
+              <div className="w-2.5 h-2.5 bg-[#34d399] rounded-sm border border-[#2A313A]" title="Exceptional (46-50)"></div>
+              <div className="w-2.5 h-2.5 bg-[#10b981] rounded-sm border border-[#2A313A]" title="Amazing (51-60)"></div>
+              <div className="w-2.5 h-2.5 bg-[#059669] rounded-sm border border-[#2A313A]" title="Incredible (61-70)"></div>
+              <div className="w-2.5 h-2.5 bg-[#047857] rounded-sm border border-[#2A313A]" title="Best (71-85)"></div>
+            </div>
+            <span className="text-xs text-[#94A3B8]">Best</span>
+          </div>
         </div>
       </div>
     );

@@ -99,7 +99,7 @@ const FoodSearch = () => {
 
       {/* Error Display */}
       {error && (
-        <Card variant="error" className="p-4">
+        <Card variant="elevated" className="p-4">
           <p className="text-red-600">{error}</p>
         </Card>
       )}
@@ -111,7 +111,7 @@ const FoodSearch = () => {
         <>
           {/* No Results */}
           {!loading && query && !error && (
-            <Card variant="base" className="p-8 text-center">
+            <Card variant="elevated" className="p-8 text-center">
               <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-700 mb-2">No relevant results found</h3>
               <p className="text-gray-500 mb-4">
@@ -141,7 +141,7 @@ const FoodSearch = () => {
 
           {/* Search Tips - Only show when no query and no results */}
           {!query && results.length === 0 && (
-            <Card variant="base" className="p-8">
+            <Card variant="elevated" className="p-8">
               <div className="text-center mb-6">
                 <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">Ready to Search?</h3>

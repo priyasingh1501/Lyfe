@@ -166,6 +166,7 @@ async function fetchExternalFoodData(externalId) {
  * POST /api/meals
  */
 router.post('/', auth, async (req, res) => {
+  const startTime = Date.now();
   try {
     console.log('🍽️ MEAL CREATION REQUEST RECEIVED');
     console.log('🍽️ Request body:', JSON.stringify(req.body, null, 2));
@@ -207,14 +208,23 @@ router.post('/', auth, async (req, res) => {
 
     // Handle external foods by creating temporary food objects
     const externalFoods = [];
-    for (const item of externalFoodIds) {
-      // For now, we'll need to fetch the external food data
-      // This is a simplified approach - in production, you might want to cache this
-      const externalFood = await fetchExternalFoodData(item.foodId);
-      if (externalFood) {
-        foodMap.set(item.foodId, externalFood);
-        externalFoods.push(externalFood);
-      }
+    if (externalFoodIds.length > 0) {
+      console.log('🔍 Fetching external foods in parallel...');
+      const externalFoodPromises = externalFoodIds.map(item => 
+        fetchExternalFoodData(item.foodId).then(food => ({ item, food }))
+      );
+      
+      const externalFoodResults = await Promise.allSettled(externalFoodPromises);
+      
+      externalFoodResults.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value.food) {
+          const { item, food } = result.value;
+          foodMap.set(item.foodId, food);
+          externalFoods.push(food);
+        } else {
+          console.warn('⚠️ Failed to fetch external food:', externalFoodIds[index].foodId, result.reason?.message);
+        }
+      });
     }
 
     // Check if all items were found
@@ -257,8 +267,9 @@ router.post('/', auth, async (req, res) => {
       // Check if OpenAI API key is available
       if (!process.env.OPENAI_API_KEY) {
         console.warn('⚠️ OPENAI_API_KEY not found, skipping AI analysis');
-        throw new Error('OpenAI API key not configured');
-      }
+        // Skip AI analysis entirely instead of throwing error
+        enhancedEffects = ruleBasedEffects;
+      } else {
 
       // Get user profile for AI analysis (you might want to fetch this from user model)
       const userProfile = {
@@ -281,10 +292,11 @@ router.post('/', auth, async (req, res) => {
       
       enhancedEffects = await aiService.analyzeMealEffects(mealDataForAI, userProfile, ruleBasedEffects);
       
-      console.log('✅ AI meal analysis completed');
-      console.log('🤖 Enhanced effects after AI:', JSON.stringify(enhancedEffects, null, 2));
-      console.log('🤖 AI insights found:', !!enhancedEffects.aiInsights);
-      console.log('🤖 Effects with AI insights:', Object.keys(enhancedEffects).filter(key => enhancedEffects[key]?.aiInsights));
+        console.log('✅ AI meal analysis completed');
+        console.log('🤖 Enhanced effects after AI:', JSON.stringify(enhancedEffects, null, 2));
+        console.log('🤖 AI insights found:', !!enhancedEffects.aiInsights);
+        console.log('🤖 Effects with AI insights:', Object.keys(enhancedEffects).filter(key => enhancedEffects[key]?.aiInsights));
+      }
     } catch (aiError) {
       console.error('⚠️ AI analysis failed, using rule-based effects:', aiError.message);
       console.error('⚠️ AI error details:', aiError);
@@ -315,13 +327,15 @@ router.post('/', auth, async (req, res) => {
     // Populate food details for response
     await meal.populate('items.foodId');
 
+    const totalTime = Date.now() - startTime;
     console.log('📤 Sending meal response:', {
       mealId: meal._id,
       hasComputed: !!meal.computed,
       hasEffects: !!meal.computed?.effects,
       effectsKeys: meal.computed?.effects ? Object.keys(meal.computed.effects) : [],
       hasAiInsights: !!meal.computed?.aiInsights,
-      aiInsights: meal.computed?.aiInsights
+      aiInsights: meal.computed?.aiInsights,
+      totalTimeMs: totalTime
     });
 
     res.status(201).json({

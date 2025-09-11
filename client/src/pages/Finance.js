@@ -30,6 +30,8 @@ const Finance = () => {
   const [showCategoryGoalsForm, setShowCategoryGoalsForm] = useState(false);
   const [showAddGoalForm, setShowAddGoalForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
+  const [showSubscriptionForm, setShowSubscriptionForm] = useState(false);
+  const [editingSubscription, setEditingSubscription] = useState(null);
   const [categoryGoals, setCategoryGoals] = useState({
     food: 2000,
     transportation: 1500,
@@ -46,7 +48,7 @@ const Finance = () => {
   const [newGoalForm, setNewGoalForm] = useState({
     category: '',
     amount: '',
-    period: 'monthly',
+    period: 'monthly', // Always monthly
     notes: '',
     color: '#3CCB7F'
   });
@@ -56,12 +58,20 @@ const Finance = () => {
     category: '',
     description: '',
     vendor: '',
-    paymentMethod: '',
     source: '',
     date: new Date().toISOString().split('T')[0],
     notes: '',
     billImage: null,
-    billImageUrl: ''
+    billImageUrl: '',
+    impulseBuy: false
+  });
+  const [subscriptionForm, setSubscriptionForm] = useState({
+    name: '',
+    category: '',
+    amount: '',
+    frequency: 'monthly',
+    notes: '',
+    color: '#1E49C9'
   });
 
   useEffect(() => {
@@ -96,17 +106,70 @@ const Finance = () => {
     }
   };
 
+  // Map frontend expense goal categories to backend-compatible categories
+  const mapExpenseGoalToBackendCategory = (frontendCategory) => {
+    const categoryMap = {
+      'nourishing_food': 'food',
+      'safe_convenient_travel': 'transportation',
+      'safe_comfortable_home': 'housing',
+      'living_essentials': 'utilities',
+      'healthcare_wellbeing': 'healthcare',
+      'enjoy_life': 'entertainment',
+      'value_shopping': 'shopping',
+      'learning_growing': 'education',
+      'exploring_places': 'travel',
+      'prepare_unexpected': 'insurance',
+      'other': 'other'
+    };
+    return categoryMap[frontendCategory] || 'other';
+  };
+
+  // Map backend categories back to frontend display names
+  const mapBackendCategoryToDisplayName = (backendCategory) => {
+    const reverseMap = {
+      'food': 'Nourishing food',
+      'transportation': 'Safe, convenient travel',
+      'housing': 'Safe, comfortable and peaceful home',
+      'utilities': 'Maintain living essentials',
+      'healthcare': 'Long term wellbeing and protective healthcare',
+      'entertainment': 'Enjoy life, have fun',
+      'shopping': 'Value, comfort or joyful shopping',
+      'education': 'Learning, growing and investing in my future',
+      'travel': 'Exploring new places',
+      'insurance': 'Prepare for the unexpected',
+      'other': 'Other'
+    };
+    return reverseMap[backendCategory] || 'Other';
+  };
+
   // Expense Goals Management Functions
   const handleAddGoal = async (e) => {
     e.preventDefault();
+    console.log('🎯 Add Goal form submitted:', newGoalForm);
+    
+    // Validate required fields
+    if (!newGoalForm.category || !newGoalForm.amount || isNaN(newGoalForm.amount) || newGoalForm.amount <= 0) {
+      toast.error('Please fill in all required fields with valid values');
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('token');
+      
+      // Map frontend category to backend category
+      const backendCategory = mapExpenseGoalToBackendCategory(newGoalForm.category);
+      const goalData = {
+        ...newGoalForm,
+        category: backendCategory
+      };
+      
+      console.log('🎯 Mapped goal data:', goalData);
       
       if (editingGoal) {
         // Update existing goal
         const response = await axios.put(
           buildApiUrl(`/api/finance/goals/${editingGoal._id}`),
-          newGoalForm,
+          goalData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
@@ -125,7 +188,7 @@ const Finance = () => {
         setEditingGoal(null);
       } else {
         // Check if goal already exists for this category
-        const existingGoal = expenseGoals.find(goal => goal.category === newGoalForm.category);
+        const existingGoal = expenseGoals.find(goal => goal.category === backendCategory);
         if (existingGoal) {
           toast.error('A goal already exists for this category. Please edit the existing goal instead.');
           return;
@@ -134,7 +197,7 @@ const Finance = () => {
         // Create new goal
         const response = await axios.post(
           buildApiUrl('/api/finance/goals'),
-          newGoalForm,
+          goalData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
@@ -160,6 +223,7 @@ const Finance = () => {
       toast.success(editingGoal ? 'Goal updated successfully!' : 'Goal added successfully!');
     } catch (error) {
       console.error('Error managing expense goal:', error);
+      console.error('Error details:', error.response?.data);
       toast.error(error.response?.data?.message || 'Error managing expense goal');
     }
   };
@@ -208,7 +272,7 @@ const Finance = () => {
     setNewGoalForm({
       category: '',
       amount: '',
-      period: 'monthly',
+      period: 'monthly', // Always monthly
       notes: '',
       color: '#3CCB7F'
     });
@@ -251,11 +315,11 @@ const Finance = () => {
         category: '',
         description: '',
         vendor: '',
-        paymentMethod: '',
         date: new Date().toISOString().split('T')[0],
         notes: '',
         billImage: null,
-        billImageUrl: ''
+        billImageUrl: '',
+        impulseBuy: false
       });
       
       fetchFinancialData();
@@ -280,6 +344,73 @@ const Finance = () => {
     }
   };
 
+  // Map expense goal categories to Finance model categories
+  const mapExpenseGoalToFinanceCategory = (expenseGoalCategory) => {
+    const categoryMap = {
+      'nourishing_food': 'food',
+      'safe_convenient_travel': 'transportation',
+      'safe_comfortable_home': 'housing',
+      'living_essentials': 'utilities',
+      'healthcare_wellbeing': 'healthcare',
+      'enjoy_life': 'entertainment',
+      'value_shopping': 'shopping',
+      'learning_growing': 'education',
+      'exploring_places': 'travel',
+      'prepare_unexpected': 'other',
+      'other': 'other'
+    };
+    return categoryMap[expenseGoalCategory] || 'other';
+  };
+
+  const handleSubscriptionSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const endpoint = buildApiUrl('/api/finance/expenses');
+      
+      const subscriptionData = {
+        amount: subscriptionForm.amount,
+        category: mapExpenseGoalToFinanceCategory(subscriptionForm.category),
+        description: subscriptionForm.name,
+        vendor: subscriptionForm.name, // Use name as vendor for subscriptions
+        date: new Date().toISOString().split('T')[0],
+        notes: `Subscription | Frequency: ${subscriptionForm.frequency} | Goal: ${expenseGoalCategories[subscriptionForm.category]}${subscriptionForm.notes ? ` | ${subscriptionForm.notes}` : ''}`,
+        isRecurring: true,
+        recurringPattern: subscriptionForm.frequency,
+        tags: ['subscription', subscriptionForm.category]
+      };
+      
+      if (editingSubscription) {
+        await axios.put(`${endpoint}/${editingSubscription._id}`, subscriptionData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success('Subscription updated successfully!');
+      } else {
+        await axios.post(endpoint, subscriptionData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success('Subscription added successfully!');
+      }
+      
+      setShowSubscriptionForm(false);
+      setEditingSubscription(null);
+      setSubscriptionForm({
+        name: '',
+        category: '',
+        amount: '',
+        frequency: 'monthly',
+        notes: '',
+        color: '#1E49C9'
+      });
+      
+      // Refresh data
+      fetchFinancialData();
+    } catch (error) {
+      console.error('Error saving subscription:', error);
+      toast.error('Failed to save subscription. Please try again.');
+    }
+  };
+
   const handleEdit = (item) => {
     setEditingItem(item);
     setFormData({
@@ -287,11 +418,11 @@ const Finance = () => {
       category: item.category || '',
       description: item.description || '',
       vendor: item.vendor || '',
-      paymentMethod: item.paymentMethod || '',
       date: new Date(item.date).toISOString().split('T')[0],
       notes: item.notes || '',
       billImage: null,
-      billImageUrl: item.billImage?.url || item.billImageUrl || ''
+      billImageUrl: item.billImage?.url || item.billImageUrl || '',
+      impulseBuy: item.impulseBuy || false
     });
     setShowAddForm(true);
   };
@@ -315,25 +446,51 @@ const Finance = () => {
       expense.date.startsWith(currentMonth)
     );
 
-    // Group expenses by category for current month
-    const categoryExpenses = {};
-    currentMonthExpenses.forEach(expense => {
-      const category = expense.category || 'other';
-      categoryExpenses[category] = (categoryExpenses[category] || 0) + expense.amount;
-    });
-
-    // Calculate progress for each category
-    return Object.entries(categoryGoals).map(([category, goal]) => {
-      const spent = categoryExpenses[category] || 0;
-      const percentage = goal > 0 ? Math.round((spent / goal) * 100) : 0;
+    // Only show goals that users have actually added (from expenseGoals)
+    return expenseGoals.map(goal => {
+      const categoryExpenses = currentMonthExpenses.filter(expense => 
+        expense.category === goal.category
+      );
+      
+      const spent = categoryExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+      const impulseBuys = categoryExpenses.filter(expense => expense.impulseBuy).length;
+      const totalSpends = categoryExpenses.length;
+      const percentage = goal.amount > 0 ? Math.round((spent / goal.amount) * 100) : 0;
       
       return {
-        name: category,
-        goal,
+        name: goal.category,
+        displayName: mapBackendCategoryToDisplayName(goal.category),
+        goal: goal.amount,
         spent,
-        percentage
+        percentage,
+        impulseBuys,
+        totalSpends,
+        color: goal.color || '#1E49C9'
       };
     }).sort((a, b) => b.spent - a.spent); // Sort by amount spent
+  };
+
+  // Calculate total impulse buys for current month
+  const getCurrentMonthImpulseBuys = () => {
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+    return expenses.filter(expense => 
+      expense.date.startsWith(currentMonth) && expense.impulseBuy
+    ).length;
+  };
+
+  // Expense goal category mapping
+  const expenseGoalCategories = {
+    'nourishing_food': 'Nourishing food',
+    'safe_convenient_travel': 'Safe, convenient travel',
+    'safe_comfortable_home': 'Safe, comfortable and peaceful home',
+    'living_essentials': 'Maintain living essentials',
+    'healthcare_wellbeing': 'Long term wellbeing and protective healthcare',
+    'enjoy_life': 'Enjoy life, have fun',
+    'value_shopping': 'Value, comfort or joyful shopping',
+    'learning_growing': 'Learning, growing and investing in my future',
+    'exploring_places': 'Exploring new places',
+    'prepare_unexpected': 'Prepare for the unexpected',
+    'other': 'Other'
   };
 
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
@@ -618,12 +775,16 @@ const Finance = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="relative w-full max-w-full overflow-x-auto p-4 lg:p-0"
+      className="p-6"
     >
-      {/* Header - Mission Card */}
+      {/* Bento Grid Layout - Pinterest Style */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-[minmax(200px,auto)] [&>*:nth-child(odd)]:animate-fade-in [&>*:nth-child(even)]:animate-fade-in-delayed">
+        
+        {/* Header - Mission Card - Full width */}
+        <div className="md:col-span-2 lg:col-span-3 xl:col-span-4">
       <Card 
         variant="elevated" 
-        className="mb-6"
+            className="h-full"
         title="FINANCIAL MISSION"
         subtitle="Track expenses, manage budgets, and achieve financial goals"
         icon={<DollarSign className="h-5 w-5 text-[#1E49C9]" />}
@@ -649,59 +810,102 @@ const Finance = () => {
           </div>
           
           <div className="flex justify-center lg:justify-end">
+            {activeTab === 'subscriptions' ? (
+              <button
+                onClick={() => setShowSubscriptionForm(true)}
+                className={componentStyles.button.primary + " flex items-center gap-2"}
+              >
+                <Plus size={16} />
+                ADD SUBSCRIPTION
+              </button>
+            ) : (
             <button
               onClick={() => setShowAddForm(true)}
               className={componentStyles.button.primary + " flex items-center gap-2"}
             >
               <Plus size={16} />
-              ADD RECORD
+                ADD EXPENSE
             </button>
+            )}
           </div>
         </div>
       </Card>
+        </div>
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <>
-
-          {/* Monthly Expense Analysis */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             {/* Current Month */}
-            <Card 
-              variant="base"
-              title="CURRENT MONTH"
-              subtitle={new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              icon={<TrendingUp className="h-5 w-5 text-[#1E49C9]" />}
-            >
-              <div className="text-center">
+            <div className="col-span-1">
+              <Card className="h-full flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-[#1E49C9] bg-opacity-20 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-[#1E49C9]" />
+                    </div>
+                    <div>
+                      <h3 className="font-jakarta text-2xl leading-normal text-text-primary font-bold tracking-wide">
+                        CURRENT MONTH
+                      </h3>
+                      <p className="font-jakarta text-lg leading-loose text-text-secondary">
+                        {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 flex items-center justify-center">
                 <p className="text-3xl font-bold text-[#1E49C9] font-mono">
                   {formatCurrency(summary.currentMonthExpenses || 0)}
                 </p>
               </div>
             </Card>
+            </div>
             
             {/* Previous Month */}
-            <Card 
-              variant="base"
-              title="PREVIOUS MONTH"
-              subtitle={new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              icon={<TrendingDown className="h-5 w-5 text-[#1E49C9]" />}
-            >
-              <div className="text-center">
+            <div className="col-span-1">
+              <Card className="h-full flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-[#1E49C9] bg-opacity-20 rounded-lg">
+                      <TrendingDown className="h-5 w-5 text-[#1E49C9]" />
+                    </div>
+                    <div>
+                      <h3 className="font-jakarta text-2xl leading-normal text-text-primary font-bold tracking-wide">
+                        PREVIOUS MONTH
+                      </h3>
+                      <p className="font-jakarta text-lg leading-loose text-text-secondary">
+                        {new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 flex items-center justify-center">
                 <p className="text-3xl font-bold text-[#1E49C9] font-mono">
                   {formatCurrency(summary.previousMonthExpenses || 0)}
                 </p>
               </div>
             </Card>
+            </div>
             
             {/* Monthly Average */}
-            <Card 
-              variant="base"
-              title="MONTHLY AVERAGE"
-              subtitle="Last 6 months"
-              icon={<DollarSign className="h-5 w-5 text-[#1E49C9]" />}
-            >
-              <div className="text-center">
+            <div className="col-span-1">
+              <Card className="h-full flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-[#1E49C9] bg-opacity-20 rounded-lg">
+                      <DollarSign className="h-5 w-5 text-[#1E49C9]" />
+                    </div>
+                    <div>
+                      <h3 className="font-jakarta text-2xl leading-normal text-text-primary font-bold tracking-wide">
+                        MONTHLY AVERAGE
+                      </h3>
+                      <p className="font-jakarta text-lg leading-loose text-text-secondary">
+                        Last 6 months
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 flex items-center justify-center">
                 <p className="text-3xl font-bold text-[#1E49C9] font-mono">
                   {formatCurrency(summary.monthlyAverage || 0)}
                 </p>
@@ -709,50 +913,57 @@ const Finance = () => {
             </Card>
           </div>
 
-          {/* Monthly Trend Chart */}
-          <Card 
-            variant="base" 
-            className="mb-6"
-            title="MONTHLY TREND"
-            subtitle="Track your spending patterns over time"
-            icon={<TrendingUp className="h-5 w-5 text-[#1E49C9]" />}
-          >
-            <div className="flex items-end justify-between h-20 space-x-2 min-w-max">
-              {Array.from({ length: 6 }, (_, i) => {
-                const month = new Date(new Date().getFullYear(), new Date().getMonth() - (5 - i), 1);
-                const monthKey = month.toISOString().slice(0, 7); // YYYY-MM format
-                
-                // Generate sample data for demonstration since monthlyExpenses might not exist
-                const monthExpense = summary.monthlyExpenses?.[monthKey] || Math.floor(Math.random() * 1000) + 100;
-                const maxExpense = Math.max(...Object.values(summary.monthlyExpenses || { 1: 1000, 2: 800, 3: 1200, 4: 900, 5: 1100, 6: 950 }), 1);
-                const height = maxExpense > 0 ? (monthExpense / maxExpense) * 100 : 0;
-                
-                return (
-                  <div key={monthKey} className="flex flex-col items-center group">
-                    <div 
-                      className="w-4 bg-[#1E49C9] rounded-t-md transition-all duration-300 hover:bg-[#1E49C9]/80 group-hover:scale-105"
-                      style={{ height: `${height}%` }}
-                      title={`${month.toLocaleDateString('en-US', { month: 'short' })}: ${formatCurrency(monthExpense)}`}
-                    ></div>
-                    <p className="text-xs text-text-secondary mt-2 font-mono">
-                      {month.toLocaleDateString('en-US', { month: 'short' })}
+            {/* Impulse Buys */}
+            <div className="col-span-1">
+              <Card className="h-full flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-[#FF6B6B] bg-opacity-20 rounded-lg">
+                      <CreditCard className="h-5 w-5 text-[#FF6B6B]" />
+                    </div>
+                    <div>
+                      <h3 className="font-jakarta text-2xl leading-normal text-text-primary font-bold tracking-wide">
+                        IMPULSE BUYS
+                      </h3>
+                      <p className="font-jakarta text-lg leading-loose text-text-secondary">
+                        {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                     </p>
                   </div>
-                );
-              })}
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <p className="text-3xl font-bold text-[#FF6B6B] font-mono">
+                    {getCurrentMonthImpulseBuys()}
+                  </p>
+                  <p className="text-sm text-text-secondary font-jakarta mt-1">
+                    this month
+                  </p>
             </div>
           </Card>
+            </div>
+
 
           {/* Category Goals vs Expenses */}
+            <div className="md:col-span-2 lg:col-span-3 xl:col-span-4">
           <Card 
             variant="base" 
-            className="mb-6"
-            title="CATEGORY GOALS VS EXPENSES"
-            subtitle="Monitor spending against your budget goals"
-            icon={<Target className="h-5 w-5 text-[#1E49C9]" />}
+                className="h-full"
           >
+                {/* Custom Header */}
             <div className="flex items-center justify-between mb-6">
-              <div></div>
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-[#1E49C9] bg-opacity-20 rounded-lg">
+                      <Target className="h-5 w-5 text-[#1E49C9]" />
+                    </div>
+                    <div>
+                      <h3 className="font-jakarta text-2xl leading-normal text-text-primary font-bold tracking-wide">
+                        CATEGORY GOALS VS EXPENSES
+                      </h3>
+                      <p className="font-jakarta text-lg leading-loose text-text-secondary">
+                        Monitor spending against your budget goals
+                      </p>
+                    </div>
+                  </div>
               <div className="flex items-center space-x-3">
                 <button 
                   onClick={() => setShowAddGoalForm(true)}
@@ -764,34 +975,26 @@ const Finance = () => {
                   onClick={() => setShowCategoryGoalsForm(true)}
                   className={componentStyles.button.outline + " text-sm"}
                 >
-                  SET GOALS
+                      EDIT EXPENSE GOALS
                 </button>
               </div>
             </div>
             
             <div className="space-y-3">
-              {getCategoryGoalsWithProgress().map((category) => {
-                const existingGoal = expenseGoals.find(goal => goal.category === category.name);
-                const categoryExpenses = expenses.filter(expense => expense.category === category.name);
-                const spendCount = categoryExpenses.length;
-                
-                // Get category color
-                const getCategoryColor = (categoryName) => {
-                  const colors = {
-                    food: '#10B981', // green-500
-                    transportation: '#3B82F6', // blue-500
-                    shopping: '#8B5CF6', // purple-500
-                    entertainment: '#EC4899', // pink-500
-                    healthcare: '#EF4444', // red-500
-                    utilities: '#F59E0B', // yellow-500
-                    housing: '#6366F1', // indigo-500
-                    travel: '#06B6D4', // cyan-500
-                    education: '#F97316', // orange-500
-                    other: '#6B7280' // gray-500
-                  };
-                  return colors[categoryName] || '#6B7280';
-                };
-
+              {getCategoryGoalsWithProgress().length === 0 ? (
+                <div className="text-center py-8">
+                  <Target className="h-12 w-12 text-text-secondary mx-auto mb-4" />
+                  <p className="text-lg font-semibold text-text-primary font-jakarta mb-2">No expense goals set</p>
+                  <p className="text-sm text-text-secondary font-jakarta mb-4">Create your first expense goal to start tracking</p>
+                  <button
+                    onClick={() => setShowAddGoalForm(true)}
+                    className={componentStyles.button.primary}
+                  >
+                    ADD FIRST GOAL
+                  </button>
+                </div>
+              ) : (
+                getCategoryGoalsWithProgress().map((category) => {
                 return (
                   <div key={category.name} className="flex items-center justify-between p-4 bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.1)] rounded-lg backdrop-blur-sm hover:border-[#1E49C9]/30 transition-all duration-300">
                     {/* Left side - Glass circle with colored dot, name, and spend count */}
@@ -799,16 +1002,21 @@ const Finance = () => {
                       <div className="w-12 h-12 bg-[rgba(255,255,255,0.1)] border border-[rgba(255,255,255,0.2)] rounded-full flex items-center justify-center backdrop-blur-sm">
                         <div 
                           className="w-4 h-4 rounded-full" 
-                          style={{ backgroundColor: getCategoryColor(category.name) }}
+                            style={{ backgroundColor: category.color }}
                         ></div>
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide capitalize">
-                          {category.name}
+                          <h3 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide">
+                            {category.displayName}
                         </h3>
-                        <p className="text-sm text-text-secondary font-jakarta">
-                          {spendCount} Spend{spendCount !== 1 ? 's' : ''}
-                        </p>
+                          <div className="flex items-center space-x-3 text-sm text-text-secondary font-jakarta">
+                            <span>{category.totalSpends} Spend{category.totalSpends !== 1 ? 's' : ''}</span>
+                            {category.impulseBuys > 0 && (
+                              <span className="text-[#FFD200] font-medium">
+                                • {category.impulseBuys} Impulse{category.impulseBuys !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </div>
                       </div>
                     </div>
                     
@@ -817,39 +1025,35 @@ const Finance = () => {
                       <p className="text-lg font-bold text-[#1E49C9] font-mono">
                         {formatCurrency(category.spent)}
                       </p>
-                      {existingGoal ? (
                         <p className="text-sm text-text-secondary font-jakarta">
                           of {formatCurrency(category.goal)}
                         </p>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setNewGoalForm({
-                              ...newGoalForm,
-                              category: category.name
-                            });
-                            setShowAddGoalForm(true);
-                          }}
-                          className="text-sm text-[#1E49C9] hover:text-[#1E49C9]/80 font-jakarta transition-colors"
-                        >
-                          Set budget →
-                        </button>
-                      )}
+                        <div className="w-full bg-[rgba(255,255,255,0.1)] rounded-full h-2 mt-2">
+                          <div 
+                            className="bg-[#1E49C9] h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(category.percentage, 100)}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-text-secondary font-jakarta mt-1">
+                          {category.percentage}% of goal
+                        </p>
                     </div>
                   </div>
                 );
-              })}
+                })
+              )}
             </div>
           </Card>
-
-
+            </div>
 
         </>
       )}
 
       {activeTab === 'expenses' && (
+          <div className="md:col-span-2 lg:col-span-3 xl:col-span-4">
         <Card 
           variant="base"
+              className="h-full"
           title="ALL EXPENSES"
           subtitle="Complete list of your financial transactions"
           icon={<CreditCard className="h-5 w-5 text-[#1E49C9]" />}
@@ -862,7 +1066,7 @@ const Finance = () => {
                   <th className="text-left py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">DESCRIPTION</th>
                   <th className="text-left py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">CATEGORY</th>
                   <th className="text-left py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">VENDOR</th>
-                  <th className="text-left py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">PAYMENT</th>
+                  <th className="text-center py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">IMPULSE</th>
                   <th className="text-center py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">BILL IMAGE</th>
                   <th className="text-right py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">AMOUNT</th>
                   <th className="text-center py-3 px-4 font-medium text-text-primary font-jakarta tracking-wider text-sm">ACTIONS</th>
@@ -874,16 +1078,33 @@ const Finance = () => {
                     <tr key={expense._id} className="border-b border-[rgba(255,255,255,0.1)] hover:bg-[rgba(30,73,201,0.05)] transition-colors">
                       <td className="py-3 px-4 text-sm text-text-secondary font-jakarta">{formatDate(expense.date)}</td>
                       <td className="py-3 px-4">
+                        <div className="flex items-center space-x-2">
                         <p className="font-medium text-text-primary font-jakarta tracking-wide text-sm">{expense.description}</p>
+                          {expense.tags && expense.tags.includes('subscription') && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium font-jakarta tracking-wider bg-[rgba(30,73,201,0.2)] text-[#1E49C9] border border-[#1E49C9]/30">
+                              🔄 Subscription
+                            </span>
+                          )}
+                        </div>
                         {expense.notes && <p className="text-xs text-text-secondary font-jakarta mt-1">{expense.notes}</p>}
                       </td>
                       <td className="py-3 px-4">
                         <span className="px-3 py-1 rounded-full text-xs font-medium font-jakarta tracking-wider bg-[rgba(30,73,201,0.2)] text-[#1E49C9] border border-[#1E49C9]/30">
-                          {expense.category}
+                          {expense.tags && expense.tags.includes('subscription') && expense.tags[1] 
+                            ? expenseGoalCategories[expense.tags[1]] || expense.category
+                            : expenseGoalCategories[expense.category] || expense.category}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-sm text-text-secondary font-jakarta">{expense.vendor}</td>
-                      <td className="py-3 px-4 text-sm text-text-secondary font-jakarta">{expense.paymentMethod}</td>
+                      <td className="py-3 px-4 text-center">
+                        {expense.impulseBuy ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium font-jakarta tracking-wider bg-[rgba(255,210,0,0.2)] text-[#FFD200] border border-[#FFD200]/30">
+                            ⚡ Impulse
+                          </span>
+                        ) : (
+                          <span className="text-xs text-text-secondary font-jakarta">-</span>
+                        )}
+                      </td>
                       <td className="py-3 px-4 text-center">
                         {expense.billImage?.url || expense.billImageUrl ? (
                           <button
@@ -940,28 +1161,113 @@ const Finance = () => {
             </table>
           </div>
         </Card>
+          </div>
       )}
 
       {activeTab === 'subscriptions' && (
+          <div className="md:col-span-2 lg:col-span-3 xl:col-span-4">
         <Card 
           variant="base"
+              className="h-full"
           title="ACTIVE SUBSCRIPTIONS"
           subtitle="Manage your recurring payments and subscriptions"
           icon={<Target className="h-5 w-5 text-[#1E49C9]" />}
         >
+          {(() => {
+            const subscriptionExpenses = expenses.filter(expense => 
+              expense.tags && expense.tags.includes('subscription')
+            );
+            
+            return subscriptionExpenses.length > 0 ? (
+              <div className="space-y-4">
+                {subscriptionExpenses.map((subscription) => (
+                  <div key={subscription._id} className="flex items-center justify-between p-4 bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.1)] rounded-lg backdrop-blur-sm hover:border-[#1E49C9]/30 transition-all duration-300">
+                    {/* Left side - Subscription info */}
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-[rgba(30,73,201,0.2)] border border-[#1E49C9]/30 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <Target className="h-6 w-6 text-[#1E49C9]" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide">
+                          {subscription.description}
+                        </h3>
+                        <div className="flex items-center space-x-3 text-sm text-text-secondary font-jakarta">
+                          <span>{subscription.recurringPattern || 'monthly'}</span>
+                          <span>•</span>
+                          <span>{subscription.tags && subscription.tags[1] ? expenseGoalCategories[subscription.tags[1]] : subscription.category}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Right side - Amount and actions */}
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-[#1E49C9] font-mono">
+                        {formatCurrency(subscription.amount)}
+                      </p>
+                      <p className="text-sm text-text-secondary font-jakarta">
+                        per {subscription.recurringPattern || 'month'}
+                      </p>
+                      <div className="flex justify-end space-x-2 mt-2">
+                        <button
+                          onClick={() => {
+                            // Handle edit subscription
+                            setEditingSubscription(subscription);
+                            setSubscriptionForm({
+                              name: subscription.description,
+                              category: subscription.tags && subscription.tags[1] ? subscription.tags[1] : 'other',
+                              amount: subscription.amount,
+                              frequency: subscription.recurringPattern || 'monthly',
+                              notes: subscription.notes ? subscription.notes.split(' | ')[2] || '' : '',
+                              color: '#1E49C9'
+                            });
+                            setShowSubscriptionForm(true);
+                          }}
+                          className="text-[#1E49C9] hover:text-[#1E49C9]/80 transition-colors p-2 rounded-lg hover:bg-[rgba(30,73,201,0.1)]"
+                          title="Edit subscription"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(subscription._id, 'expense')}
+                          className="text-red-500 hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-red-500/10"
+                          title="Delete subscription"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                <div className="flex justify-center pt-4">
+                  <button
+                    onClick={() => setShowSubscriptionForm(true)}
+                    className={componentStyles.button.primary + " flex items-center gap-2"}
+                  >
+                    <Plus size={16} />
+                    ADD SUBSCRIPTION
+                  </button>
+                </div>
+              </div>
+            ) : (
           <div className="text-center py-12">
             <Target className="h-16 w-16 text-text-secondary mx-auto mb-4" />
             <p className="text-lg font-semibold text-text-primary font-jakarta mb-2">No subscriptions yet</p>
             <p className="text-sm text-text-secondary font-jakarta mb-6">Track your recurring payments and manage subscriptions</p>
             <button
-              onClick={() => setShowAddForm(true)}
+                  onClick={() => setShowSubscriptionForm(true)}
               className={componentStyles.button.primary}
             >
               ADD SUBSCRIPTION
             </button>
           </div>
+            );
+          })()}
         </Card>
+          </div>
       )}
+
+      </div>
 
       {/* Add/Edit Form Modal */}
       {showAddForm && (
@@ -986,11 +1292,11 @@ const Finance = () => {
                     category: '',
                     description: '',
                     vendor: '',
-                    paymentMethod: '',
                     date: new Date().toISOString().split('T')[0],
                     notes: '',
                     billImage: null,
-                    billImageUrl: ''
+                    billImageUrl: '',
+                    impulseBuy: false
                   });
                 }}
                 className="text-text-secondary hover:text-text-primary transition-colors p-1"
@@ -1064,20 +1370,17 @@ const Finance = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">PAYMENT METHOD</label>
-                <select
-                  value={formData.paymentMethod}
-                  onChange={(e) => setFormData({...formData, paymentMethod: e.target.value})}
-                  className={componentStyles.input.base}
-                >
-                  <option value="">Select Payment Method</option>
-                  <option value="cash">Cash</option>
-                  <option value="credit-card">Credit Card</option>
-                  <option value="debit-card">Debit Card</option>
-                  <option value="digital-wallet">Digital Wallet</option>
-                  <option value="bank-transfer">Bank Transfer</option>
-                  <option value="other">Other</option>
-                </select>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={formData.impulseBuy}
+                    onChange={(e) => setFormData({...formData, impulseBuy: e.target.checked})}
+                    className="w-4 h-4 text-[#1E49C9] bg-[rgba(0,0,0,0.2)] border-[rgba(255,255,255,0.2)] rounded focus:ring-[#1E49C9] focus:ring-2"
+                  />
+                  <span className="text-sm font-medium text-text-secondary font-jakarta tracking-wider">
+                    IMPULSE BUY
+                  </span>
+                </label>
               </div>
 
               <div>
@@ -1178,11 +1481,11 @@ const Finance = () => {
                       category: '',
                       description: '',
                       vendor: '',
-                      paymentMethod: '',
                       date: new Date().toISOString().split('T')[0],
                       notes: '',
                       billImage: null,
-                      billImageUrl: ''
+                      billImageUrl: '',
+                      impulseBuy: false
                     });
                   }}
                   className={componentStyles.button.outline + " flex-1"}
@@ -1295,16 +1598,16 @@ const Finance = () => {
 
       {/* Add Goal Form Modal */}
       {showAddGoalForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4">
-          <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-            {/* Film grain overlay */}
-            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-            
-            {/* Reason Strip */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] to-[#FFD200]"></div>
-            
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <motion.div 
+            className="bg-[rgba(0,0,0,0.8)] border border-[rgba(255,255,255,0.2)] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl backdrop-blur-[32px]"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-[#E8EEF2] font-oswald tracking-wide">
+              <h3 className="text-xl font-semibold text-text-primary font-jakarta tracking-wide">
                 {editingGoal ? 'EDIT EXPENSE GOAL' : 'ADD EXPENSE GOAL'}
               </h3>
               <button
@@ -1312,7 +1615,7 @@ const Finance = () => {
                   setShowAddGoalForm(false);
                   resetGoalForm();
                 }}
-                className="text-[#C9D1D9] hover:text-[#E8EEF2] transition-colors"
+                className="text-text-secondary hover:text-text-primary transition-colors p-1"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1321,74 +1624,64 @@ const Finance = () => {
             </div>
             
             <form onSubmit={handleAddGoal} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Category *</label>
+              <div className="relative">
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">EXPENSE GOALS *</label>
                 <select
                   value={newGoalForm.category}
                   onChange={(e) => setNewGoalForm({...newGoalForm, category: e.target.value})}
-                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                  className={`${componentStyles.input.base} w-full appearance-none cursor-pointer pr-10`}
                   required
                 >
-                  <option value="" className="bg-[#0A0C0F] text-[#E8EEF2]">Select a category</option>
-                  <option value="food" className="bg-[#0A0C0F] text-[#E8EEF2]">Food</option>
-                  <option value="transportation" className="bg-[#0A0C0F] text-[#E8EEF2]">Transportation</option>
-                  <option value="housing" className="bg-[#0A0C0F] text-[#E8EEF2]">Housing</option>
-                  <option value="utilities" className="bg-[#0A0C0F] text-[#E8EEF2]">Utilities</option>
-                  <option value="healthcare" className="bg-[#0A0C0F] text-[#E8EEF2]">Healthcare</option>
-                  <option value="entertainment" className="bg-[#0A0C0F] text-[#E8EEF2]">Entertainment</option>
-                  <option value="shopping" className="bg-[#0A0C0F] text-[#E8EEF2]">Shopping</option>
-                  <option value="education" className="bg-[#0A0C0F] text-[#E8EEF2]">Education</option>
-                  <option value="travel" className="bg-[#0A0C0F] text-[#E8EEF2]">Travel</option>
-                  <option value="insurance" className="bg-[#0A0C0F] text-[#E8EEF2]">Insurance</option>
-                  <option value="taxes" className="bg-[#0A0C0F] text-[#E8EEF2]">Taxes</option>
-                  <option value="debt" className="bg-[#0A0C0F] text-[#E8EEF2]">Debt</option>
-                  <option value="other" className="bg-[#0A0C0F] text-[#E8EEF2]">Other</option>
+                  <option value="" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Select an expense goal</option>
+                  <option value="nourishing_food" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Nourishing food</option>
+                  <option value="safe_convenient_travel" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Safe, convenient travel</option>
+                  <option value="safe_comfortable_home" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Safe, comfortable and peaceful home</option>
+                  <option value="living_essentials" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Maintain living essentials</option>
+                  <option value="healthcare_wellbeing" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Long term wellbeing and protective healthcare</option>
+                  <option value="enjoy_life" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Enjoy life, have fun</option>
+                  <option value="value_shopping" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Value, comfort or joyful shopping</option>
+                  <option value="learning_growing" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Learning, growing and investing in my future</option>
+                  <option value="exploring_places" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Exploring new places</option>
+                  <option value="prepare_unexpected" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Prepare for the unexpected</option>
+                  <option value="other" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Other</option>
                 </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Amount *</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">AMOUNT *</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
                   value={newGoalForm.amount}
-                  onChange={(e) => setNewGoalForm({...newGoalForm, amount: e.target.value})}
-                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                  onChange={(e) => setNewGoalForm({...newGoalForm, amount: parseFloat(e.target.value) || ''})}
+                  className={`${componentStyles.input.base} w-full`}
                   placeholder="0.00"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Period</label>
-                <select
-                  value={newGoalForm.period}
-                  onChange={(e) => setNewGoalForm({...newGoalForm, period: e.target.value})}
-                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
-                >
-                  <option value="monthly" className="bg-[#0A0C0F] text-[#E8EEF2]">Monthly</option>
-                  <option value="weekly" className="bg-[#0A0C0F] text-[#E8EEF2]">Weekly</option>
-                  <option value="yearly" className="bg-[#0A0C0F] text-[#E8EEF2]">Yearly</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Color</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">COLOR</label>
                 <input
                   type="color"
                   value={newGoalForm.color}
                   onChange={(e) => setNewGoalForm({...newGoalForm, color: e.target.value})}
-                  className="w-full h-10 border border-[#2A313A] rounded-lg bg-[#0A0C0F]"
+                  className={`${componentStyles.input.base} w-full h-10`}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Notes</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">NOTES</label>
                 <textarea
                   value={newGoalForm.notes}
                   onChange={(e) => setNewGoalForm({...newGoalForm, notes: e.target.value})}
-                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
+                  className={`${componentStyles.input.base} w-full`}
                   rows="3"
                   placeholder="Optional notes about this goal..."
                 />
@@ -1396,187 +1689,98 @@ const Finance = () => {
               
               <div className="flex space-x-3 pt-4">
                 <button
-                  type="submit"
-                  className="flex-1 bg-[#3CCB7F] text-[#0A0C0F] py-2 px-4 rounded-lg hover:bg-[#2FB86B] transition-colors font-oswald tracking-wide"
-                >
-                  {editingGoal ? 'Update Goal' : 'Add Goal'}
-                </button>
-                <button
                   type="button"
                   onClick={() => {
                     setShowAddGoalForm(false);
                     resetGoalForm();
                   }}
-                  className="flex-1 bg-[#2A313A] text-[#E8EEF2] py-2 px-4 rounded-lg hover:bg-[#3A414A] transition-colors font-oswald tracking-wide"
+                  className={componentStyles.button.outline + " flex-1"}
                 >
-                  Cancel
+                  CANCEL
                 </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Add Goal Form Modal */}
-      {showAddGoalForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4">
-          <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-            {/* Film grain overlay */}
-            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
-            
-            {/* Reason Strip */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] to-[#FFD200]"></div>
-            
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-[#E8EEF2] font-oswald tracking-wide">
-                {editingGoal ? 'EDIT EXPENSE GOAL' : 'ADD EXPENSE GOAL'}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowAddGoalForm(false);
-                  resetGoalForm();
-                }}
-                className="text-[#C9D1D9] hover:text-[#E8EEF2] transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <form onSubmit={handleAddGoal} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Category *</label>
-                <select
-                  value={newGoalForm.category}
-                  onChange={(e) => setNewGoalForm({...newGoalForm, category: e.target.value})}
-                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
-                  required
-                >
-                  <option value="" className="bg-[#0A0C0F] text-[#E8EEF2]">Select a category</option>
-                  <option value="food" className="bg-[#0A0C0F] text-[#E8EEF2]">Food</option>
-                  <option value="transportation" className="bg-[#0A0C0F] text-[#E8EEF2]">Transportation</option>
-                  <option value="housing" className="bg-[#0A0C0F] text-[#E8EEF2]">Housing</option>
-                  <option value="utilities" className="bg-[#0A0C0F] text-[#E8EEF2]">Utilities</option>
-                  <option value="healthcare" className="bg-[#0A0C0F] text-[#E8EEF2]">Healthcare</option>
-                  <option value="entertainment" className="bg-[#0A0C0F] text-[#E8EEF2]">Entertainment</option>
-                  <option value="shopping" className="bg-[#0A0C0F] text-[#E8EEF2]">Shopping</option>
-                  <option value="education" className="bg-[#0A0C0F] text-[#E8EEF2]">Education</option>
-                  <option value="travel" className="bg-[#0A0C0F] text-[#E8EEF2]">Travel</option>
-                  <option value="insurance" className="bg-[#0A0C0F] text-[#E8EEF2]">Insurance</option>
-                  <option value="taxes" className="bg-[#0A0C0F] text-[#E8EEF2]">Taxes</option>
-                  <option value="debt" className="bg-[#0A0C0F] text-[#E8EEF2]">Debt</option>
-                  <option value="other" className="bg-[#0A0C0F] text-[#E8EEF2]">Other</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Amount *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={newGoalForm.amount}
-                  onChange={(e) => setNewGoalForm({...newGoalForm, amount: e.target.value})}
-                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Period</label>
-                <select
-                  value={newGoalForm.period}
-                  onChange={(e) => setNewGoalForm({...newGoalForm, period: e.target.value})}
-                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
-                >
-                  <option value="monthly" className="bg-[#0A0C0F] text-[#E8EEF2]">Monthly</option>
-                  <option value="weekly" className="bg-[#0A0C0F] text-[#E8EEF2]">Weekly</option>
-                  <option value="yearly" className="bg-[#0A0C0F] text-[#E8EEF2]">Yearly</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Color</label>
-                <input
-                  type="color"
-                  value={newGoalForm.color}
-                  onChange={(e) => setNewGoalForm({...newGoalForm, color: e.target.value})}
-                  className="w-full h-10 border border-[#2A313A] rounded-lg bg-[#0A0C0F]"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-[#C9D1D9] mb-1 font-inter">Notes</label>
-                <textarea
-                  value={newGoalForm.notes}
-                  onChange={(e) => setNewGoalForm({...newGoalForm, notes: e.target.value})}
-                  className="w-full px-3 py-2 bg-[#0A0C0F] border border-[#2A313A] rounded-lg text-[#E8EEF2] focus:border-[#FFD200] focus:outline-none"
-                  rows="3"
-                  placeholder="Optional notes about this goal..."
-                />
-              </div>
-              
-              <div className="flex space-x-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#3CCB7F] text-[#0A0C0F] py-2 px-4 rounded-lg hover:bg-[#2FB86B] transition-colors font-oswald tracking-wide"
+                  onClick={() => console.log('🎯 Submit button clicked')}
+                  className={componentStyles.button.primary + " flex-1"}
                 >
-                  {editingGoal ? 'Update Goal' : 'Add Goal'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddGoalForm(false);
-                    resetGoalForm();
-                  }}
-                  className="flex-1 bg-[#2A313A] text-[#E8EEF2] py-2 px-4 rounded-lg hover:bg-[#3A414A] transition-colors font-oswald tracking-wide"
-                >
-                  Cancel
+                  {editingGoal ? 'UPDATE GOAL' : 'ADD GOAL'}
                 </button>
               </div>
             </form>
+          </motion.div>
           </div>
-        </div>
       )}
 
       {/* Category Goals Form Modal */}
       {showCategoryGoalsForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999] p-4">
-          <div className="bg-[#11151A] border-2 border-[#2A313A] rounded-lg p-4 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
-            {/* Film grain overlay */}
-            <div className="absolute inset-0 opacity-5 bg-noise-pattern pointer-events-none"></div>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <motion.div 
+            className="bg-[rgba(0,0,0,0.8)] border border-[rgba(255,255,255,0.2)] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl backdrop-blur-[32px]"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-text-primary font-jakarta tracking-wide">EDIT EXPENSE GOALS</h3>
+              <button
+                onClick={() => setShowCategoryGoalsForm(false)}
+                className="text-text-secondary hover:text-text-primary transition-colors p-1"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+        </div>
             
-            {/* Reason Strip */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3CCB7F] to-[#FFD200]"></div>
-            
-            <h3 className="text-base font-semibold text-[#E8EEF2] mb-3 font-oswald tracking-wide">SET CATEGORY GOALS</h3>
-            
-            <div className="space-y-3">
-              {Object.entries(categoryGoals).map(([category, goal]) => (
-                <div key={category}>
-                  <label className="block text-xs font-medium text-[#C9D1D9] mb-1 capitalize font-oswald tracking-wide">{category.toUpperCase()}</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={goal}
-                    onChange={(e) => setCategoryGoals({
-                      ...categoryGoals,
-                      [category]: parseFloat(e.target.value) || 0
-                    })}
-                    className="w-full p-1.5 border-2 border-[#2A313A] rounded-md focus:ring-2 focus:ring-[#FFD200] focus:border-[#FFD200] bg-[#0A0C0F] text-[#E8EEF2] placeholder-[#C9D1D9] font-inter text-sm"
-                    placeholder="0.00"
-                  />
+            <div className="space-y-4">
+              {expenseGoals.length === 0 ? (
+                <div className="text-center py-8">
+                  <Target className="h-12 w-12 text-text-secondary mx-auto mb-4" />
+                  <p className="text-lg font-semibold text-text-primary font-jakarta mb-2">No expense goals set</p>
+                  <p className="text-sm text-text-secondary font-jakarta mb-4">Add your first expense goal to get started</p>
+                  <button
+                    onClick={() => {
+                      setShowCategoryGoalsForm(false);
+                      setShowAddGoalForm(true);
+                    }}
+                    className={componentStyles.button.primary}
+                  >
+                    ADD FIRST GOAL
+                  </button>
                 </div>
-              ))}
+              ) : (
+                expenseGoals.map((goal) => (
+                  <div key={goal._id}>
+                    <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">
+                      {mapBackendCategoryToDisplayName(goal.category)}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={goal.amount}
+                      onChange={(e) => {
+                        const newAmount = parseFloat(e.target.value) || 0;
+                        setExpenseGoals(prev => 
+                          prev.map(g => 
+                            g._id === goal._id ? { ...g, amount: newAmount } : g
+                          )
+                        );
+                      }}
+                      className={`${componentStyles.input.base} w-full`}
+                      placeholder="0.00"
+                    />
+                  </div>
+                ))
+              )}
             </div>
 
-            <div className="flex space-x-2 pt-3">
+            <div className="flex space-x-3 pt-4">
               <button
                 type="button"
                 onClick={() => setShowCategoryGoalsForm(false)}
-                className="flex-1 px-3 py-1.5 border-2 border-[#2A313A] text-[#C9D1D9] rounded-md hover:bg-[#2A313A] font-oswald tracking-wide transition-colors text-sm"
+                className={componentStyles.button.outline + " flex-1"}
               >
                 CANCEL
               </button>
@@ -1585,27 +1789,197 @@ const Finance = () => {
                 onClick={async () => {
                   try {
                     const token = localStorage.getItem('token');
-                    await axios.put(
-                      buildApiUrl('/api/finance/goals/bulk'),
-                      { categoryGoals },
-                      { headers: { Authorization: `Bearer ${token}` } }
+                    
+                    // Update each goal individually
+                    const updatePromises = expenseGoals.map(goal => 
+                      axios.put(
+                        buildApiUrl(`/api/finance/goals/${goal._id}`),
+                        { amount: goal.amount },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                      )
                     );
+                    
+                    await Promise.all(updatePromises);
                     
                     // Refresh the data to get updated goals
                     await fetchFinancialData();
                     setShowCategoryGoalsForm(false);
-                    toast.success('Goals saved successfully!');
+                    toast.success('Goals updated successfully!');
                   } catch (error) {
-                    console.error('Error saving goals:', error);
-                    toast.error('Error saving goals');
+                    console.error('Error updating goals:', error);
+                    toast.error('Error updating goals');
                   }
                 }}
-                className="flex-1 px-3 py-1.5 bg-[#FFD200] text-[#0A0C0F] rounded-md hover:bg-[#FFD200]/90 font-oswald tracking-wide transition-colors text-sm"
+                className={componentStyles.button.primary + " flex-1"}
+                disabled={expenseGoals.length === 0}
               >
                 SAVE GOALS
               </button>
             </div>
-          </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Subscription Form Modal */}
+      {showSubscriptionForm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <motion.div 
+            className="bg-[rgba(0,0,0,0.8)] border border-[rgba(255,255,255,0.2)] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl backdrop-blur-[32px]"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-text-primary font-jakarta tracking-wide">
+                {editingSubscription ? 'EDIT SUBSCRIPTION' : 'ADD NEW SUBSCRIPTION'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowSubscriptionForm(false);
+                  setEditingSubscription(null);
+                  setSubscriptionForm({
+                    name: '',
+                    category: '',
+                    amount: '',
+                    frequency: 'monthly',
+                    notes: '',
+                    color: '#1E49C9'
+                  });
+                }}
+                className="text-text-secondary hover:text-text-primary transition-colors p-1"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubscriptionSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">SUBSCRIPTION NAME *</label>
+                <input
+                  type="text"
+                  required
+                  value={subscriptionForm.name}
+                  onChange={(e) => setSubscriptionForm({...subscriptionForm, name: e.target.value})}
+                  className={componentStyles.input.base + " w-full"}
+                  placeholder="e.g., Netflix, Spotify, Gym Membership"
+                />
+              </div>
+
+              <div className="relative">
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">EXPENSE GOAL CATEGORY *</label>
+                <select
+                  value={subscriptionForm.category}
+                  onChange={(e) => setSubscriptionForm({...subscriptionForm, category: e.target.value})}
+                  className={componentStyles.input.base + " w-full appearance-none cursor-pointer pr-10"}
+                  required
+                >
+                  <option value="" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Select expense goal category</option>
+                  <option value="nourishing_food" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Nourishing food</option>
+                  <option value="safe_convenient_travel" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Safe, convenient travel</option>
+                  <option value="safe_comfortable_home" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Safe, comfortable and peaceful home</option>
+                  <option value="living_essentials" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Maintain living essentials</option>
+                  <option value="healthcare_wellbeing" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Long term wellbeing and protective healthcare</option>
+                  <option value="enjoy_life" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Enjoy life, have fun</option>
+                  <option value="value_shopping" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Value, comfort or joyful shopping</option>
+                  <option value="learning_growing" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Learning, growing and investing in my future</option>
+                  <option value="exploring_places" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Exploring new places</option>
+                  <option value="prepare_unexpected" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Prepare for the unexpected</option>
+                  <option value="other" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Other</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">AMOUNT *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  value={subscriptionForm.amount}
+                  onChange={(e) => setSubscriptionForm({...subscriptionForm, amount: parseFloat(e.target.value)})}
+                  className={componentStyles.input.base + " w-full"}
+                  placeholder="0.00"
+                />
+              </div>
+              
+              <div className="relative">
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">REPEAT FREQUENCY *</label>
+                <select
+                  value={subscriptionForm.frequency}
+                  onChange={(e) => setSubscriptionForm({...subscriptionForm, frequency: e.target.value})}
+                  className={componentStyles.input.base + " w-full appearance-none cursor-pointer pr-10"}
+                  required
+                >
+                  <option value="weekly" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Weekly</option>
+                  <option value="monthly" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Monthly</option>
+                  <option value="quarterly" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Quarterly</option>
+                  <option value="yearly" className="bg-[rgba(0,0,0,0.8)] text-text-primary">Yearly</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+              
+              
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">NOTES</label>
+                <textarea
+                  value={subscriptionForm.notes}
+                  onChange={(e) => setSubscriptionForm({...subscriptionForm, notes: e.target.value})}
+                  className={componentStyles.input.base + " w-full"}
+                  rows="3"
+                  placeholder="Additional notes about this subscription..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">COLOR</label>
+                  <input
+                  type="color"
+                  value={subscriptionForm.color}
+                  onChange={(e) => setSubscriptionForm({...subscriptionForm, color: e.target.value})}
+                  className={componentStyles.input.base + " w-full h-10"}
+                />
+              </div>
+              
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSubscriptionForm(false);
+                    setEditingSubscription(null);
+                    setSubscriptionForm({
+                      name: '',
+                      category: '',
+                      amount: '',
+                      frequency: 'monthly',
+                      notes: '',
+                      color: '#1E49C9'
+                    });
+                  }}
+                  className={componentStyles.button.outline + " flex-1"}
+              >
+                CANCEL
+              </button>
+              <button
+                  type="submit"
+                  className={componentStyles.button.primary + " flex-1"}
+                >
+                  {editingSubscription ? 'UPDATE' : 'ADD'} SUBSCRIPTION
+              </button>
+            </div>
+            </form>
+          </motion.div>
         </div>
       )}
     </motion.div>

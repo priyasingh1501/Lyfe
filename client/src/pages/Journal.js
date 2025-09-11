@@ -20,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import AlfredAnalysis from '../components/journal/AlfredAnalysis';
 import JournalTrends from '../components/journal/JournalTrends';
+import MindfulnessCheckin from '../components/mindfulness/MindfulnessCheckin';
 import { buildApiUrl } from '../config';
 import { Button, Input, Card, Section, Header } from '../components/ui';
 
@@ -27,8 +28,12 @@ const Journal = () => {
   const { token } = useAuth();
   const [entries, setEntries] = useState([]);
   const [showNewEntryForm, setShowNewEntryForm] = useState(false);
+  const [showMindfulnessCheckin, setShowMindfulnessCheckin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
+  const [goals, setGoals] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [habits, setHabits] = useState([]);
   const [filters, setFilters] = useState({
     type: '',
     mood: '',
@@ -42,7 +47,15 @@ const Journal = () => {
     type: 'daily',
     mood: 'neutral',
     tags: [],
-    isPrivate: false
+    isPrivate: false,
+    // Mindfulness dimensions
+    mindfulnessDimensions: {
+      presence: { rating: 0 },
+      emotionAwareness: { rating: 0 },
+      intentionality: { rating: 0 },
+      attentionQuality: { rating: 0 },
+      compassion: { rating: 0 }
+    }
   });
 
   const [tagInput, setTagInput] = useState('');
@@ -98,12 +111,92 @@ const Journal = () => {
     }
   }, [token]);
 
+  // Load user's goals
+  const loadGoals = useCallback(async () => {
+    try {
+      const response = await fetch(buildApiUrl('/api/goals'), {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setGoals(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading goals:', error);
+    }
+  }, [token]);
+
+  // Load user's tasks
+  const loadTasks = useCallback(async () => {
+    try {
+      let allTasks = [];
+      let page = 1;
+      let hasMorePages = true;
+      
+      while (hasMorePages) {
+        const response = await fetch(buildApiUrl(`/api/tasks?limit=100&page=${page}`), {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const tasksData = data.tasks || [];
+          allTasks = [...allTasks, ...tasksData];
+          hasMorePages = page < data.totalPages;
+          page++;
+        } else {
+          break;
+        }
+      }
+      
+      setTasks(allTasks);
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+    }
+  }, [token]);
+
+  // Load user's habits
+  const loadHabits = useCallback(async () => {
+    try {
+      const response = await fetch(buildApiUrl('/api/habits'), {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setHabits(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading habits:', error);
+    }
+  }, [token]);
+
   useEffect(() => {
     if (token) {
-      fetchJournal();
-      fetchStats();
+      const loadAllData = async () => {
+        try {
+          await Promise.all([
+            fetchJournal(),
+            fetchStats(),
+            loadGoals(),
+            loadTasks(),
+            loadHabits()
+          ]);
+        } catch (err) {
+          console.error('Error loading data:', err);
+        }
+      };
+      
+      loadAllData();
     }
-  }, [token, fetchJournal, fetchStats]);
+  }, [token, fetchJournal, fetchStats, loadGoals, loadTasks, loadHabits]);
 
   const handleCreateEntry = async (e) => {
     e.preventDefault();
@@ -133,7 +226,14 @@ const Journal = () => {
           type: 'daily',
           mood: 'neutral',
           tags: [],
-          isPrivate: false
+          isPrivate: false,
+          mindfulnessDimensions: {
+            presence: { rating: 0 },
+            emotionAwareness: { rating: 0 },
+            intentionality: { rating: 0 },
+            attentionQuality: { rating: 0 },
+            compassion: { rating: 0 }
+          }
         });
         toast.success('Journal entry created successfully!');
         fetchStats();
@@ -220,6 +320,107 @@ const Journal = () => {
     });
   };
 
+  // Helper functions for mindfulness checkin
+  const getTasksForGoal = (goalId) => {
+    return tasks.filter(task => 
+      task.goalIds && 
+      task.goalIds.includes(goalId)
+    );
+  };
+
+  const getHabitsForGoal = (goalId) => {
+    const goalHabits = habits.filter(habit => {
+      const habitGoalId = habit.goalId;
+      let matches = false;
+      
+      if (typeof habitGoalId === 'object' && habitGoalId !== null) {
+        matches = habitGoalId._id === goalId || habitGoalId._id === goalId.toString();
+      } else {
+        matches = habitGoalId === goalId || habitGoalId === goalId.toString() || habitGoalId?.toString() === goalId?.toString();
+      }
+      
+      const isActive = habit.isActive !== false;
+      return matches && isActive;
+    });
+    return goalHabits;
+  };
+
+  const getActivitiesForGoal = (goalId) => {
+    const goalTasks = getTasksForGoal(goalId);
+    const goalHabits = getHabitsForGoal(goalId);
+    
+    const activities = [
+      ...goalTasks.map(task => ({
+        ...task,
+        type: 'task',
+        displayName: task.title,
+        duration: task.estimatedDuration || 0,
+        isCompleted: task.status === 'completed'
+      })),
+      ...goalHabits.map(habit => ({
+        ...habit,
+        type: 'habit',
+        displayName: habit.habit,
+        duration: habit.valueMin || 0,
+        isCompleted: isHabitCompletedToday(habit)
+      }))
+    ];
+    
+    return activities;
+  };
+
+  const isHabitCompletedToday = (habit) => {
+    if (!habit.checkins || !Array.isArray(habit.checkins)) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return habit.checkins.some(checkin => {
+      const checkinDate = new Date(checkin.date);
+      checkinDate.setHours(0, 0, 0, 0);
+      return checkinDate.getTime() === today.getTime() && checkin.completed;
+    });
+  };
+
+  const getTodayTasksForGoal = (goalId) => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    const completedTasksToday = tasks.filter((task) =>
+      task.goalIds &&
+      task.goalIds.includes(goalId) &&
+      task.completedAt &&
+      task.completedAt.split('T')[0] === todayStr
+    );
+
+    return completedTasksToday;
+  };
+
+  const getTodayHoursForGoal = (goalId) => {
+    const todayTasks = getTodayTasksForGoal(goalId);
+    const taskHours = todayTasks.reduce((total, task) => {
+      const duration = task.estimatedDuration || 0;
+      return total + duration / 60;
+    }, 0);
+
+    const goalHabits = getHabitsForGoal(goalId);
+    const habitHours = goalHabits.reduce((total, habit) => {
+      if (isHabitCompletedToday(habit)) {
+        const duration = habit.valueMin || 0;
+        return total + duration / 60;
+      }
+      return total;
+    }, 0);
+
+    return taskHours + habitHours;
+  };
+
+  const handleMindfulnessComplete = () => {
+    // Refresh data after mindfulness checkin
+    fetchJournal();
+    fetchStats();
+  };
+
   // Show all entries since filters are removed
   const filteredEntries = entries;
 
@@ -304,7 +505,7 @@ const Journal = () => {
       )}
 
       {/* Action Bar */}
-      <div className="flex justify-start mb-6">
+      <div className="flex justify-start gap-4 mb-6">
         <Button
           onClick={() => setShowNewEntryForm(true)}
           variant="primary"
@@ -312,6 +513,14 @@ const Journal = () => {
         >
           <Plus className="h-5 w-5 mr-2" />
           NEW ENTRY
+        </Button>
+        <Button
+          onClick={() => setShowMindfulnessCheckin(true)}
+          variant="secondary"
+          className="inline-flex items-center"
+        >
+          <Heart className="h-5 w-5 mr-2" />
+          MINDFULNESS CHECK-IN
         </Button>
       </div>
 
@@ -357,6 +566,157 @@ const Journal = () => {
                   placeholder="Write your thoughts, feelings, or experiences..."
                   required
                 />
+
+                {/* Mindfulness Dimensions */}
+                <div className="space-y-6">
+                  <h4 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide">Mindfulness Check-in</h4>
+                  <p className="text-sm text-text-secondary">Rate each dimension from 1-5 (1 = needs attention, 5 = excellent)</p>
+                  
+                  {/* Presence */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-text-secondary font-jakarta">
+                      Presence - How present and aware were you today?
+                    </label>
+                    <div className="flex space-x-2">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setNewEntry({
+                            ...newEntry,
+                            mindfulnessDimensions: {
+                              ...newEntry.mindfulnessDimensions,
+                              presence: { rating }
+                            }
+                          })}
+                          className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${
+                            newEntry.mindfulnessDimensions.presence.rating === rating
+                              ? 'bg-primary-500 border-primary-500 text-white'
+                              : 'border-border-primary text-text-secondary hover:border-primary-500'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Emotion Awareness */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-text-secondary font-jakarta">
+                      Emotion Awareness - How well did you recognize and understand your emotions?
+                    </label>
+                    <div className="flex space-x-2">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setNewEntry({
+                            ...newEntry,
+                            mindfulnessDimensions: {
+                              ...newEntry.mindfulnessDimensions,
+                              emotionAwareness: { rating }
+                            }
+                          })}
+                          className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${
+                            newEntry.mindfulnessDimensions.emotionAwareness.rating === rating
+                              ? 'bg-primary-500 border-primary-500 text-white'
+                              : 'border-border-primary text-text-secondary hover:border-primary-500'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Intentionality */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-text-secondary font-jakarta">
+                      Intentionality - How intentional and purposeful were your actions?
+                    </label>
+                    <div className="flex space-x-2">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setNewEntry({
+                            ...newEntry,
+                            mindfulnessDimensions: {
+                              ...newEntry.mindfulnessDimensions,
+                              intentionality: { rating }
+                            }
+                          })}
+                          className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${
+                            newEntry.mindfulnessDimensions.intentionality.rating === rating
+                              ? 'bg-primary-500 border-primary-500 text-white'
+                              : 'border-border-primary text-text-secondary hover:border-primary-500'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Attention Quality */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-text-secondary font-jakarta">
+                      Attention Quality - How focused and undistracted was your attention?
+                    </label>
+                    <div className="flex space-x-2">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setNewEntry({
+                            ...newEntry,
+                            mindfulnessDimensions: {
+                              ...newEntry.mindfulnessDimensions,
+                              attentionQuality: { rating }
+                            }
+                          })}
+                          className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${
+                            newEntry.mindfulnessDimensions.attentionQuality.rating === rating
+                              ? 'bg-primary-500 border-primary-500 text-white'
+                              : 'border-border-primary text-text-secondary hover:border-primary-500'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Compassion */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-text-secondary font-jakarta">
+                      Compassion - How kind and compassionate were you toward yourself and others?
+                    </label>
+                    <div className="flex space-x-2">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setNewEntry({
+                            ...newEntry,
+                            mindfulnessDimensions: {
+                              ...newEntry.mindfulnessDimensions,
+                              compassion: { rating }
+                            }
+                          })}
+                          className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${
+                            newEntry.mindfulnessDimensions.compassion.rating === rating
+                              ? 'bg-primary-500 border-primary-500 text-white'
+                              : 'border-border-primary text-text-secondary hover:border-primary-500'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -447,6 +807,31 @@ const Journal = () => {
               </form>
             </Card>
           )}
+      </AnimatePresence>
+
+      {/* Mindfulness Check-in */}
+      <AnimatePresence>
+        {showMindfulnessCheckin && (
+          <Card className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide">Mindfulness Check-in</h3>
+              <Button
+                onClick={() => setShowMindfulnessCheckin(false)}
+                variant="ghost"
+                size="sm"
+              >
+                Close
+              </Button>
+            </div>
+            <MindfulnessCheckin 
+              onCheckinComplete={handleMindfulnessComplete}
+              goals={goals}
+              getTodayTasksForGoal={getTodayTasksForGoal}
+              getActivitiesForGoal={getActivitiesForGoal}
+              getTodayHoursForGoal={getTodayHoursForGoal}
+            />
+          </Card>
+        )}
       </AnimatePresence>
 
       {/* Journal Entries */}

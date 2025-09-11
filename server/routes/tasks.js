@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('../models/Task');
-const Goal = require('../models/Goal');
+const LifestyleGoal = require('../models/Goal');
 const auth = require('../middleware/auth');
 
 // Get all tasks
@@ -103,7 +103,7 @@ router.post('/', auth, async (req, res) => {
     
     // Validate goal IDs if provided
     if (goalIds && goalIds.length > 0) {
-      const validGoals = await Goal.find({ _id: { $in: goalIds }, userId: req.user.userId });
+      const validGoals = await LifestyleGoal.find({ _id: { $in: goalIds }, userId: req.user.userId });
       console.log('Valid goals found:', validGoals.length, 'out of', goalIds.length);
       if (validGoals.length !== goalIds.length) {
         return res.status(400).json({ success: false, message: 'Invalid goal IDs' });

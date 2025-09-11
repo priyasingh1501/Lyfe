@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Clock, 
   ArrowRight,
@@ -14,10 +14,9 @@ import DailyMealKPIs from '../components/meal/DailyMealKPIs';
 import JournalTrends from '../components/journal/JournalTrends';
 import {
   FinancialOverview,
-  QuickActions,
-  MindfulnessScore
+  QuickActions
 } from '../components/dashboard';
-import { Button, Card } from '../components/ui';
+import { Button, Card, Tooltip, MonthGrid } from '../components/ui';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -32,6 +31,27 @@ const Dashboard = () => {
   const [showMusicInput, setShowMusicInput] = useState(false);
   const [musicPlatform, setMusicPlatform] = useState('youtube');
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMusicLoading, setIsMusicLoading] = useState(false);
+  const youtubePlayerRef = useRef(null);
+  
+  // Year grid data
+  const [goals, setGoals] = useState([]);
+  const [habits, setHabits] = useState([]);
+  const [mindfulnessCheckins, setMindfulnessCheckins] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [meals, setMeals] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [youtubePlayer, setYoutubePlayer] = useState(null);
+  
+  // Safe arrays for MonthGrid compatibility
+  const safeHabits = Array.isArray(habits) ? habits : [];
+  const safeGoals = Array.isArray(goals) ? goals : [];
+  const safeMindfulnessCheckins = Array.isArray(mindfulnessCheckins) ? mindfulnessCheckins : [];
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const safeMeals = Array.isArray(meals) ? meals : [];
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
   
   // Image gallery state
   const [imageGallery, setImageGallery] = useState([
@@ -78,10 +98,47 @@ const Dashboard = () => {
   }, [showImageUpload]);
 
   useEffect(() => {
-    fetchData();
-    fetchDashboardQuotes();
-    loadSavedMusicLink();
+    const loadAllData = async () => {
+      setIsDataLoading(true);
+      try {
+        await Promise.all([
+          fetchData(),
+          fetchDashboardQuotes(),
+          loadSavedMusicLink(),
+          loadGoals(),
+          loadHabits(),
+          loadMindfulnessCheckins(),
+          loadTasks(),
+          loadMeals(),
+          loadExpenses()
+        ]);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
+    
+    loadAllData();
+    
+    // Load YouTube Player API
+    loadYouTubeAPI();
   }, []);
+
+  const loadYouTubeAPI = () => {
+    if (window.YT) {
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.async = true;
+    document.head.appendChild(script);
+    
+    window.onYouTubeIframeAPIReady = () => {
+      console.log('YouTube API loaded');
+    };
+  };
 
   const loadSavedMusicLink = () => {
     const savedLink = localStorage.getItem('dashboardMusicLink');
@@ -93,6 +150,12 @@ const Dashboard = () => {
       const link = savedLink.trim();
       if (link.includes('youtube.com') || link.includes('youtu.be')) {
         setMusicPlatform('youtube');
+        // Initialize YouTube player for saved link
+        const videoId = extractYouTubeId(link);
+        if (videoId) {
+          setIsMusicLoading(true);
+          initializeYouTubePlayer(videoId);
+        }
       } else if (link.includes('spotify.com')) {
         setMusicPlatform('spotify');
       } else if (link.includes('music.apple.com')) {
@@ -107,6 +170,10 @@ const Dashboard = () => {
       const defaultLink = 'https://youtu.be/w0o8JCxjjpM?si=OCQ4TjYlkC8sTpcy';
       localStorage.setItem('dashboardMusicLink', defaultLink);
       localStorage.setItem('dashboardMusicPlatform', 'youtube');
+      setMusicLink(defaultLink);
+      setMusicPlatform('youtube');
+      setIsMusicLoading(true);
+      initializeYouTubePlayer('w0o8JCxjjpM');
     }
   };
 
@@ -146,6 +213,118 @@ const Dashboard = () => {
       console.error('Error fetching dashboard quotes:', error);
     } finally {
       setQuotesLoading(false);
+    }
+  };
+
+  // Load year grid data
+  const loadGoals = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.get(buildApiUrl('/api/goals'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setGoals(response.data || []);
+    } catch (error) {
+      console.error('Error loading goals:', error);
+    }
+  };
+
+  const loadHabits = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.get(buildApiUrl('/api/habits'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setHabits(response.data || []);
+    } catch (error) {
+      console.error('Error loading habits:', error);
+    }
+  };
+
+  const loadMindfulnessCheckins = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.get(buildApiUrl('/api/mindfulness'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setMindfulnessCheckins(response.data || []);
+    } catch (error) {
+      console.error('Error loading mindfulness checkins:', error);
+    }
+  };
+
+  const loadTasks = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, setting tasks to empty array');
+        setTasks([]);
+        return;
+      }
+
+      console.log('Loading tasks...');
+      const response = await axios.get(buildApiUrl('/api/tasks'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log('Tasks response:', response.data);
+      setTasks(response.data || []);
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+      console.log('Setting tasks to empty array due to error');
+      setTasks([]);
+    }
+  };
+
+  const loadMeals = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, setting meals to empty array');
+        setMeals([]);
+        return;
+      }
+
+      console.log('Loading meals...');
+      const response = await axios.get(buildApiUrl('/api/meals'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log('Meals response:', response.data);
+      setMeals(response.data || []);
+    } catch (error) {
+      console.error('Error loading meals:', error);
+      console.log('Setting meals to empty array due to error');
+      setMeals([]);
+    }
+  };
+
+  const loadExpenses = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, setting expenses to empty array');
+        setExpenses([]);
+        return;
+      }
+
+      console.log('Loading expenses...');
+      const response = await axios.get(buildApiUrl('/api/finance/expenses'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log('Expenses response:', response.data);
+      setExpenses(response.data || []);
+    } catch (error) {
+      console.error('Error loading expenses:', error);
+      console.log('Setting expenses to empty array due to error');
+      setExpenses([]);
     }
   };
 
@@ -287,13 +466,60 @@ const Dashboard = () => {
 
 
 
+  const initializeYouTubePlayer = (videoId) => {
+    if (window.YT && window.YT.Player) {
+      try {
+        const player = new window.YT.Player('youtube-player', {
+          height: '1',
+          width: '1',
+          videoId: videoId,
+          playerVars: {
+            'playsinline': 1,
+            'controls': 0,
+            'showinfo': 0,
+            'rel': 0,
+            'modestbranding': 1,
+            'loop': 1,
+            'playlist': videoId
+          },
+          events: {
+            'onReady': (event) => {
+              console.log('YouTube player ready');
+              setYoutubePlayer(event.target);
+              setIsMusicLoading(false);
+            },
+            'onError': (event) => {
+              console.error('YouTube player error:', event.data);
+              toast.error('Failed to load music player. Please check your internet connection.');
+              setIsMusicLoading(false);
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error initializing YouTube player:', error);
+        toast.error('Failed to initialize music player.');
+        setIsMusicLoading(false);
+      }
+    } else {
+      console.log('YouTube API not ready, retrying...');
+      setTimeout(() => initializeYouTubePlayer(videoId), 1000);
+    }
+  };
+
   const handleMusicLinkSubmit = () => {
     if (musicLink.trim()) {
       // Validate and process the music link
       const link = musicLink.trim();
       if (link.includes('youtube.com') || link.includes('youtu.be')) {
         setMusicPlatform('youtube');
+        setIsMusicLoading(true);
         toast.success('YouTube link added!');
+        
+        // Initialize YouTube player
+        const videoId = extractYouTubeId(link);
+        if (videoId) {
+          initializeYouTubePlayer(videoId);
+        }
       } else if (link.includes('spotify.com')) {
         setMusicPlatform('spotify');
         toast.success('Spotify link added!');
@@ -317,18 +543,44 @@ const Dashboard = () => {
   const handleChangeMusic = () => {
     setShowMusicInput(true);
     setMusicLink(''); // Clear the current link when changing
+    setIsMusicLoading(false);
+    setIsPlaying(false);
   };
 
   const handleRemoveMusic = () => {
     setMusicLink('');
     setShowMusicInput(true);
+    setIsMusicLoading(false);
+    setIsPlaying(false);
     localStorage.removeItem('dashboardMusicLink');
     localStorage.removeItem('dashboardMusicPlatform');
     toast.success('Music link removed!');
   };
 
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
+    if (musicPlatform === 'youtube') {
+      if (youtubePlayer) {
+        try {
+          if (isPlaying) {
+            youtubePlayer.pauseVideo();
+          } else {
+            youtubePlayer.playVideo();
+          }
+          setIsPlaying(!isPlaying);
+        } catch (error) {
+          console.error('Error controlling YouTube player:', error);
+          toast.error('Unable to control music player. Please try again.');
+        }
+      } else {
+        // Fallback: open in new tab if player not ready
+        handleOpenInNewTab();
+      }
+    } else if (musicPlatform === 'spotify' || musicPlatform === 'apple') {
+      // For Spotify and Apple Music, just open in new tab
+      handleOpenInNewTab();
+    } else {
+      setIsPlaying(!isPlaying);
+    }
   };
 
 
@@ -348,7 +600,8 @@ const Dashboard = () => {
       const videoId = extractYouTubeId(link);
       console.log('Extracted video ID:', videoId);
       if (videoId) {
-        const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&showinfo=0&rel=0&modestbranding=1&loop=1&playlist=${videoId}&enablejsapi=1`;
+        // Remove autoplay and add enablejsapi for control
+        const embedUrl = `https://www.youtube.com/embed/${videoId}?controls=1&showinfo=0&rel=0&modestbranding=1&loop=1&playlist=${videoId}&enablejsapi=1`;
         console.log('Generated embed URL:', embedUrl);
         return embedUrl;
       }
@@ -408,6 +661,200 @@ const Dashboard = () => {
     </div>
   );
 
+  // Get time-based greeting
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      return "Good morning";
+    } else if (hour >= 12 && hour < 17) {
+      return "Good afternoon";
+    } else if (hour >= 17 && hour < 21) {
+      return "Good evening";
+    } else {
+      return "Good night";
+    }
+  };
+
+  // Get today's comprehensive score
+  const getTodaysScore = () => {
+    if (isDataLoading) return null;
+    
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('en-CA');
+    
+    // Calculate mindfulness score
+    const mindfulnessScore = safeMindfulnessCheckins.find(checkin => {
+      if (!checkin || !checkin.date) return false;
+      const checkinDate = new Date(checkin.date).toLocaleDateString('en-CA');
+      return dateStr === checkinDate;
+    });
+    
+    let totalScore = 0;
+    const breakdown = {
+      mindfulness: 0,
+      goalProgress: 0,
+      habitCompletion: 0,
+      mealEffects: 0,
+      impulseBuyPenalty: 0
+    };
+    
+    // Mindfulness score (0-25)
+    if (mindfulnessScore) {
+      const dimensions = mindfulnessScore.dimensions || {};
+      breakdown.mindfulness = Object.values(dimensions).reduce((sum, dim) => {
+        return sum + (dim.rating || 0);
+      }, 0);
+    }
+    
+    // Goal progress score (0-20)
+    const completedTasksForGoals = safeTasks.filter(task => {
+      if (!task.goalIds || task.goalIds.length === 0) return false;
+      if (task.status !== 'completed') return false;
+      const taskDate = new Date(task.completedAt || task.updatedAt).toLocaleDateString('en-CA');
+      return taskDate === dateStr;
+    });
+    
+    if (completedTasksForGoals.length > 0) {
+      breakdown.goalProgress = 10;
+      if (completedTasksForGoals.length >= 2) breakdown.goalProgress += 5;
+      if (completedTasksForGoals.length >= 3) breakdown.goalProgress += 5;
+    }
+    
+    // Habit completion score (0-15)
+    let completedCount = 0;
+    let totalCount = 0;
+    
+    safeHabits.forEach(habit => {
+      if (!habit || !habit.startDate || !habit.endDate) return;
+      const checkDate = new Date(today);
+      checkDate.setHours(0, 0, 0, 0);
+      const startDate = new Date(habit.startDate);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(habit.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      
+      if (habit.isActive && checkDate >= startDate && checkDate <= endDate) {
+        totalCount++;
+        const checkin = habit.checkins?.find(c => {
+          const checkinDate = new Date(c.date).toLocaleDateString('en-CA');
+          return checkinDate === dateStr && c.completed;
+        });
+        if (checkin) completedCount++;
+      }
+    });
+    
+    if (totalCount > 0) {
+      const completionRate = completedCount / totalCount;
+      breakdown.habitCompletion = Math.round(completionRate * 15);
+    }
+    
+    // Meal effects score (0-25)
+    const dayMeals = safeMeals.filter(meal => {
+      const mealDate = new Date(meal.ts).toLocaleDateString('en-CA');
+      return mealDate === dateStr;
+    });
+    
+    if (dayMeals.length > 0) {
+      let totalScore = 0;
+      let mealCount = 0;
+      
+      dayMeals.forEach(meal => {
+        if (!meal.computed?.effects) return;
+        const effects = meal.computed.effects;
+        let mealScore = 0;
+        
+        const positiveEffects = ['strength', 'antiInflammatory', 'immunity', 'gutFriendly', 'energizing'];
+        positiveEffects.forEach(effect => {
+          if (effects[effect]?.score) {
+            mealScore += Math.round(effects[effect].score / 2);
+          }
+        });
+        
+        const negativeEffects = ['inflammation', 'fatForming'];
+        negativeEffects.forEach(effect => {
+          if (effects[effect]?.score) {
+            mealScore -= Math.round(effects[effect].score / 2);
+          }
+        });
+        
+        totalScore += Math.max(0, mealScore);
+        mealCount++;
+      });
+      
+      const averageScore = mealCount > 0 ? totalScore / mealCount : 0;
+      breakdown.mealEffects = Math.min(Math.round(averageScore * dayMeals.length), 25);
+    }
+    
+    // Impulse buy penalty (0 to -10)
+    const dayExpenses = safeExpenses.filter(expense => {
+      const expenseDate = new Date(expense.date).toLocaleDateString('en-CA');
+      return expenseDate === dateStr;
+    });
+    
+    const impulseExpenses = dayExpenses.filter(expense => expense.impulseBuy === true);
+    if (impulseExpenses.length > 0) {
+      let penalty = 0;
+      impulseExpenses.forEach(expense => {
+        if (expense.amount > 1000) penalty += 3;
+        else if (expense.amount > 500) penalty += 2;
+        else if (expense.amount > 100) penalty += 1;
+        else penalty += 0.5;
+      });
+      breakdown.impulseBuyPenalty = Math.min(penalty, 10);
+    }
+    
+    totalScore = Math.max(0, breakdown.mindfulness + breakdown.goalProgress + breakdown.habitCompletion + breakdown.mealEffects + breakdown.impulseBuyPenalty);
+    
+    return { totalScore, breakdown };
+  };
+
+  // Get goals progress for today
+  const getGoalsProgress = () => {
+    if (isDataLoading || !goals || goals.length === 0) return [];
+    
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('en-CA');
+    
+    return goals.map(goal => {
+      // Count tasks completed for this goal today
+      const completedTasks = safeTasks.filter(task => {
+        if (!task.goalIds || !task.goalIds.includes(goal._id)) return false;
+        if (task.status !== 'completed') return false;
+        const taskDate = new Date(task.completedAt || task.updatedAt).toLocaleDateString('en-CA');
+        return taskDate === dateStr;
+      });
+      
+      // Count habits completed for this goal today
+      const completedHabits = safeHabits.filter(habit => {
+        if (!habit.goalIds || !habit.goalIds.includes(goal._id)) return false;
+        if (!habit.isActive) return false;
+        
+        const checkin = habit.checkins?.find(c => {
+          const checkinDate = new Date(c.date).toLocaleDateString('en-CA');
+          return checkinDate === dateStr && c.completed;
+        });
+        return !!checkin;
+      });
+      
+      // Calculate progress percentage based on target hours
+      const todayHours = completedTasks.reduce((sum, task) => {
+        return sum + (task.estimatedHours || 0);
+      }, 0);
+      
+      const progressPercentage = goal.targetHours > 0 
+        ? Math.min((todayHours / goal.targetHours) * 100, 100)
+        : 0;
+      
+      return {
+        ...goal,
+        completedTasks: completedTasks.length,
+        completedHabits: completedHabits.length,
+        todayHours: Math.round(todayHours * 10) / 10,
+        progressPercentage: Math.round(progressPercentage)
+      };
+    }).sort((a, b) => b.progressPercentage - a.progressPercentage);
+  };
+
   const getPlatformIcon = () => {
     switch (musicPlatform) {
       case 'youtube':
@@ -444,55 +891,240 @@ const Dashboard = () => {
         
         {/* Welcome Card - 2x1 on large screens */}
         <div className="md:col-span-2 lg:col-span-2 xl:col-span-2">
-          <Card className="h-full">
-            <div className="flex flex-col items-center justify-center h-full">
-              {/* Image and greetings - stacked vertically */}
-              <div className="flex flex-col items-center space-y-4">
-            {/* Image */}
-                <div className="flex-shrink-0 relative group self-center">
-              <img 
-                src={welcomeImage} 
-                alt="Welcome illustration" 
-                    className="w-24 h-24 object-cover rounded-lg border-2 border-[#2A313A] shadow-lg cursor-pointer transition-all duration-200 group-hover:border-[#1E49C9] group-hover:shadow-[#1E49C9]/20"
-                onClick={() => {
-                  console.log('Dashboard image clicked, setting showImageUpload to true');
-                  setShowImageUpload(true);
-                }}
-                title="Click to change image"
-              />
-              
-              {/* Upload overlay with button text */}
-              <div className="absolute inset-0 bg-black/60 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center">
-                <Upload className="h-5 w-5 text-white mb-2" />
-                <span className="text-white text-xs font-medium font-jakarta leading-relaxed tracking-wider">Change Image</span>
+          <Card className="h-full overflow-hidden">
+            <div className="relative h-full">
+              {/* Background Image with Overlay */}
+              <div className="absolute inset-0">
+                <img 
+                  src="/images/dashboard/minimalist.jpg"
+                  alt="Minimalist Design"
+                  className="w-full h-full object-contain"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"></div>
               </div>
-              
-              {/* Upload button overlay - always visible on hover */}
-              <div className="absolute -bottom-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <div className="bg-[#1E49C9] text-white p-2 rounded-full shadow-lg border-2 border-[#0A0C0F]">
-                  <Upload className="h-4 w-4" />
-                </div>
-              </div>
-            </div>
 
-            {/* Greetings */}
-                <div className="flex flex-col items-center space-y-2">
-              <div className="p-2 bg-[#1E49C9] bg-opacity-20 rounded-lg">
-                <Upload className="h-5 w-5 text-[#1E49C9]" />
-              </div>
-                  <div className="text-center">
-                <h3 className="font-jakarta text-2xl leading-normal text-text-primary font-bold tracking-wide">
-                  Welcome back, {user?.firstName || 'User'}!
-                </h3>
-                <p className="font-jakarta text-lg leading-loose text-text-secondary">
-                  Here's your day at a glance
-                </p>
-              </div>
-            </div>
+              {/* Content */}
+              <div className="relative z-10 flex h-full p-6">
+                {/* Left Side - Greeting with Dark Overlay and Blur */}
+                <div className="flex-1 flex flex-col justify-center space-y-3 relative">
+                  {/* Dark overlay and blur for text area */}
+                  <div className="absolute inset-0 bg-black/40 backdrop-blur-sm rounded-xl -m-2"></div>
+                  <div className="relative z-10 p-4">
+                    <div>
+                      <h3 className="font-jakarta text-xl text-white/90 font-medium">
+                        {getTimeBasedGreeting()}, {user?.firstName || 'User'}!
+                      </h3>
+                      <p className="font-jakarta text-sm text-white/70 mt-1">
+                        Here's your day at a glance
+                      </p>
+                    </div>
+
+                    {/* Motivational Message */}
+                    {(() => {
+                      const todaysScore = getTodaysScore();
+                      if (!todaysScore) return null;
+                      
+                      const { totalScore, breakdown } = todaysScore;
+                      const getMotivationalMessage = () => {
+                        // No activities logged
+                        if (totalScore === 0) {
+                          const hasAnyActivity = breakdown.mindfulness > 0 || breakdown.goalProgress > 0 || 
+                                               breakdown.habitCompletion > 0 || breakdown.mealEffects > 0;
+                          if (!hasAnyActivity) {
+                            return "Let's get your first log in! 🚀";
+                          }
+                        }
+                        
+                        // Halfway point (around 40-45 points)
+                        if (totalScore >= 40 && totalScore < 60) {
+                          return "You're halfway there! Keep pushing! 💪";
+                        }
+                        
+                        // Done/Excellent (60+ points)
+                        if (totalScore >= 60) {
+                          return "Boom! You crushed today's goals! 🎉";
+                        }
+                        
+                        // Early progress states
+                        if (totalScore <= 5) return "Nice start! You've logged some activities today. 💪";
+                        if (totalScore <= 15) return "Great progress! You're building momentum. 🚀";
+                        if (totalScore <= 25) return "Excellent work! You're on fire today! 🔥";
+                        if (totalScore <= 35) return "Outstanding! You're crushing your goals! 🎯";
+                        if (totalScore <= 45) return "Incredible! You're in the zone today! ⚡";
+                        
+                        return "Perfect! You're absolutely unstoppable! 🌟";
+                      };
+
+                      return (
+                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 mt-3">
+                          <p className="text-white/90 text-sm font-medium">
+                            {getMotivationalMessage()}
+                          </p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* Right Side - Score Display */}
+                {(() => {
+                  const todaysScore = getTodaysScore();
+                  if (!todaysScore) return null;
+                  
+                  const { totalScore, breakdown } = todaysScore;
+                  const getScoreGradient = (score) => {
+                    if (score === 0) return 'from-red-500 to-red-600';
+                    if (score <= 10) return 'from-red-400 to-orange-500';
+                    if (score <= 20) return 'from-orange-400 to-yellow-500';
+                    if (score <= 30) return 'from-yellow-400 to-yellow-500';
+                    if (score <= 40) return 'from-yellow-300 to-green-400';
+                    if (score <= 50) return 'from-green-400 to-green-500';
+                    if (score <= 60) return 'from-green-500 to-emerald-500';
+                    return 'from-emerald-500 to-green-600';
+                  };
+
+                  const getScoreRingColor = (score) => {
+                    if (score === 0) return '#ef4444'; // Red - no activity
+                    if (score <= 15) return '#ef4444'; // Red - low score
+                    if (score <= 30) return '#f59e0b'; // Yellow - needs push
+                    if (score <= 50) return '#10b981'; // Green - on track
+                    return '#059669'; // Dark green - excellent
+                  };
+
+                  const getScoreState = (score) => {
+                    if (score === 0) return { label: "No Activity", color: "text-red-400" };
+                    if (score <= 15) return { label: "Low Score", color: "text-red-400" };
+                    if (score <= 30) return { label: "Needs Push", color: "text-yellow-400" };
+                    if (score <= 50) return { label: "On Track", color: "text-green-400" };
+                    return { label: "Excellent", color: "text-green-500" };
+                  };
+
+                  const circumference = 2 * Math.PI * 45; // radius = 45
+                  const strokeDasharray = circumference;
+                  const strokeDashoffset = circumference - (totalScore / 85) * circumference;
+                  const scoreState = getScoreState(totalScore);
+
+                  return (
+                    <div className="flex-shrink-0 flex flex-col items-center justify-center space-y-4 relative">
+                      {/* Blur background for score area */}
+                      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl -m-4"></div>
+                      {/* Circular Score Indicator */}
+                      <div className="relative z-10">
+                        <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+                          {/* Background circle */}
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="45"
+                            stroke="rgba(255,255,255,0.2)"
+                            strokeWidth="8"
+                            fill="none"
+                          />
+                          {/* Progress circle */}
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="45"
+                            stroke={getScoreRingColor(totalScore)}
+                            strokeWidth="8"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeDasharray={strokeDasharray}
+                            strokeDashoffset={strokeDashoffset}
+                            className="transition-all duration-1000 ease-out"
+                          />
+                        </svg>
+                        {/* Score text with label */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-2xl font-bold text-white">{totalScore}</span>
+                          <span className="text-xs text-white/70">/85</span>
+                          <span className={`text-xs font-medium mt-1 ${scoreState.color}`}>
+                            {scoreState.label}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Compact Stats with Pills */}
+                      <div className="grid grid-cols-2 gap-2 w-full max-w-xs relative z-10">
+                        {/* Mindfulness */}
+                        <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-white/80 font-medium">Mindfulness</span>
+                            <span className="text-xs font-medium text-white">{breakdown.mindfulness}/25</span>
+                          </div>
+                          <div className="w-full bg-white/20 rounded-full h-1 mt-1">
+                            <div 
+                              className="bg-blue-400 h-1 rounded-full transition-all duration-500"
+                              style={{ width: `${(breakdown.mindfulness / 25) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        {/* Goals */}
+                        <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-white/80 font-medium">Goals</span>
+                            <span className="text-xs font-medium text-white">{breakdown.goalProgress}/20</span>
+                          </div>
+                          <div className="w-full bg-white/20 rounded-full h-1 mt-1">
+                            <div 
+                              className="bg-purple-400 h-1 rounded-full transition-all duration-500"
+                              style={{ width: `${(breakdown.goalProgress / 20) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        {/* Habits */}
+                        <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-white/80 font-medium">Habits</span>
+                            <span className="text-xs font-medium text-white">{breakdown.habitCompletion}/15</span>
+                          </div>
+                          <div className="w-full bg-white/20 rounded-full h-1 mt-1">
+                            <div 
+                              className="bg-green-400 h-1 rounded-full transition-all duration-500"
+                              style={{ width: `${(breakdown.habitCompletion / 15) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        {/* Meals */}
+                        <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-white/80 font-medium">Meals</span>
+                            <span className="text-xs font-medium text-white">{breakdown.mealEffects}/25</span>
+                          </div>
+                          <div className="w-full bg-white/20 rounded-full h-1 mt-1">
+                            <div 
+                              className="bg-orange-400 h-1 rounded-full transition-all duration-500"
+                              style={{ width: `${(breakdown.mealEffects / 25) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        {/* Impulse - Special highlighting */}
+                        <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 col-span-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-white/80 font-medium">Impulse</span>
+                            <span className={`text-xs font-medium ${breakdown.impulseBuyPenalty < 0 ? 'text-red-300' : 'text-white'}`}>
+                              {breakdown.impulseBuyPenalty}
+                            </span>
+                          </div>
+                          <div className="w-full bg-white/20 rounded-full h-1 mt-1">
+                            <div 
+                              className={`h-1 rounded-full transition-all duration-500 ${breakdown.impulseBuyPenalty < 0 ? 'bg-red-400' : 'bg-teal-400'}`}
+                              style={{ width: `${Math.min(Math.abs(breakdown.impulseBuyPenalty) * 10, 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </Card>
-          </div>
+        </div>
 
          {/* Music Card - 1x1 */}
          <div className="col-span-1">
@@ -552,72 +1184,74 @@ const Dashboard = () => {
                    <div className="flex flex-col items-center justify-center py-8">
                      {/* Hidden YouTube Player for Audio */}
                      {musicPlatform === 'youtube' && (
-                       <iframe
-                         src={getEmbedUrl()}
+                       <div
+                         ref={youtubePlayerRef}
                          className="absolute opacity-0 pointer-events-none w-1 h-1"
-                         frameBorder="0"
-                         allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                         allowFullScreen
-                         title="Hidden YouTube Audio Player"
-                       ></iframe>
+                         id="youtube-player"
+                       ></div>
                      )}
                      
                      {/* Gramophone Base */}
-                     <div className="relative">
+                     <div className="relative flex flex-col items-center">
                        
-                       {/* Gramophone Visual */}
+                       {/* Glassmorphic Gramophone Visual with Primary Color */}
                        <div className="relative w-32 h-32 mx-auto">
-                         {/* Gramophone Base */}
-                         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-16 bg-gradient-to-t from-amber-800 to-amber-600 rounded-t-full shadow-lg">
-                           <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-20 h-2 bg-amber-700 rounded-full"></div>
+                         {/* Gramophone Base - Glassmorphic with Primary Color */}
+                         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-16 bg-gradient-to-t from-[rgba(30,73,201,0.2)] to-[rgba(30,73,201,0.1)] backdrop-blur-md rounded-t-full border border-[rgba(30,73,201,0.3)] shadow-[0_8px_32px_rgba(30,73,201,0.2)]">
+                           <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-20 h-2 bg-[rgba(30,73,201,0.3)] backdrop-blur-sm rounded-full"></div>
                          </div>
                          
-                         {/* Horn */}
-                         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[40px] border-b-amber-600"></div>
+                         {/* Horn - Glassmorphic with Primary Color */}
+                         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[40px] border-b-[rgba(30,73,201,0.2)] backdrop-blur-sm"></div>
                          
-                         {/* Record */}
-                         <div className={`absolute top-8 left-1/2 transform -translate-x-1/2 w-20 h-20 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full shadow-lg border-4 border-gray-700 ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }}>
-                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-gray-900 rounded-full"></div>
-                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-gray-700 rounded-full"></div>
-                           {/* Grooves */}
-                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-gray-500 rounded-full opacity-30"></div>
-                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 border border-gray-500 rounded-full opacity-20"></div>
-                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 border border-gray-500 rounded-full opacity-10"></div>
+                         {/* Record - Glassmorphic with Primary Color */}
+                         <div className={`absolute top-8 left-1/2 transform -translate-x-1/2 w-20 h-20 bg-gradient-to-br from-[rgba(30,73,201,0.15)] to-[rgba(30,73,201,0.08)] backdrop-blur-md rounded-full border border-[rgba(30,73,201,0.3)] shadow-[0_8px_32px_rgba(30,73,201,0.2)] ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }}>
+                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full border border-[rgba(30,73,201,0.2)]"></div>
+                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-[rgba(30,73,201,0.6)] rounded-full"></div>
+                           {/* Grooves - Glassmorphic with Primary Color */}
+                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-[rgba(30,73,201,0.2)] rounded-full opacity-30"></div>
+                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 border border-[rgba(30,73,201,0.2)] rounded-full opacity-20"></div>
+                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 border border-[rgba(30,73,201,0.2)] rounded-full opacity-10"></div>
                          </div>
                          
-                         {/* Tonearm */}
-                         <div className={`absolute top-12 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-amber-800 rounded-full origin-left ${isPlaying ? 'animate-pulse' : ''}`} style={{ transform: 'translateX(-50%) rotate(-15deg)' }}>
-                           <div className="absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-2 h-2 bg-amber-600 rounded-full"></div>
+                         {/* Tonearm - Glassmorphic with Primary Color */}
+                         <div className={`absolute top-12 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-[rgba(30,73,201,0.3)] backdrop-blur-sm rounded-full origin-left border border-[rgba(30,73,201,0.2)] ${isPlaying ? 'animate-pulse' : ''}`} style={{ transform: 'translateX(-50%) rotate(-15deg)' }}>
+                           <div className="absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-2 h-2 bg-[rgba(30,73,201,0.5)] backdrop-blur-sm rounded-full border border-[rgba(30,73,201,0.2)]"></div>
                          </div>
                          
-                         {/* Sound Waves */}
+                         {/* Sound Waves - Glassmorphic with Primary Color */}
                          {isPlaying && (
                            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                              <div className="flex space-x-1">
-                               <div className="w-1 h-4 bg-amber-400 rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
-                               <div className="w-1 h-6 bg-amber-400 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
-                               <div className="w-1 h-3 bg-amber-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                               <div className="w-1 h-5 bg-amber-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
-                               <div className="w-1 h-2 bg-amber-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                               <div className="w-1 h-4 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0s' }}></div>
+                               <div className="w-1 h-6 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0.1s' }}></div>
+                               <div className="w-1 h-3 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0.2s' }}></div>
+                               <div className="w-1 h-5 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0.3s' }}></div>
+                               <div className="w-1 h-2 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0.4s' }}></div>
                              </div>
                            </div>
                          )}
                        </div>
                        
-                       {/* Play/Pause Button */}
-                       <button
-                         onClick={handlePlayPause}
-                         className="mt-6 w-12 h-12 bg-[#1E49C9] rounded-full flex items-center justify-center text-white hover:bg-[#1E49C9]/80 transition-colors shadow-lg"
-                       >
-                         {isPlaying ? (
-                           <div className="flex space-x-1">
-                             <div className="w-1 h-4 bg-white rounded"></div>
-                             <div className="w-1 h-4 bg-white rounded"></div>
-                           </div>
-                         ) : (
-                           <div className="w-0 h-0 border-l-[6px] border-l-white border-y-[4px] border-y-transparent ml-1"></div>
-                         )}
-                       </button>
+                       {/* Play/Pause Button - Glassmorphic with Primary Color - Centered */}
+                       <div className="flex justify-center mt-6">
+                         <button
+                           onClick={handlePlayPause}
+                           disabled={isMusicLoading}
+                           className="w-12 h-12 bg-[rgba(30,73,201,0.2)] backdrop-blur-md border border-[rgba(30,73,201,0.3)] rounded-full flex items-center justify-center text-white hover:bg-[rgba(30,73,201,0.3)] transition-all duration-300 shadow-[0_8px_32px_rgba(30,73,201,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                         >
+                           {isMusicLoading ? (
+                             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                           ) : isPlaying ? (
+                             <div className="flex space-x-1">
+                               <div className="w-1 h-4 bg-white rounded"></div>
+                               <div className="w-1 h-4 bg-white rounded"></div>
+                             </div>
+                           ) : (
+                             <div className="w-0 h-0 border-l-[6px] border-l-white border-y-[4px] border-y-transparent ml-1"></div>
+                           )}
+                         </button>
+                       </div>
                        
                        {/* Track Info */}
                        <div className="mt-4 text-center">
@@ -627,7 +1261,7 @@ const Dashboard = () => {
                             musicPlatform === 'apple' ? 'Apple Music' : 'Custom Track'}
                          </h4>
                          <p className="font-jakarta text-xs text-text-secondary">
-                           {isPlaying ? 'Now Playing' : 'Paused'}
+                           {isMusicLoading ? 'Loading...' : isPlaying ? 'Now Playing' : 'Paused'}
                          </p>
                        </div>
                      </div>
@@ -638,25 +1272,27 @@ const Dashboard = () => {
                {/* Music Controls - Hover Icons */}
                {musicLink && (
                  <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                   <button
-                     onClick={handleChangeMusic}
-                     className="w-8 h-8 bg-[#1E49C9] text-white rounded-full flex items-center justify-center hover:bg-[#1E49C9]/80 transition-colors shadow-lg"
-                     title="Change Music"
-                   >
-                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                       <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 01-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/>
-                     </svg>
-                   </button>
-                   <button 
-                     onClick={handleRemoveMusic}
-                     className="w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors shadow-lg"
-                     title="Remove Music"
-                   >
-                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                       <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd"/>
-                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
-                     </svg>
-                   </button>
+                   <Tooltip content="Change Music Link" position="bottom">
+                     <button
+                       onClick={handleChangeMusic}
+                       className="w-8 h-8 bg-[#1E49C9] text-white rounded-full flex items-center justify-center hover:bg-[#1E49C9]/80 transition-colors shadow-lg"
+                     >
+                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                         <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 01-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/>
+                       </svg>
+                     </button>
+                   </Tooltip>
+                   <Tooltip content="Remove Music Link" position="bottom">
+                     <button 
+                       onClick={handleRemoveMusic}
+                       className="w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors shadow-lg"
+                     >
+                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                         <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd"/>
+                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+                       </svg>
+                     </button>
+                   </Tooltip>
                  </div>
                )}
               
@@ -735,6 +1371,36 @@ const Dashboard = () => {
       </Card>
         </div>
 
+        {/* Year Grid - Full Width */}
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
+          <Card className="h-full">
+            <div className="p-6">
+              {isDataLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E49C9]"></div>
+                  <span className="ml-3 text-[#94A3B8]">Loading year data...</span>
+                </div>
+              ) : (
+                <MonthGrid
+                  selectedDate={selectedDate}
+                  habits={habits}
+                  goals={goals}
+                  mindfulnessCheckins={mindfulnessCheckins}
+                  tasks={tasks}
+                  meals={meals}
+                  expenses={expenses}
+                  onDateSelect={(date) => {
+                    setSelectedDate(date);
+                    // Navigate to goal-aligned-day with selected date
+                    window.location.href = `/goal-aligned-day?date=${date.toISOString().split('T')[0]}`;
+                  }}
+                  onMonthChange={setSelectedDate}
+                />
+              )}
+            </div>
+          </Card>
+        </div>
+
         {/* Random Image Card 1 - Nature */}
         <div className="col-span-1 lg:row-span-2 animate-fade-in">
           <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
@@ -782,7 +1448,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Mission Status - 2x1 */}
+        {/* Goals Progress - 2x1 */}
         <div className="md:col-span-2 lg:col-span-2 xl:col-span-2">
           <Card className="h-full flex flex-col">
           <div className="flex justify-end mb-6">
@@ -792,171 +1458,65 @@ const Dashboard = () => {
           </div>
           
           <div className="flex-1 flex flex-col">
-          {loading ? (
+          {isDataLoading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
-          ) : todayTasks.length > 0 ? (
+          ) : getGoalsProgress().length > 0 ? (
               <div className="space-y-4 flex-1">
-              {/* Day Summary Stats - Chore Chips */}
-                <div className="grid grid-cols-2 gap-2 mb-6">
-                <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3CCB7F] rounded-lg relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-[#3CCB7F]"></div>
-                  <p className="text-base lg:text-lg font-bold text-[#3CCB7F] font-mono">
-                    {todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      const hour = taskTime.getHours();
-                      return hour >= 0 && hour < 24;
-                    }).filter(task => task.goalIds && task.goalIds.length > 0 && task.mindfulRating >= 4).length}
-                  </p>
-                  <p className="font-jakarta text-xs text-[#1E49C9]/80 leading-relaxed tracking-wider">GOAL + MINDFUL</p>
-                </div>
-                <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#3EA6FF] rounded-lg relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-[#3EA6FF]"></div>
-                  <p className="text-base lg:text-lg font-bold text-[#3EA6FF] font-mono">
-                    {todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      const hour = taskTime.getHours();
-                      return hour >= 0 && hour < 24;
-                    }).filter(task => task.goalIds && task.goalIds.length > 0 && task.mindfulRating < 4).length}
-                  </p>
-                  <p className="font-jakarta text-xs text-[#1E49C9]/80 leading-relaxed tracking-wider">GOAL-ALIGNED</p>
-                </div>
-                <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#FFD200] rounded-lg relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-[#FFD200]"></div>
-                  <p className="text-base lg:text-lg font-bold text-[#FFD200] font-mono">
-                    {todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      const hour = taskTime.getHours();
-                      return hour >= 0 && hour < 24;
-                    }).filter(task => (!task.goalIds || task.goalIds.length === 0) && task.mindfulRating >= 4).length}
-                  </p>
-                  <p className="font-jakarta text-xs text-[#1E49C9]/80 leading-relaxed tracking-wider">MINDFUL</p>
-                </div>
-                <div className="text-center p-3 bg-[#0A0C0F] border-2 border-[#D64545] rounded-lg relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-[#D64545]"></div>
-                  <p className="text-base lg:text-lg font-bold text-[#D64545] font-mono">
-                    {todayTasks.filter(task => {
-                      if (!task.completedAt) return false;
-                      const taskTime = new Date(task.completedAt);
-                      const hour = taskTime.getHours();
-                      return hour >= 0 && hour < 24;
-                    }).filter(task => (!task.goalIds || task.goalIds.length === 0) && task.mindfulRating < 4).length}
-                  </p>
-                  <p className="font-jakarta text-xs text-[#1E49C9]/80 leading-relaxed tracking-wider">NOT MINDFUL, NOT GOAL-ORIENTED</p>
-                </div>
-              </div>
-              
-              {/* 24-Hour Strip - Progress Rings */}
-              <div className="flex flex-wrap justify-center gap-1 max-w-full lg:max-w-4xl mx-auto overflow-x-auto">
-                {Array.from({ length: 24 }, (_, hour) => {
-                  const hourStart = new Date();
-                  hourStart.setHours(hour, 0, 0, 0);
-                  const hourEnd = new Date(hourStart);
-                  hourEnd.setHours(hour + 1, 0, 0, 0);
-                  
-                  // Check if this hour has any activity
-                  const hasActivity = todayTasks.some(task => {
-                    if (!task.completedAt) return false;
-                    const taskTime = new Date(task.completedAt);
-                    return taskTime >= hourStart && taskTime < hourEnd;
-                  });
-                  
-                  // Check if this hour has goal-aligned activity
-                  const hasGoalAligned = todayTasks.some(task => {
-                    if (!task.completedAt || !task.goalIds || task.goalIds.length === 0) return false;
-                    const taskTime = new Date(task.completedAt);
-                    return taskTime >= hourStart && taskTime < hourEnd;
-                  });
-                  
-                  // Check if this hour has mindful activity
-                  const hasMindful = todayTasks.some(task => {
-                    if (!task.completedAt || !task.mindfulRating || task.mindfulRating < 4) return false;
-                    const taskTime = new Date(task.completedAt);
-                    return taskTime >= hourStart && taskTime < hourEnd;
-                  });
-                  
-                  let color = 'bg-[#2A313A]'; // No activity
-                  let borderColor = 'border-[#2A313A]';
-                  let status = 'No activity';
-                  
-                  if (hasActivity) {
-                    if (hasGoalAligned && hasMindful) {
-                      color = 'bg-[#3CCB7F]'; // Goal-aligned + Mindful
-                      borderColor = 'border-[#3CCB7F]';
-                      status = 'Goal-aligned + Mindful';
-                    } else if (hasGoalAligned) {
-                      color = 'bg-[#3EA6FF]'; // Only Goal-aligned
-                      borderColor = 'border-[#3EA6FF]';
-                      status = 'Goal-aligned';
-                    } else if (hasMindful) {
-                      color = 'bg-[#FFD200]'; // Only Mindful
-                      borderColor = 'border-[#FFD200]';
-                      status = 'Mindful';
-                    } else {
-                      color = 'bg-[#D64545]'; // Not mindful, not goal-oriented
-                      borderColor = 'border-[#D64545]';
-                      status = 'Not Mindful, Not Goal-Oriented';
-                    }
-                  }
-                  
-                  // Format hour for display
-                  const displayHour = hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
-                  
-                  return (
-                    <div key={hour} className="flex flex-col items-center group">
-                      <div 
-                        className={`w-3 h-4 lg:w-4 lg:h-5 xl:w-5 xl:h-6 rounded-sm ${color} border-2 ${borderColor} transition-all duration-300 hover:scale-125 cursor-pointer shadow-lg hover:shadow-[#FFD200]/20`}
-                        title={`${displayHour}\n${status}`}
-                      />
-                      <span className="text-xs text-[#C9D1D9] mt-1 group-hover:text-[#FFD200] transition-colors font-mono">
-                        {hour === 0 ? '12' : hour > 12 ? hour - 12 : hour}
-                      </span>
+              {/* Goals Progress Cards */}
+                <div className="space-y-3">
+                  {getGoalsProgress().slice(0, 4).map((goal, index) => (
+                    <div key={goal._id || index} className="bg-[#11151A]/50 rounded-lg p-4 border border-[#2A313A] hover:border-[#1E49C9]/30 transition-all duration-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-medium text-[#E8EEF2] truncate flex-1">
+                          {goal.name}
+                        </h4>
+                        <div className="flex items-center space-x-3 text-xs text-[#94A3B8]">
+                          <span className="flex items-center space-x-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{goal.todayHours}h / {goal.targetHours || 0}h</span>
+                          </span>
+                          <span className="flex items-center space-x-1">
+                            <span className="w-2 h-2 bg-[#3CCB7F] rounded-full"></span>
+                            <span>{goal.completedTasks} tasks</span>
+                          </span>
+                          <span className="flex items-center space-x-1">
+                            <span className="w-2 h-2 bg-[#3EA6FF] rounded-full"></span>
+                            <span>{goal.completedHabits} habits</span>
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div className="w-full bg-[#2A313A] rounded-full h-2 mb-2">
+                        <div 
+                          className="bg-gradient-to-r from-[#3CCB7F] to-[#4ECDC4] h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${goal.progressPercentage}%` }}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-xs text-[#94A3B8]">
+                        <span>{goal.progressPercentage}% complete</span>
+                        <span className="font-mono">{goal.completedTasks + goal.completedHabits} activities today</span>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-              
-              {/* Legend */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 text-sm max-w-4xl mx-auto">
-                <div className="flex items-center space-x-2 justify-center">
-                  <div className="w-3 h-3 rounded-sm bg-[#3CCB7F]"></div>
-                  <span className="text-[#C9D1D9] text-xs">Goal + Mindful</span>
-                </div>
-                <div className="flex items-center space-x-2 justify-center">
-                  <div className="w-3 h-3 rounded-sm bg-[#3EA6FF]"></div>
-                  <span className="text-[#C9D1D9] text-xs">Goal-aligned</span>
-                </div>
-                <div className="flex items-center space-x-2 justify-center">
-                  <div className="w-3 h-3 rounded-sm bg-[#FFD200]"></div>
-                  <span className="text-[#C9D1D9] text-xs">Mindful</span>
-                </div>
-                <div className="flex items-center space-x-2 justify-center">
-                  <div className="w-3 h-3 rounded-sm bg-[#D64545]"></div>
-                  <span className="text-[#C9D1D9] text-xs">Not Mindful, Not Goal-Oriented</span>
-                </div>
-                <div className="flex items-center space-x-2 justify-center">
-                  <div className="w-3 h-3 rounded-sm bg-[#2A313A]"></div>
-                  <span className="text-[#C9D1D9] text-xs">No activity</span>
+                  ))}
                 </div>
               </div>
-            </div>
           ) : (
               <div className="text-center py-8 flex-1 flex flex-col justify-center">
               <div className="w-16 h-16 bg-[#2A313A] rounded-full mx-auto mb-4 flex items-center justify-center">
                 <Clock className="text-[#C9D1D9]" size={24} />
               </div>
-              <h3 className="font-jakarta text-lg font-semibold text-text-primary mb-2">No Tasks Today</h3>
-              <p className="font-jakarta text-text-secondary mb-4">Complete some tasks to see your day breakdown</p>
+              <h3 className="font-jakarta text-lg font-semibold text-text-primary mb-2">No Goals Set</h3>
+              <p className="font-jakarta text-text-secondary mb-4">Create some goals to track your progress</p>
               <Button
                 onClick={() => window.location.href = '/goal-aligned-day'}
                 variant="primary"
                 className="inline-flex items-center"
               >
-                ADD YOUR FIRST TASK
+                CREATE GOALS
               </Button>
             </div>
           )}
@@ -964,25 +1524,6 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Random Image Card 3 - Minimalist */}
-        <div className="col-span-1 animate-fade-in">
-          <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-            <div className="relative h-full bg-gradient-to-br from-[#1E49C9]/20 to-[#3CCB7F]/20">
-              <img 
-                src="/images/dashboard/minimalist.jpg"
-                alt="Minimalist Design"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
-                <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                  <h3 className="font-jakarta text-lg font-semibold mb-1">Less is More</h3>
-                  <p className="text-sm opacity-90">Simplicity breeds clarity</p>
-                </div>
-              </div>
-              <div className="absolute top-4 right-4 w-3 h-3 bg-[#1E49C9] rounded-full animate-pulse-glow"></div>
-            </div>
-          </Card>
-        </div>
 
         {/* Daily Meal KPIs - 1x1 */}
         <div className="col-span-1">
@@ -1025,12 +1566,7 @@ const Dashboard = () => {
           </div>
       </div>
 
-        {/* Mindfulness Score - 2x1 */}
-        <div className="md:col-span-2 lg:col-span-2 xl:col-span-2">
-          <div className="h-full">
-        <MindfulnessScore />
-          </div>
-      </div>
+
 
         {/* Random Image Card 5 - Zen */}
         <div className="col-span-1 animate-fade-in">

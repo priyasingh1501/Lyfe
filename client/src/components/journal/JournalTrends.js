@@ -173,14 +173,6 @@ const JournalTrends = () => {
           </div>
         )}
 
-        {/* Summary */}
-        <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
-            <h4 className="font-jakarta text-sm font-semibold text-text-primary mb-3 tracking-wide flex items-center">
-              <Brain className="h-4 w-4 mr-2 text-blue-400" />
-              Overall Summary
-            </h4>
-          <p className="text-sm text-text-secondary font-jakarta leading-relaxed">{trends.summary}</p>
-        </div>
       </div>
     </Card>
   );

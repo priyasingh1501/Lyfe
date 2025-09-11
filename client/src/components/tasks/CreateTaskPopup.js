@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Button, Input } from '../ui';
 import { useAuth } from '../../contexts/AuthContext';
 import { buildApiUrl } from '../../config';
-import { ConsistentPopup } from '../Layout/Layout';
+import { componentStyles } from '../../styles/designTokens';
+import { motion } from 'framer-motion';
 
 const CreateTaskPopup = ({ isOpen, onClose, onTaskCreated, goalId, goalName }) => {
   const { token } = useAuth();
@@ -12,6 +13,9 @@ const CreateTaskPopup = ({ isOpen, onClose, onTaskCreated, goalId, goalName }) =
     title: '',
     estimatedDuration: '30'
   });
+
+  // Debug logging
+  console.log('CreateTaskPopup props:', { isOpen, goalId, goalName, token: !!token });
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -67,69 +71,88 @@ const CreateTaskPopup = ({ isOpen, onClose, onTaskCreated, goalId, goalName }) =
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <ConsistentPopup
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Add Task"
-      maxWidth="md"
-      showReasonStrip={true}
-      reasonStripColor="from-accent-blue to-accent-green"
-    >
-      {goalName && (
-        <p className="text-sm text-text-secondary mb-4">for goal: {goalName}</p>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Task Title */}
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-2">
-            Task Title *
-          </label>
-          <Input
-            type="text"
-            value={formData.title}
-            onChange={(e) => handleInputChange('title', e.target.value)}
-            placeholder="Enter task title..."
-            required
-          />
-        </div>
-
-        {/* Estimated Duration */}
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-2">
-            Duration (minutes)
-          </label>
-          <Input
-            type="number"
-            min="5"
-            step="5"
-            value={formData.estimatedDuration}
-            onChange={(e) => handleInputChange('estimatedDuration', e.target.value)}
-            placeholder="30"
-          />
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-3 pt-4">
-          <Button
-            type="button"
-            variant="outline"
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+      <motion.div 
+        className="bg-[rgba(0,0,0,0.8)] border border-[rgba(255,255,255,0.2)] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl backdrop-blur-[32px]"
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-text-primary font-jakarta tracking-wide">
+            ADD TASK
+          </h3>
+          <button
             onClick={onClose}
-            className="flex-1"
+            className="text-text-secondary hover:text-text-primary transition-colors p-1"
           >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={loading || !formData.title}
-            className="flex-1"
-          >
-            {loading ? 'Creating...' : 'Create Task'}
-          </Button>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-      </form>
-    </ConsistentPopup>
+        
+        {goalName && (
+          <p className="text-sm text-text-secondary mb-4 font-jakarta">for goal: {goalName}</p>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Task Title */}
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">
+              TASK TITLE *
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => handleInputChange('title', e.target.value)}
+              placeholder="Enter task title..."
+              required
+              className={componentStyles.input.base}
+            />
+          </div>
+
+          {/* Estimated Duration */}
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">
+              DURATION (MINUTES)
+            </label>
+            <input
+              type="number"
+              min="5"
+              step="5"
+              value={formData.estimatedDuration}
+              onChange={(e) => handleInputChange('estimatedDuration', e.target.value)}
+              placeholder="30"
+              className={componentStyles.input.base}
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className={componentStyles.button.outline + " flex-1"}
+            >
+              CANCEL
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !formData.title}
+              className={componentStyles.button.primary + " flex-1"}
+            >
+              {loading ? 'CREATING...' : 'ADD TASK'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
   );
 };
 
