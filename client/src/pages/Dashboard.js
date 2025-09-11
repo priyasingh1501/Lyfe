@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { buildApiUrl } from '../config';
 import toast from 'react-hot-toast';
-import DailyMealKPIs from '../components/meal/DailyMealKPIs';
+// Note: Food page has its own DailyMealKPIs. Dashboard renders its own compact summary.
 import JournalTrends from '../components/journal/JournalTrends';
 import {
   FinancialOverview,
@@ -351,6 +351,42 @@ const Dashboard = () => {
       console.log('Setting expenses to empty array due to error');
       setExpenses([]);
     }
+  };
+
+  // ===== Dashboard-specific daily nutrition helpers (separate from Food page) =====
+  const getTodayMeals = () => {
+    const todayStr = new Date().toLocaleDateString('en-CA');
+    return safeMeals.filter(meal => new Date(meal.ts).toLocaleDateString('en-CA') === todayStr);
+  };
+
+  const getTodayNutritionTotals = () => {
+    const dayMeals = getTodayMeals();
+    return dayMeals.reduce((acc, meal) => {
+      const totals = meal.computed && meal.computed.totals ? meal.computed.totals : {};
+      Object.keys(totals).forEach(key => {
+        acc[key] = (acc[key] || 0) + (totals[key] || 0);
+      });
+      return acc;
+    }, {});
+  };
+
+  const getTodayEffectsAggregate = () => {
+    const dayMeals = getTodayMeals();
+    return dayMeals.reduce((acc, meal) => {
+      const effects = meal.computed && meal.computed.effects ? meal.computed.effects : {};
+      Object.entries(effects).forEach(([effectKey, effectData]) => {
+        if (!acc[effectKey]) {
+          acc[effectKey] = { score: 0, why: [] };
+        }
+        acc[effectKey].score += effectData.score || 0;
+        if (Array.isArray(effectData.why)) {
+          effectData.why.forEach(reason => {
+            if (!acc[effectKey].why.includes(reason)) acc[effectKey].why.push(reason);
+          });
+        }
+      });
+      return acc;
+    }, {});
   };
 
   // Quote of the Day functions
@@ -1575,11 +1611,69 @@ const Dashboard = () => {
         </div>
 
 
-        {/* Daily Meal KPIs - 1x1 */}
+        {/* Daily Nutrition (Dashboard summary) - 1x1 */}
         <div className="col-span-1">
-          <div className="h-full">
-        <DailyMealKPIs />
-          </div>
+          <Card className="h-full">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-jakarta text-lg font-semibold text-text-primary">Daily Nutrition</h3>
+                <a href="/food" className="text-xs text-[#1E49C9] hover:text-[#1E49C9]/80">Open Food</a>
+              </div>
+              {(() => {
+                const totals = getTodayNutritionTotals();
+                const effects = getTodayEffectsAggregate();
+                const dayMeals = getTodayMeals();
+                if (dayMeals.length === 0) {
+                  return (
+                    <div className="text-center py-6">
+                      <div className="w-12 h-12 bg-[#2A313A] rounded-full mx-auto mb-3 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-[#C9D1D9]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16"/><path d="M5 2l14 4-1 7H6L5 2z"/></svg>
+                      </div>
+                      <p className="text-sm text-text-secondary">No meals logged today</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-text-primary">{Math.round(totals.kcal || 0)}</div>
+                        <div className="text-xs text-text-secondary">kcal</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-text-primary">{Math.round(totals.protein || 0)}g</div>
+                        <div className="text-xs text-text-secondary">protein</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-text-primary">{Math.round(totals.carbs || 0)}g</div>
+                        <div className="text-xs text-text-secondary">carbs</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-text-primary">{Math.round(totals.fat || 0)}g</div>
+                        <div className="text-xs text-text-secondary">fat</div>
+                      </div>
+                    </div>
+                    {Object.keys(effects).length > 0 && (
+                      <div>
+                        <div className="text-xs text-text-secondary mb-1">Meal effects</div>
+                        <div className="flex flex-wrap gap-1">
+                          {Object.entries(effects)
+                            .filter(([, d]) => (d.score || 0) > 0)
+                            .sort((a, b) => (b[1].score || 0) - (a[1].score || 0))
+                            .slice(0, 6)
+                            .map(([key, d]) => (
+                              <span key={key} className="px-2 py-0.5 text-xs rounded bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)]">
+                                {key} ({Math.round(d.score)})
+                              </span>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </Card>
         </div>
         
         {/* Journal Trends - 1x1 */}

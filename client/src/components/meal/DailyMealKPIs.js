@@ -13,11 +13,13 @@ const DailyMealKPIs = ({ refreshTrigger }) => {
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Get today's date in YYYY-MM-DD format
+  // Get today's local date in YYYY-MM-DD format (avoid UTC shift)
   const getTodayDate = () => {
     const today = new Date();
-    const dateStr = today.toISOString().split('T')[0];
-    return dateStr;
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
 

@@ -14,7 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   BookOpen,
-  User
+  
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { componentStyles, colors, typography } from '../../styles/designTokens';
@@ -101,7 +101,6 @@ const Layout = () => {
     { name: 'Finance', href: '/finance', icon: DollarSign },
     { name: 'Content', href: '/content', icon: Brain },
     { name: 'Journal', href: '/journal', icon: BookOpen },
-    { name: 'Profile', href: '/profile', icon: User },
   ];
 
   // Debug log

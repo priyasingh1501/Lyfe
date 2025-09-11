@@ -194,32 +194,18 @@ const GoalAlignedDay = () => {
     return activities;
   };
 
-  // Check if a habit is completed today
+  // Check if a habit is completed today (local timezone)
   const isHabitCompletedToday = (habit) => {
     if (!habit.checkins || !Array.isArray(habit.checkins)) return false;
     
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+    today.setHours(0, 0, 0, 0);
     
     const isCompleted = habit.checkins.some(checkin => {
       const checkinDate = new Date(checkin.date);
-      const checkinStr = checkinDate.toISOString().split('T')[0]; // YYYY-MM-DD format
-      return checkinStr === todayStr && checkin.completed;
+      checkinDate.setHours(0, 0, 0, 0);
+      return checkinDate.getTime() === today.getTime() && checkin.completed;
     });
-    
-    // Debug logging
-    if (habit.habit && habit.checkins.length > 0) {
-      console.log(`🔍 Habit "${habit.habit}" completion check:`, {
-        habitId: habit._id,
-        checkins: habit.checkins.map(c => ({
-          date: c.date,
-          dateStr: new Date(c.date).toISOString().split('T')[0],
-          completed: c.completed
-        })),
-        today: todayStr,
-        isCompleted
-      });
-    }
     
     return isCompleted;
   };

@@ -17,8 +17,12 @@ const authenticateToken = async (req, res, next) => {
   try {
     const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const normalizedUserId = decoded.userId || decoded.id || decoded._id || decoded.sub;
+    if (!normalizedUserId) {
+      return res.status(401).json({ message: 'Invalid token payload' });
+    }
     const User = require('../models/User');
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(normalizedUserId);
     
     if (!user || !user.isActive) {
       return res.status(401).json({ message: 'Invalid or inactive user' });
@@ -92,7 +96,7 @@ router.post('/entries', authenticateToken, async (req, res) => {
     // Return success immediately, then analyze in background
     res.status(201).json({
       message: 'Journal entry created successfully',
-      entry: newEntry,
+      entry: journal.entries[0],
       journal
     });
     
