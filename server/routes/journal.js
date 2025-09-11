@@ -114,8 +114,8 @@ router.post('/entries', authenticateToken, async (req, res) => {
             entry.content === newEntry.content &&
             new Date(entry.createdAt) > fiveMinutesAgo &&
             (!entry.alfredAnalysis || 
-             !entry.alfredAnalysis.sentiment || 
-             !entry.alfredAnalysis.sentiment.label ||
+             !entry.alfredAnalysis.emotion || 
+             !entry.alfredAnalysis.emotion.primary ||
              entry.alfredAnalysis.insights.length === 0) // Check if analysis is incomplete
           );
           

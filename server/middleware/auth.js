@@ -10,7 +10,8 @@ const auth = (req, res, next) => {
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     console.log('🔍 Auth middleware - decoded token:', decoded);
-    req.user = decoded;
+    // Normalize user id for downstream routes
+    req.user = { ...decoded, id: decoded.id || decoded.userId || decoded._id };
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);

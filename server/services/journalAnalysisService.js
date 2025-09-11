@@ -24,11 +24,14 @@ Your analysis should be:
 - Helpful for personal growth and self-reflection
 - Respectful of privacy and sensitive topics
 
+Available emotions: joy, sadness, anger, fear, surprise, disgust, love, anxiety, excitement, contentment, frustration, gratitude, loneliness, hope, disappointment, pride, shame, relief, confusion, peace, overwhelmed, confident, vulnerable, motivated, tired, energetic, calm, stressed, curious, nostalgic
+
 Return your analysis in the following JSON format:
 {
-  "sentiment": {
-    "score": -1.0 to 1.0,
-    "label": "very_negative|negative|neutral|positive|very_positive",
+  "emotion": {
+    "primary": "primary emotion from the list below",
+    "secondary": "secondary emotion from the list below (optional)",
+    "intensity": 1-10,
     "confidence": 0.0 to 1.0
   },
   "topics": [
@@ -141,21 +144,22 @@ Focus on understanding the writer's emotional state, concerns, and underlying va
     const hasPositiveWords = /good|great|happy|love|joy|amazing|wonderful|excellent|fantastic/i.test(content);
     const hasNegativeWords = /bad|terrible|awful|hate|sad|angry|frustrated|disappointed|worried|anxious/i.test(content);
     
-    let sentimentScore = 0;
-    let sentimentLabel = 'neutral';
+    let primaryEmotion = 'contentment';
+    let intensity = 5;
     
     if (hasPositiveWords && !hasNegativeWords) {
-      sentimentScore = 0.5;
-      sentimentLabel = 'positive';
+      primaryEmotion = 'joy';
+      intensity = 7;
     } else if (hasNegativeWords && !hasPositiveWords) {
-      sentimentScore = -0.5;
-      sentimentLabel = 'negative';
+      primaryEmotion = 'sadness';
+      intensity = 6;
     }
 
     return {
-      sentiment: {
-        score: sentimentScore,
-        label: sentimentLabel,
+      emotion: {
+        primary: primaryEmotion,
+        secondary: null,
+        intensity: intensity,
         confidence: 0.3
       },
       topics: [
@@ -190,7 +194,7 @@ Focus on understanding the writer's emotional state, concerns, and underlying va
     try {
       if (analyses.length === 0) {
         return {
-          sentimentTrend: 'stable',
+          emotionTrend: 'stable',
           commonTopics: [],
           evolvingBeliefs: [],
           summary: 'No entries available for trend analysis.'
@@ -221,7 +225,7 @@ Focus on understanding the writer's emotional state, concerns, and underlying va
         return JSON.parse(trendText);
       } catch (parseError) {
         return {
-          sentimentTrend: 'stable',
+          emotionTrend: 'stable',
           commonTopics: [],
           evolvingBeliefs: [],
           summary: 'Trend analysis completed but detailed insights are not available.'
@@ -230,7 +234,7 @@ Focus on understanding the writer's emotional state, concerns, and underlying va
     } catch (error) {
       console.error('Error generating trend analysis:', error);
       return {
-        sentimentTrend: 'stable',
+        emotionTrend: 'stable',
         commonTopics: [],
         evolvingBeliefs: [],
         summary: 'Unable to complete trend analysis at this time.'
@@ -243,7 +247,10 @@ Focus on understanding the writer's emotional state, concerns, and underlying va
     
     analyses.forEach((item, index) => {
       prompt += `Entry ${index + 1}:\n`;
-      prompt += `- Sentiment: ${item.analysis.sentiment.label} (${item.analysis.sentiment.score})\n`;
+      prompt += `- Emotion: ${item.analysis.emotion.primary} (intensity: ${item.analysis.emotion.intensity})\n`;
+      if (item.analysis.emotion.secondary) {
+        prompt += `- Secondary Emotion: ${item.analysis.emotion.secondary}\n`;
+      }
       prompt += `- Topics: ${item.analysis.topics.map(t => t.name).join(', ')}\n`;
       prompt += `- Beliefs: ${item.analysis.beliefs.map(b => b.belief).join(', ')}\n`;
       prompt += `- Summary: ${item.analysis.summary}\n\n`;
@@ -251,7 +258,7 @@ Focus on understanding the writer's emotional state, concerns, and underlying va
     
     prompt += `Please provide a trend analysis in JSON format:
 {
-  "sentimentTrend": "improving|declining|stable|volatile",
+  "emotionTrend": "improving|declining|stable|volatile",
   "commonTopics": ["topic1", "topic2", "topic3"],
   "evolvingBeliefs": ["belief1", "belief2"],
   "summary": "overall trend summary"

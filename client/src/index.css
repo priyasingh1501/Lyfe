@@ -1183,6 +1183,142 @@ code {
   animation: shimmer 2s infinite;
 }
 
+/* Floating Particle Animations for Quotes Card */
+@keyframes float-1 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translateY(-10px) translateX(5px);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-5px) translateX(-3px);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translateY(-15px) translateX(8px);
+    opacity: 0.7;
+  }
+}
+
+@keyframes float-2 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.2;
+  }
+  33% {
+    transform: translateY(-8px) translateX(-4px);
+    opacity: 0.5;
+  }
+  66% {
+    transform: translateY(-12px) translateX(6px);
+    opacity: 0.3;
+  }
+}
+
+@keyframes float-3 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.25;
+  }
+  20% {
+    transform: translateY(-6px) translateX(3px);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-10px) translateX(-2px);
+    opacity: 0.6;
+  }
+  60% {
+    transform: translateY(-4px) translateX(7px);
+    opacity: 0.3;
+  }
+  80% {
+    transform: translateY(-14px) translateX(-5px);
+    opacity: 0.5;
+  }
+}
+
+@keyframes float-4 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.2;
+  }
+  30% {
+    transform: translateY(-7px) translateX(-6px);
+    opacity: 0.4;
+  }
+  60% {
+    transform: translateY(-11px) translateX(4px);
+    opacity: 0.3;
+  }
+  90% {
+    transform: translateY(-3px) translateX(-8px);
+    opacity: 0.5;
+  }
+}
+
+.animate-float-1 {
+  animation: float-1 8s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float-2 10s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.animate-float-3 {
+  animation: float-3 12s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+.animate-float-4 {
+  animation: float-4 9s ease-in-out infinite;
+  animation-delay: -6s;
+}
+
+/* Time-based gradient animations */
+@keyframes dawn-gradient {
+  0%, 100% {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.15) 50%, rgba(255, 87, 34, 0.1) 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.2) 50%, rgba(255, 87, 34, 0.15) 100%);
+  }
+}
+
+@keyframes deep-blue-gradient {
+  0%, 100% {
+    background: linear-gradient(135deg, rgba(30, 73, 201, 0.1) 0%, rgba(59, 130, 246, 0.15) 50%, rgba(147, 51, 234, 0.1) 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, rgba(30, 73, 201, 0.15) 0%, rgba(59, 130, 246, 0.2) 50%, rgba(147, 51, 234, 0.15) 100%);
+  }
+}
+
+@keyframes warm-amber-gradient {
+  0%, 100% {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.15) 50%, rgba(252, 211, 77, 0.1) 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.2) 50%, rgba(252, 211, 77, 0.15) 100%);
+  }
+}
+
+.animate-dawn-gradient {
+  animation: dawn-gradient 6s ease-in-out infinite;
+}
+
+.animate-deep-blue-gradient {
+  animation: deep-blue-gradient 8s ease-in-out infinite;
+}
+
+.animate-warm-amber-gradient {
+  animation: warm-amber-gradient 7s ease-in-out infinite;
+}
+
 /* Global Glassmorphic Overrides */
 [class*="bg-background-card"],
 [class*="bg-background-secondary"],

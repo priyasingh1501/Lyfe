@@ -110,34 +110,34 @@ const JournalTrends = () => {
         </button>
       </div>
 
-      <div className="space-y-6 relative z-10">
-        {/* Sentiment Trend */}
-        <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
+      <div className="space-y-4 relative z-10">
+        {/* Emotion Trend */}
+        <Card className="p-4">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-text-primary font-jakarta tracking-wide flex items-center">
               <BarChart3 className="h-4 w-4 mr-2 text-green-400" />
-              Sentiment Trend
+              Emotion Trend
             </h4>
             <div className="flex items-center space-x-2">
-              {React.createElement(getTrendIcon(trends.sentimentTrend), { 
-                className: `h-4 w-4 ${getTrendColor(trends.sentimentTrend)}` 
+              {React.createElement(getTrendIcon(trends.emotionTrend || trends.sentimentTrend), { 
+                className: `h-4 w-4 ${getTrendColor(trends.emotionTrend || trends.sentimentTrend)}` 
               })}
-              <span className={`text-sm font-medium capitalize ${getTrendColor(trends.sentimentTrend)}`}>
-                {trends.sentimentTrend}
+              <span className={`text-sm font-medium capitalize ${getTrendColor(trends.emotionTrend || trends.sentimentTrend)}`}>
+                {trends.emotionTrend || trends.sentimentTrend}
               </span>
             </div>
           </div>
-          <div className={`w-full h-2 rounded-full ${getTrendBgColor(trends.sentimentTrend)} bg-opacity-20`}>
+          <div className={`w-full h-2 rounded-full ${getTrendBgColor(trends.emotionTrend || trends.sentimentTrend)} bg-opacity-20`}>
             <div 
-              className={`h-2 rounded-full ${getTrendBgColor(trends.sentimentTrend)} transition-all duration-1000`}
+              className={`h-2 rounded-full ${getTrendBgColor(trends.emotionTrend || trends.sentimentTrend)} transition-all duration-1000`}
               style={{ width: '100%' }}
             ></div>
           </div>
-        </div>
+        </Card>
 
         {/* Common Topics */}
         {trends.commonTopics && trends.commonTopics.length > 0 && (
-          <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
+          <Card className="p-4">
             <h4 className="text-sm font-semibold text-text-primary mb-3 font-jakarta tracking-wide flex items-center">
               <Lightbulb className="h-4 w-4 mr-2 text-yellow-400" />
               Common Topics
@@ -152,12 +152,12 @@ const JournalTrends = () => {
                 </span>
               ))}
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Evolving Beliefs */}
         {trends.evolvingBeliefs && trends.evolvingBeliefs.length > 0 && (
-          <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
+          <Card className="p-4">
             <h4 className="text-sm font-semibold text-text-primary mb-3 font-jakarta tracking-wide flex items-center">
               <Heart className="h-4 w-4 mr-2 text-pink-400" />
               Evolving Beliefs
@@ -170,7 +170,7 @@ const JournalTrends = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         )}
 
       </div>

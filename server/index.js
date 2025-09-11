@@ -23,6 +23,8 @@ const mindfulnessRoutes = require('./routes/mindfulness');
 const foodRoutes = require('./routes/food');
 const mealsRoutes = require('./routes/meals');
 const devRoutes = require('./routes/dev');
+const aiQuoteAnalysisRoutes = require('./routes/aiQuoteAnalysis');
+const billingRoutes = require('./routes/billing');
 
 // Debug environment variable loading
 console.log('🔍 Environment check on startup:');
@@ -151,6 +153,8 @@ app.use('/api/mindfulness', mindfulnessRoutes);
 app.use('/api/food', foodRoutes);
 app.use('/api/meals', mealsRoutes);
 app.use('/api/dev', devRoutes);
+app.use('/api/ai', aiQuoteAnalysisRoutes);
+app.use('/api/billing', billingRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

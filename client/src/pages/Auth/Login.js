@@ -29,7 +29,7 @@ const Login = () => {
     try {
       const result = await login(formData.email, formData.password);
       if (result.success) {
-        navigate('/dashboard');
+        navigate('/overview');
       }
     } catch (error) {
       console.error('Login error:', error);

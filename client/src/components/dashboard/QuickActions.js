@@ -83,10 +83,10 @@ const QuickActions = () => {
               href={action.href}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className={`${action.color} ${action.hoverColor} text-white rounded-lg p-3 transition-all duration-200 group cursor-pointer border-2 border-transparent hover:border-[#1E49C9]/30`}
+              className={`relative overflow-hidden bg-white/10 hover:bg-white/15 backdrop-blur-md text-white rounded-xl p-4 transition-all duration-300 group cursor-pointer border border-white/20 shadow-lg shadow-black/10 hover:shadow-black/20`}
             >
               <div className="flex flex-col items-center text-center space-y-2">
-                <div className="p-2 bg-white bg-opacity-20 rounded-lg group-hover:bg-opacity-30 transition-all duration-200">
+                <div className="p-2 bg-white/20 rounded-lg group-hover:bg-white/30 transition-all duration-200">
                   <IconComponent className="h-5 w-5" />
                 </div>
                 <div>

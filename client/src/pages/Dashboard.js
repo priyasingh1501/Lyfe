@@ -44,6 +44,31 @@ const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [youtubePlayer, setYoutubePlayer] = useState(null);
+  const [currentGradient, setCurrentGradient] = useState('deep-blue');
+  
+  // Function to get time-based gradient
+  const getTimeBasedGradient = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      return 'dawn'; // 5 AM - 12 PM
+    } else if (hour >= 12 && hour < 18) {
+      return 'warm-amber'; // 12 PM - 6 PM
+    } else {
+      return 'deep-blue'; // 6 PM - 5 AM
+    }
+  };
+
+  // Update gradient based on time
+  useEffect(() => {
+    setCurrentGradient(getTimeBasedGradient());
+    
+    // Update gradient every hour
+    const interval = setInterval(() => {
+      setCurrentGradient(getTimeBasedGradient());
+    }, 60 * 60 * 1000); // Check every hour
+    
+    return () => clearInterval(interval);
+  }, []);
   
   // Safe arrays for MonthGrid compatibility
   const safeHabits = Array.isArray(habits) ? habits : [];
@@ -755,7 +780,7 @@ const Dashboard = () => {
     });
     
     if (dayMeals.length > 0) {
-      let totalScore = 0;
+      let totalMealScore = 0;
       let mealCount = 0;
       
       dayMeals.forEach(meal => {
@@ -777,12 +802,12 @@ const Dashboard = () => {
           }
         });
         
-        totalScore += Math.max(0, mealScore);
+        totalMealScore += Math.max(0, mealScore);
         mealCount++;
       });
       
-      const averageScore = mealCount > 0 ? totalScore / mealCount : 0;
-      breakdown.mealEffects = Math.min(Math.round(averageScore * dayMeals.length), 25);
+      // Cap the meal effects score at 25 points total
+      breakdown.mealEffects = Math.min(Math.round(totalMealScore), 25);
     }
     
     // Impulse buy penalty (0 to -10)
@@ -803,7 +828,7 @@ const Dashboard = () => {
       breakdown.impulseBuyPenalty = Math.min(penalty, 10);
     }
     
-    totalScore = Math.max(0, breakdown.mindfulness + breakdown.goalProgress + breakdown.habitCompletion + breakdown.mealEffects + breakdown.impulseBuyPenalty);
+    totalScore = Math.max(0, breakdown.mindfulness + breakdown.goalProgress + breakdown.habitCompletion + breakdown.mealEffects - breakdown.impulseBuyPenalty);
     
     return { totalScore, breakdown };
   };
@@ -1322,53 +1347,78 @@ const Dashboard = () => {
 
         {/* Quote Card - 1x1 */}
         <div className="col-span-1">
-          <Card className="h-full group">
-        <div className="text-center relative h-full flex flex-col justify-center items-center">
-          {/* Refresh Button - Only visible on hover */}
-          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-            <button
-              onClick={refreshQuote}
-              className="p-1.5 text-[#1E49C9] hover:text-[#1E49C9]/80 hover:bg-[#2A313A] rounded-full transition-all duration-200"
-              title="Get a new quote"
-            >
-              <RefreshCw size={14} className="hover:rotate-180 transition-transform duration-500" />
-            </button>
-          </div>
-          
-          {quotesLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E49C9]"></div>
+          <Card className="h-full group relative overflow-hidden">
+            {/* Time-based Animated Background Gradient */}
+            <div className={`absolute inset-0 ${
+              currentGradient === 'dawn' ? 'animate-dawn-gradient' :
+              currentGradient === 'warm-amber' ? 'animate-warm-amber-gradient' :
+              'animate-deep-blue-gradient'
+            }`}></div>
+            
+            {/* Floating Particles Animation */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute top-1/4 left-1/4 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#1E49C9]/20 rounded-full animate-float-1"></div>
+              <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-amber-400/30 rounded-full animate-float-2"></div>
+              <div className="absolute top-1/2 right-1/3 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-purple-400/25 rounded-full animate-float-3"></div>
+              <div className="absolute bottom-1/4 left-1/3 w-1 h-1 bg-blue-400/20 rounded-full animate-float-4"></div>
             </div>
-          ) : (
-            <div className="space-y-4 pr-8 w-full">
-              {/* Quote - Major Emphasis */}
-              <blockquote className="font-jakarta text-lg lg:text-xl font-medium text-text-primary italic leading-relaxed px-4">
-                "{getQuoteOfTheDay()}"
-              </blockquote>
+            
+            {/* Large Faded Quotation Marks */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-[#1E49C9]/5 text-[8rem] sm:text-[10rem] lg:text-[12rem] font-serif leading-none select-none">
+                "
+              </div>
+            </div>
+            
+            <div className="relative z-10 h-full flex flex-col justify-center items-center">
+              {/* Refresh Button - Only visible on hover */}
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
+                <button
+                  onClick={refreshQuote}
+                  className="p-1.5 text-[#1E49C9] hover:text-[#1E49C9]/80 hover:bg-[#2A313A] rounded-full transition-all duration-200"
+                  title="Get a new quote"
+                >
+                  <RefreshCw size={14} className="hover:rotate-180 transition-transform duration-500" />
+                </button>
+              </div>
               
-              {/* Author - Secondary Emphasis */}
-              <cite className="font-jakarta text-sm text-[#1E49C9] font-medium leading-relaxed tracking-wider">
-                — {getQuoteAuthor()}
-              </cite>
-              
-              {/* Source - Tertiary Emphasis */}
-              {dashboardQuotes.length > 0 && getQuoteSource() && (
-                <p className="font-jakarta text-xs text-text-secondary">
-                  from <span className="text-[#1E49C9] font-medium">{getQuoteSource()}</span>
-                </p>
-              )}
-              
-              
-              {/* Add Quotes Hint - Least Emphasis */}
-              {dashboardQuotes.length === 0 && !quotesLoading && (
-                <p className="font-jakarta text-xs text-text-secondary opacity-40 mt-2">
-                  Add quotes in Content tab to see them here
-                </p>
+              {quotesLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E49C9]"></div>
+                </div>
+              ) : (
+                <div className="space-y-4 sm:space-y-6 pr-4 sm:pr-8 w-full px-2 sm:px-4 h-full flex flex-col justify-center">
+                  {/* Quote - Major Emphasis with Enhanced Typography */}
+                  <blockquote className="font-jakarta text-lg sm:text-xl lg:text-2xl font-light text-text-primary italic leading-relaxed relative z-10">
+                    <span className="text-[#1E49C9]/20 text-2xl sm:text-3xl lg:text-4xl font-serif absolute -left-1 sm:-left-2 -top-1 sm:-top-2">"</span>
+                    <span className="relative z-10 pl-4 sm:pl-6 pr-4 sm:pr-6 block">{getQuoteOfTheDay()}</span>
+                    <span className="text-[#1E49C9]/20 text-2xl sm:text-3xl lg:text-4xl font-serif absolute -right-1 sm:-right-2 -bottom-1 sm:-bottom-2">"</span>
+                  </blockquote>
+                  
+                  {/* Author - Secondary Emphasis with Right Alignment */}
+                  <div className="text-right pr-2 sm:pr-0">
+                    <cite className="font-jakarta text-xs sm:text-sm text-[#1E49C9] font-medium leading-relaxed tracking-wider block">
+                      — {getQuoteAuthor()}
+                    </cite>
+                    
+                    {/* Source - Tertiary Emphasis */}
+                    {dashboardQuotes.length > 0 && getQuoteSource() && (
+                      <p className="font-jakarta text-xs text-text-secondary mt-1">
+                        from <span className="text-[#1E49C9] font-medium">{getQuoteSource()}</span>
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Add Quotes Hint - Least Emphasis */}
+                  {dashboardQuotes.length === 0 && !quotesLoading && (
+                    <p className="font-jakarta text-xs text-text-secondary opacity-40 mt-2 text-center px-2">
+                      Add quotes in Content tab to see them here
+                    </p>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
-      </Card>
+          </Card>
         </div>
 
         {/* Year Grid - Full Width */}

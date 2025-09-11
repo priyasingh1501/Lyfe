@@ -89,9 +89,8 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+    // Update last login without triggering full validation on legacy users
+    await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
 
     // Generate JWT token
     const token = jwt.sign(

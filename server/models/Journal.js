@@ -46,15 +46,19 @@ const journalEntrySchema = new mongoose.Schema({
     description: String
   },
   alfredAnalysis: {
-    sentiment: {
-      score: {
-        type: Number,
-        min: -1,
-        max: 1
-      },
-      label: {
+    emotion: {
+      primary: {
         type: String,
-        enum: ['very_negative', 'negative', 'neutral', 'positive', 'very_positive']
+        enum: ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'love', 'anxiety', 'excitement', 'contentment', 'frustration', 'gratitude', 'loneliness', 'hope', 'disappointment', 'pride', 'shame', 'relief', 'confusion', 'peace', 'overwhelmed', 'confident', 'vulnerable', 'motivated', 'tired', 'energetic', 'calm', 'stressed', 'curious', 'nostalgic']
+      },
+      secondary: {
+        type: String,
+        enum: ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'love', 'anxiety', 'excitement', 'contentment', 'frustration', 'gratitude', 'loneliness', 'hope', 'disappointment', 'pride', 'shame', 'relief', 'confusion', 'peace', 'overwhelmed', 'confident', 'vulnerable', 'motivated', 'tired', 'energetic', 'calm', 'stressed', 'curious', 'nostalgic']
+      },
+      intensity: {
+        type: Number,
+        min: 1,
+        max: 10
       },
       confidence: {
         type: Number,

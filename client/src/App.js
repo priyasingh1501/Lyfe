@@ -12,6 +12,7 @@ import Content from './pages/Content';
 import GoalAlignedDay from './pages/GoalAlignedDay';
 import Food from './pages/Food';
 import AiChat from './pages/AiChat';
+import Profile from './pages/Profile';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import './index.css';
@@ -140,6 +141,7 @@ function App() {
                 <Route path="goal-aligned-day" element={<GoalAlignedDay />} />
                 <Route path="food" element={<Food />} />
                 <Route path="ai-chat" element={<AiChat />} />
+                <Route path="profile" element={<Profile />} />
               </Route>
               
               {/* Catch all route */}

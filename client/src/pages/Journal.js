@@ -218,25 +218,37 @@ const Journal = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setEntries([data.entry, ...entries]);
-        setShowNewEntryForm(false);
-        setNewEntry({
-          title: '',
-          content: '',
-          type: 'daily',
-          mood: 'neutral',
-          tags: [],
-          isPrivate: false,
-          mindfulnessDimensions: {
-            presence: { rating: 0 },
-            emotionAwareness: { rating: 0 },
-            intentionality: { rating: 0 },
-            attentionQuality: { rating: 0 },
-            compassion: { rating: 0 }
-          }
-        });
-        toast.success('Journal entry created successfully!');
-        fetchStats();
+        console.log('Server response data:', data);
+        console.log('Entry data:', data.entry);
+        console.log('Entry ID:', data.entry?._id);
+        
+        // Ensure the entry has an _id before adding to state
+        if (data.entry && data.entry._id) {
+          setEntries([data.entry, ...entries]);
+          setShowNewEntryForm(false);
+          setNewEntry({
+            title: '',
+            content: '',
+            type: 'daily',
+            mood: 'neutral',
+            tags: [],
+            isPrivate: false,
+            mindfulnessDimensions: {
+              presence: { rating: 0 },
+              emotionAwareness: { rating: 0 },
+              intentionality: { rating: 0 },
+              attentionQuality: { rating: 0 },
+              compassion: { rating: 0 }
+            }
+          });
+          toast.success('Journal entry created successfully!');
+          fetchStats();
+        } else {
+          console.error('Entry missing _id:', data.entry);
+          toast.error('Entry created but missing ID. Refreshing entries...');
+          // Refresh the journal entries to get the latest data with proper IDs
+          fetchJournal();
+        }
       } else {
         const errorData = await response.json();
         console.error('Failed to create entry:', errorData);
@@ -448,87 +460,43 @@ const Journal = () => {
   }
 
   return (
-    <Section>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <Header level={1} className="tracking-tight">Journal</Header>
-          <p className="text-text-secondary mt-2">Capture your thoughts, memories, and reflections</p>
-        </div>
-      </div>
-
-      {/* Alfred's Trend Analysis */}
-      <div className="mb-8">
-        <JournalTrends />
-      </div>
-
-      {/* Stats Overview */}
-      {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <div className="flex items-center">
-              <div className="ml-4">
-                <p className="text-sm font-medium text-text-secondary font-jakarta tracking-wide">TOTAL ENTRIES</p>
-                <p className="text-2xl font-bold text-text-primary font-mono">{stats.totalEntries}</p>
+    <div className="p-6">
+      {/* Bento Grid Layout - Pinterest Style */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-[minmax(200px,auto)] [&>*:nth-child(odd)]:animate-fade-in [&>*:nth-child(even)]:animate-fade-in-delayed">
+        
+        {/* Header Card - Full Width */}
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
+          <Card className="h-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <Header level={1} className="tracking-tight">Journal</Header>
+                  <p className="text-text-secondary mt-2">Capture your thoughts, memories, and reflections</p>
+                </div>
               </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center">
-              <div className="ml-4">
-                <p className="text-sm font-medium text-text-secondary font-jakarta tracking-wide">CURRENT STREAK</p>
-                <p className="text-2xl font-bold text-text-primary font-mono">{stats.currentStreak} days</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center">
-              <div className="ml-4">
-                <p className="text-sm font-medium text-text-secondary font-jakarta tracking-wide">LONGEST STREAK</p>
-                <p className="text-2xl font-bold text-text-primary font-mono">{stats.longestStreak} days</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center">
-              <div className="ml-4">
-                <p className="text-sm font-medium text-text-secondary font-jakarta tracking-wide">LAST ENTRY</p>
-                <p className="text-lg font-bold text-text-primary font-mono">
-                  {stats.lastEntryDate ? new Date(stats.lastEntryDate).toLocaleDateString() : 'Never'}
-                </p>
+              
+              {/* Action Bar */}
+              <div className="flex justify-start gap-4">
+                <Button
+                  onClick={() => setShowNewEntryForm(true)}
+                  variant="primary"
+                  className="inline-flex items-center"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  NEW ENTRY
+                </Button>
               </div>
             </div>
           </Card>
         </div>
-      )}
 
-      {/* Action Bar */}
-      <div className="flex justify-start gap-4 mb-6">
-        <Button
-          onClick={() => setShowNewEntryForm(true)}
-          variant="primary"
-          className="inline-flex items-center"
-        >
-          <Plus className="h-5 w-5 mr-2" />
-          NEW ENTRY
-        </Button>
-        <Button
-          onClick={() => setShowMindfulnessCheckin(true)}
-          variant="secondary"
-          className="inline-flex items-center"
-        >
-          <Heart className="h-5 w-5 mr-2" />
-          MINDFULNESS CHECK-IN
-        </Button>
-      </div>
-
-      {/* New Entry Form */}
-      <AnimatePresence>
+        {/* New Entry Form - Full Width - Appears right after title */}
+        <AnimatePresence>
           {showNewEntryForm && (
-            <Card className="mb-8">
-              <h3 className="text-lg font-semibold text-text-primary mb-4 font-jakarta tracking-wide">Create New Entry</h3>
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
+              <Card className="h-full">
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-text-primary mb-4 font-jakarta tracking-wide">Create New Entry</h3>
               
               <form onSubmit={handleCreateEntry} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -558,7 +526,7 @@ const Journal = () => {
                 </div>
 
                 <Input
-                  label="Content *"
+                  label="Your Reflection *"
                   type="textarea"
                   value={newEntry.content}
                   onChange={(e) => setNewEntry({ ...newEntry, content: e.target.value })}
@@ -803,50 +771,126 @@ const Journal = () => {
                   >
                     Create Entry
                   </Button>
+                  </div>
+                </form>
                 </div>
-              </form>
-            </Card>
+              </Card>
+            </div>
           )}
-      </AnimatePresence>
+        </AnimatePresence>
 
-      {/* Mindfulness Check-in */}
-      <AnimatePresence>
-        {showMindfulnessCheckin && (
-          <Card className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide">Mindfulness Check-in</h3>
-              <Button
-                onClick={() => setShowMindfulnessCheckin(false)}
-                variant="ghost"
-                size="sm"
-              >
-                Close
-              </Button>
+        {/* Alfred's Trend Analysis - Full Width */}
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
+          <div className="h-full">
+            <JournalTrends />
+          </div>
+        </div>
+
+        {/* Stats Overview Cards */}
+        {stats && (
+          <>
+            <div className="col-span-1">
+              <Card className="h-full">
+                <div className="p-6">
+                  <div className="flex items-center">
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-text-secondary font-jakarta tracking-wide">TOTAL ENTRIES</p>
+                      <p className="text-2xl font-bold text-text-primary font-mono">{stats.totalEntries}</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
             </div>
-            <MindfulnessCheckin 
-              onCheckinComplete={handleMindfulnessComplete}
-              goals={goals}
-              getTodayTasksForGoal={getTodayTasksForGoal}
-              getActivitiesForGoal={getActivitiesForGoal}
-              getTodayHoursForGoal={getTodayHoursForGoal}
-            />
-          </Card>
+
+            <div className="col-span-1">
+              <Card className="h-full">
+                <div className="p-6">
+                  <div className="flex items-center">
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-text-secondary font-jakarta tracking-wide">CURRENT STREAK</p>
+                      <p className="text-2xl font-bold text-text-primary font-mono">{stats.currentStreak} days</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            <div className="col-span-1">
+              <Card className="h-full">
+                <div className="p-6">
+                  <div className="flex items-center">
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-text-secondary font-jakarta tracking-wide">LONGEST STREAK</p>
+                      <p className="text-2xl font-bold text-text-primary font-mono">{stats.longestStreak} days</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            <div className="col-span-1">
+              <Card className="h-full">
+                <div className="p-6">
+                  <div className="flex items-center">
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-text-secondary font-jakarta tracking-wide">LAST ENTRY</p>
+                      <p className="text-lg font-bold text-text-primary font-mono">
+                        {stats.lastEntryDate ? new Date(stats.lastEntryDate).toLocaleDateString() : 'Never'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </>
         )}
-      </AnimatePresence>
 
-      {/* Journal Entries */}
-      <div className="space-y-6">
-          {filteredEntries.length === 0 ? (
-            <div className="text-center py-12">
-              <BookOpen className="mx-auto h-12 w-12 text-text-tertiary" />
-              <h3 className="mt-2 text-sm font-medium text-text-primary font-jakarta tracking-wide">No entries yet</h3>
-              <p className="mt-1 text-sm text-text-secondary font-jakarta">
-                {filters.type || filters.mood ? 'Try adjusting your filters' : 'Get started by creating your first journal entry'}
-              </p>
+        {/* Mindfulness Check-in - Full Width */}
+        <AnimatePresence>
+          {showMindfulnessCheckin && (
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
+              <Card className="h-full">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide">Mindfulness Check-in</h3>
+                    <Button
+                      onClick={() => setShowMindfulnessCheckin(false)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Close
+                    </Button>
+                  </div>
+                  <MindfulnessCheckin 
+                    onCheckinComplete={handleMindfulnessComplete}
+                    goals={goals}
+                    getTodayTasksForGoal={getTodayTasksForGoal}
+                    getActivitiesForGoal={getActivitiesForGoal}
+                    getTodayHoursForGoal={getTodayHoursForGoal}
+                  />
+                </div>
+              </Card>
             </div>
-          ) : (
-            filteredEntries.map((entry, index) => (
-              <Card key={entry._id} className="overflow-hidden">
+          )}
+        </AnimatePresence>
+
+        {/* Journal Entries */}
+        {filteredEntries.length === 0 ? (
+          <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
+            <Card className="h-full">
+              <div className="text-center py-12">
+                <BookOpen className="mx-auto h-12 w-12 text-text-tertiary" />
+                <h3 className="mt-2 text-sm font-medium text-text-primary font-jakarta tracking-wide">No entries yet</h3>
+                <p className="mt-1 text-sm text-text-secondary font-jakarta">
+                  {filters.type || filters.mood ? 'Try adjusting your filters' : 'Get started by creating your first journal entry'}
+                </p>
+              </div>
+            </Card>
+          </div>
+        ) : (
+          filteredEntries.map((entry, index) => (
+            <div key={entry._id} className="col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-2">
+              <Card className="h-full overflow-hidden">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className={`p-2 rounded-lg ${getTypeIcon(entry.type).color} bg-opacity-20`}>
@@ -887,8 +931,11 @@ const Journal = () => {
                       onAnalyze={handleAnalyzeEntry}
                     />
                   ) : (
-                    <div className="mt-4 p-4 bg-red-800 border border-red-600 rounded-lg">
-                      <p className="text-red-300 text-sm">Error: Entry ID is missing. Cannot analyze this entry.</p>
+                    <div className="mt-4 p-4 bg-yellow-800 border border-yellow-600 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                        <p className="text-yellow-300 text-sm">Entry is being processed. Analysis will be available shortly.</p>
+                      </div>
                     </div>
                   )}
                   {console.log('Rendering AlfredAnalysis for entry:', entry._id, entry.title)}
@@ -934,10 +981,11 @@ const Journal = () => {
                     </div>
                   </div>
               </Card>
-            ))
-          )}
+            </div>
+          ))
+        )}
       </div>
-    </Section>
+    </div>
   );
 };
 

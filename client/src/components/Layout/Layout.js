@@ -13,7 +13,8 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  User
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { componentStyles, colors, typography } from '../../styles/designTokens';
@@ -100,6 +101,7 @@ const Layout = () => {
     { name: 'Finance', href: '/finance', icon: DollarSign },
     { name: 'Content', href: '/content', icon: Brain },
     { name: 'Journal', href: '/journal', icon: BookOpen },
+    { name: 'Profile', href: '/profile', icon: User },
   ];
 
   // Debug log
@@ -391,22 +393,37 @@ const Layout = () => {
             "border-t border-[rgba(255,255,255,0.2)] transition-all duration-300 relative z-10",
             isMobile ? 'p-4' : sidebarCollapsed ? 'p-2' : 'p-4'
           )}>
-            <div className={cn(
-              "flex items-center rounded-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] backdrop-blur-[28px] backdrop-saturate-[140%] shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_4px_6px_-1px_rgba(0,0,0,0.1)] transition-all duration-300",
-              isMobile ? 'space-x-3 p-3' : sidebarCollapsed ? 'justify-center p-2' : 'space-x-3 p-3'
-            )}>
-              <div className="w-8 h-8 bg-accent-green rounded-full flex items-center justify-center">
-                <span className="text-text-inverse text-sm font-semibold">
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
-                </span>
+            <div
+              onClick={() => navigate('/profile')}
+              role="button"
+              tabIndex={0}
+              className={cn(
+                "w-full flex items-center rounded-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] backdrop-blur-[28px] backdrop-saturate-[140%] shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_4px_6px_-1px_rgba(0,0,0,0.1)] transition-all duration-300 text-left",
+                isMobile ? 'space-x-3 p-3' : sidebarCollapsed ? 'justify-center p-2' : 'space-x-3 p-3'
+              )}
+              aria-label="Open profile"
+            >
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-accent-green flex items-center justify-center">
+                {user?.profilePicture ? (
+                  <img src={user.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-text-inverse text-sm font-semibold">
+                    {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+                  </span>
+                )}
               </div>
               <div className={cn(
                 "flex-1 min-w-0 transition-all duration-300",
                 isMobile ? 'opacity-100' : sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
               )}>
                 <p className="text-sm font-medium text-text-primary truncate">
-                  {user?.email || 'User'}
+                  {user?.firstName || user?.lastName ? `${user?.firstName || ''} ${user?.lastName || ''}`.trim() : (user?.email || 'User')}
                 </p>
+                {user?.bio && (
+                  <p className="text-xs text-text-muted truncate">
+                    {user.bio}
+                  </p>
+                )}
               </div>
               <Tooltip
                 content="Logout"
@@ -416,7 +433,8 @@ const Layout = () => {
               >
                 <div>
                   <button
-                    onClick={handleLogout}
+                    onClick={(e) => { e.stopPropagation(); handleLogout(); }}
+                    type="button"
                     className={cn(
                       "bg-black text-text-muted hover:text-text-primary hover:bg-gray-800 transition-colors transition-all duration-300 rounded-lg p-2",
                       isMobile ? 'opacity-100' : sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
