@@ -301,7 +301,7 @@ const Dashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Tasks response:', response.data);
-      setTasks(response.data || []);
+      setTasks((response.data && response.data.tasks) || []);
     } catch (error) {
       console.error('Error loading tasks:', error);
       console.log('Setting tasks to empty array due to error');
@@ -323,7 +323,7 @@ const Dashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Meals response:', response.data);
-      setMeals(response.data || []);
+      setMeals((response.data && response.data.meals) || []);
     } catch (error) {
       console.error('Error loading meals:', error);
       console.log('Setting meals to empty array due to error');

@@ -51,7 +51,7 @@ const GoalAlignedDay = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setHabits(data || []);
+        setHabits(Array.isArray(data) ? data : (data.habits || []));
       } else {
         console.error('❌ Habits response not ok:', response.status);
         const errorText = await response.text();
