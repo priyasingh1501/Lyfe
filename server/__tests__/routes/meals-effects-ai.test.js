@@ -3,9 +3,10 @@ import express from 'express';
 import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 
 process.env.JWT_SECRET = 'test-secret-key';
+process.env.OPENAI_API_KEY = 'test-key';
 
 // Mock OpenAIService used by meals route
-vi.mock('../../services/openaiService.js', () => {
+vi.mock('../../services/openaiService', () => {
   return {
     default: vi.fn().mockImplementation(() => ({
       analyzeMealEffects: vi.fn().mockResolvedValue({
@@ -20,9 +21,18 @@ vi.mock('../../services/openaiService.js', () => {
   };
 });
 
+// Also mock OpenAI SDK to avoid constructor checks in any transitive imports
+vi.mock('openai', () => ({
+  default: vi.fn().mockImplementation(() => ({
+    chat: { completions: { create: vi.fn().mockResolvedValue({ choices: [{ message: { content: '{}' } }] }) } }
+  }))
+}));
+
+// Import after mocks
 import mealsRoutes from '../../routes/meals.js';
 import authRoutes from '../../routes/auth.js';
-import Meal from '../../models/Meal.js';
+import mongoose from 'mongoose';
+const Meal = mongoose.models.Meal || (await import('../../models/Meal.js')).default || (await import('../../models/Meal.js'));
 import User from '../../models/User.js';
 
 const app = express();

@@ -655,7 +655,7 @@ const GoalAlignedDay = () => {
                         </span>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        {goalActivities.slice(0, 6).map((activity, activityIndex) => (
+                        {goalActivities.map((activity, activityIndex) => (
                           <div key={activity._id || activityIndex} className="flex flex-col p-2 bg-[#11151A]/50 rounded-lg border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] transition-colors">
                             {/* Activity Header */}
                             <div className="flex items-center justify-between mb-2">
@@ -707,11 +707,6 @@ const GoalAlignedDay = () => {
                             </div>
                           </div>
                         ))}
-                        {goalActivities.length > 6 && (
-                          <div className="col-span-2 text-xs text-[#94A3B8] text-center py-2 bg-[#11151A]/30 rounded">
-                            +{goalActivities.length - 6} more activities
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
