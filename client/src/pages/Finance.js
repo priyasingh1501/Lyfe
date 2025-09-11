@@ -1338,23 +1338,33 @@ const Finance = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">CATEGORY</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 font-jakarta tracking-wider">EXPENSE GOAL</label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({...formData, category: e.target.value})}
                   className={componentStyles.input.base}
                 >
-                  <option value="">Select Category</option>
-                  <option value="food">Food</option>
-                  <option value="transportation">Transportation</option>
-                  <option value="shopping">Shopping</option>
-                  <option value="entertainment">Entertainment</option>
-                  <option value="healthcare">Healthcare</option>
-                  <option value="utilities">Utilities</option>
-                  <option value="housing">Housing</option>
-                  <option value="travel">Travel</option>
-                  <option value="education">Education</option>
-                  <option value="other">Other</option>
+                  <option value="">Select Expense Goal</option>
+                  {expenseGoals && expenseGoals.length > 0 ? (
+                    expenseGoals.map((goal) => (
+                      <option key={goal._id} value={goal.category}>
+                        {mapBackendCategoryToDisplayName(goal.category)}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="food">Nourishing food</option>
+                      <option value="transportation">Safe, convenient travel</option>
+                      <option value="housing">Safe, comfortable and peaceful home</option>
+                      <option value="utilities">Maintain living essentials</option>
+                      <option value="healthcare">Long term wellbeing and protective healthcare</option>
+                      <option value="entertainment">Enjoy life, have fun</option>
+                      <option value="shopping">Value, comfort or joyful shopping</option>
+                      <option value="education">Learning, growing and investing in my future</option>
+                      <option value="travel">Exploring new places</option>
+                      <option value="other">Other</option>
+                    </>
+                  )}
                 </select>
               </div>
 

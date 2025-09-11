@@ -95,10 +95,10 @@ describe('Meals: GET /api/meals/effects/ai', () => {
     await Meal.create({
       userId: (await User.findOne({ email: 'qa-meals@example.com' }))._id,
       ts: new Date(),
-      items: [{ grams: 100, customName: 'Oatmeal' }],
+      items: [{ foodId: new mongoose.Types.ObjectId(), grams: 100, customName: 'Oatmeal' }],
       computed: {
         totals: { kcal: 150, carbs: 27 },
-        effects: { inflammation: { score: 5, label: 'Inflammation', why: ['sugar spike'] } }
+        effects: { inflammation: { score: 5, label: 'High', why: ['sugar spike'] } }
       },
       context: { stressed: false }
     });

@@ -22,14 +22,21 @@ router.get('/search', auth, async (req, res) => {
 
     const searchQuery = foldName(q.trim());
     
-    // Text search on nameFold
-    const foods = await FoodItem.find(
-      { $text: { $search: searchQuery } },
-      { score: { $meta: 'textScore' } }
-    )
-          .sort({ score: { $meta: 'textScore' } })
-      .limit(parseInt(limit))
-      .select('name portionGramsDefault portionUnits nutrients tags gi fodmap novaClass provenance qualityFlags');
+    let foods = [];
+    try {
+      // Text search on nameFold (requires text index)
+      foods = await FoodItem.find(
+        { $text: { $search: searchQuery } },
+        { score: { $meta: 'textScore' } }
+      )
+        .sort({ score: { $meta: 'textScore' } })
+        .limit(parseInt(limit))
+        .select('name portionGramsDefault portionUnits nutrients tags gi fodmap novaClass provenance qualityFlags');
+    } catch (e) {
+      // If text index is missing, fall back to fuzzy search path below
+      console.warn('⚠️ Text search failed, falling back to fuzzy search:', e.message);
+      foods = [];
+    }
 
     // If no results from text search, try fuzzy matching
     if (foods.length === 0) {
