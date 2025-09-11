@@ -101,13 +101,14 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Title is required' });
     }
     
-    // Validate goal IDs if provided
-    if (goalIds && goalIds.length > 0) {
-      const validGoals = await LifestyleGoal.find({ _id: { $in: goalIds }, userId: req.user.userId });
-      console.log('Valid goals found:', validGoals.length, 'out of', goalIds.length);
-      if (validGoals.length !== goalIds.length) {
-        return res.status(400).json({ success: false, message: 'Invalid goal IDs' });
-      }
+    // Validate goal IDs if provided (tolerant: filter out invalid ObjectIds)
+    let filteredGoalIds = Array.isArray(goalIds) ? goalIds : [];
+    filteredGoalIds = filteredGoalIds.filter(id => typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id));
+    if (filteredGoalIds.length > 0) {
+      const validGoals = await LifestyleGoal.find({ _id: { $in: filteredGoalIds }, userId: req.user.userId });
+      console.log('Valid goals found:', validGoals.length, 'out of', filteredGoalIds.length);
+      // Keep only valid goal ids
+      filteredGoalIds = validGoals.map(g => g._id.toString());
     }
     
     const task = new Task({
@@ -116,7 +117,7 @@ router.post('/', auth, async (req, res) => {
       description,
       priority: priority || 'medium',
       dueDate: dueDate ? new Date(dueDate) : null,
-      goalIds: goalIds || [],
+      goalIds: filteredGoalIds,
       estimatedDuration: estimatedDuration || 30
     });
     

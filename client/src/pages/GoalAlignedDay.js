@@ -173,21 +173,23 @@ const GoalAlignedDay = () => {
     const goalTasks = getTasksForGoal(goalId);
     const goalHabits = getHabitsForGoal(goalId);
     
-    // Combine tasks and habits into a unified list
+    // Combine tasks and habits into a unified list with stable IDs
     const activities = [
-      ...goalTasks.map(task => ({
-        ...task,
-        type: 'task',
-        displayName: task.title,
-        duration: task.estimatedDuration || 0,
-        isCompleted: task.status === 'completed'
-      })),
       ...goalHabits.map(habit => ({
         ...habit,
+        _id: habit._id || `habit-${habit.habit}`,
         type: 'habit',
         displayName: habit.habit,
         duration: habit.valueMin || 0,
         isCompleted: isHabitCompletedToday(habit)
+      })),
+      ...goalTasks.map(task => ({
+        ...task,
+        _id: task._id,
+        type: 'task',
+        displayName: task.title,
+        duration: task.estimatedDuration || 0,
+        isCompleted: task.status === 'completed'
       }))
     ];
     
@@ -642,7 +644,7 @@ const GoalAlignedDay = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         {goalActivities.map((activity, activityIndex) => (
-                          <div key={activity._id || activityIndex} className="flex flex-col p-2 bg-[#11151A]/50 rounded-lg border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] transition-colors">
+                          <div key={`${activity.type || 'activity'}-${activity._id || activityIndex}`} className="flex flex-col p-2 bg-[#11151A]/50 rounded-lg border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] transition-colors">
                             {/* Activity Header */}
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs font-medium text-[#1E49C9]">

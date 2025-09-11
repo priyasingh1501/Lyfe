@@ -74,6 +74,53 @@ const Finance = () => {
     color: '#1E49C9'
   });
 
+  // Derived KPI helpers
+  const toMonthKey = (d) => {
+    const date = new Date(d);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  };
+
+  const getCurrentMonthKey = () => new Date().toISOString().slice(0, 7);
+
+  const getPreviousMonthKey = () => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 7);
+  };
+
+  const getMonthlyTotals = () => {
+    const map = {};
+    (expenses || []).forEach((exp) => {
+      if (!exp || !exp.date || typeof exp.amount !== 'number') return;
+      const key = toMonthKey(exp.date);
+      map[key] = (map[key] || 0) + exp.amount;
+    });
+    return map;
+  };
+
+  const currentMonthKey = getCurrentMonthKey();
+  const previousMonthKey = getPreviousMonthKey();
+  const monthlyTotals = getMonthlyTotals();
+  const currentMonthTotal = monthlyTotals[currentMonthKey] || 0;
+  const previousMonthTotal = monthlyTotals[previousMonthKey] || 0;
+
+  const getSixMonthAverage = () => {
+    const months = [];
+    const d = new Date();
+    for (let i = 0; i < 6; i++) {
+      const key = d.toISOString().slice(0, 7);
+      months.push(monthlyTotals[key] || 0);
+      d.setMonth(d.getMonth() - 1);
+    }
+    if (months.length === 0) return 0;
+    const sum = months.reduce((a, b) => a + b, 0);
+    return sum / months.length;
+  };
+
+  const monthlyAverage6 = getSixMonthAverage();
+
   useEffect(() => {
     fetchFinancialData();
   }, []);
@@ -855,7 +902,7 @@ const Finance = () => {
                 </div>
                 <div className="flex-1 flex items-center justify-center">
                 <p className="text-3xl font-bold text-[#1E49C9] font-mono">
-                  {formatCurrency(summary.currentMonthExpenses || 0)}
+                  {formatCurrency(currentMonthTotal)}
                 </p>
               </div>
             </Card>
@@ -881,7 +928,7 @@ const Finance = () => {
                 </div>
                 <div className="flex-1 flex items-center justify-center">
                 <p className="text-3xl font-bold text-[#1E49C9] font-mono">
-                  {formatCurrency(summary.previousMonthExpenses || 0)}
+                  {formatCurrency(previousMonthTotal)}
                 </p>
               </div>
             </Card>
@@ -907,7 +954,7 @@ const Finance = () => {
                 </div>
                 <div className="flex-1 flex items-center justify-center">
                 <p className="text-3xl font-bold text-[#1E49C9] font-mono">
-                  {formatCurrency(summary.monthlyAverage || 0)}
+                  {formatCurrency(monthlyAverage6)}
                 </p>
               </div>
             </Card>
