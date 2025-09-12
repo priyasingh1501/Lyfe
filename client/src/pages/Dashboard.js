@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import JournalTrends from '../components/journal/JournalTrends';
 import {
   FinancialOverview,
-  QuickActions
+  MindfulnessScore
 } from '../components/dashboard';
 import { Button, Card, Tooltip, MonthGrid } from '../components/ui';
 
@@ -1383,32 +1383,10 @@ const Dashboard = () => {
 
         {/* Quote Card - 1x1 */}
         <div className="col-span-1">
-          <Card className="h-full group relative overflow-hidden">
-            {/* Time-based Animated Background Gradient */}
-            <div className={`absolute inset-0 ${
-              currentGradient === 'dawn' ? 'animate-dawn-gradient' :
-              currentGradient === 'warm-amber' ? 'animate-warm-amber-gradient' :
-              'animate-deep-blue-gradient'
-            }`}></div>
-            
-            {/* Floating Particles Animation */}
-            <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute top-1/4 left-1/4 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#1E49C9]/20 rounded-full animate-float-1"></div>
-              <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-amber-400/30 rounded-full animate-float-2"></div>
-              <div className="absolute top-1/2 right-1/3 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-purple-400/25 rounded-full animate-float-3"></div>
-              <div className="absolute bottom-1/4 left-1/3 w-1 h-1 bg-blue-400/20 rounded-full animate-float-4"></div>
-            </div>
-            
-            {/* Large Faded Quotation Marks */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-[#1E49C9]/5 text-[8rem] sm:text-[10rem] lg:text-[12rem] font-serif leading-none select-none">
-                "
-              </div>
-            </div>
-            
-            <div className="relative z-10 h-full flex flex-col justify-center items-center">
+          <Card className="h-full group relative">
+            <div className="h-full flex flex-col justify-center items-center p-6 relative">
               {/* Refresh Button - Only visible on hover */}
-              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <button
                   onClick={refreshQuote}
                   className="p-1.5 text-[#1E49C9] hover:text-[#1E49C9]/80 hover:bg-[#2A313A] rounded-full transition-all duration-200"
@@ -1423,16 +1401,14 @@ const Dashboard = () => {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E49C9]"></div>
                 </div>
               ) : (
-                <div className="space-y-4 sm:space-y-6 pr-4 sm:pr-8 w-full px-2 sm:px-4 h-full flex flex-col justify-center">
+                <div className="space-y-4 sm:space-y-6 w-full h-full flex flex-col justify-center">
                   {/* Quote - Major Emphasis with Enhanced Typography */}
-                  <blockquote className="font-jakarta text-lg sm:text-xl lg:text-2xl font-light text-text-primary italic leading-relaxed relative z-10">
-                    <span className="text-[#1E49C9]/20 text-2xl sm:text-3xl lg:text-4xl font-serif absolute -left-1 sm:-left-2 -top-1 sm:-top-2">"</span>
-                    <span className="relative z-10 pl-4 sm:pl-6 pr-4 sm:pr-6 block">{getQuoteOfTheDay()}</span>
-                    <span className="text-[#1E49C9]/20 text-2xl sm:text-3xl lg:text-4xl font-serif absolute -right-1 sm:-right-2 -bottom-1 sm:-bottom-2">"</span>
+                  <blockquote className="font-jakarta text-lg sm:text-xl lg:text-2xl font-light text-text-primary italic leading-relaxed text-center">
+                    "{getQuoteOfTheDay()}"
                   </blockquote>
                   
                   {/* Author - Secondary Emphasis with Right Alignment */}
-                  <div className="text-right pr-2 sm:pr-0">
+                  <div className="text-right">
                     <cite className="font-jakarta text-xs sm:text-sm text-[#1E49C9] font-medium leading-relaxed tracking-wider block">
                       — {getQuoteAuthor()}
                     </cite>
@@ -1457,34 +1433,39 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Year Grid - Full Width */}
+        {/* Year Grid Row */}
         <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
-          <Card className="h-full">
-            <div className="p-6">
-              {isDataLoading ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E49C9]"></div>
-                  <span className="ml-3 text-[#94A3B8]">Loading year data...</span>
+          <div className="h-full">
+            {/* Year Grid - Takes up full width */}
+            <div>
+              <Card className="h-full">
+                <div className="p-6">
+                  {isDataLoading ? (
+                    <div className="flex items-center justify-center h-32">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E49C9]"></div>
+                      <span className="ml-3 text-[#94A3B8]">Loading year data...</span>
+                    </div>
+                  ) : (
+                    <MonthGrid
+                      selectedDate={selectedDate}
+                      habits={habits}
+                      goals={goals}
+                      mindfulnessCheckins={mindfulnessCheckins}
+                      tasks={tasks}
+                      meals={meals}
+                      expenses={expenses}
+                      onDateSelect={(date) => {
+                        setSelectedDate(date);
+                        // Navigate to goal-aligned-day with selected date
+                        window.location.href = `/goal-aligned-day?date=${date.toISOString().split('T')[0]}`;
+                      }}
+                      onMonthChange={setSelectedDate}
+                    />
+                  )}
                 </div>
-              ) : (
-                <MonthGrid
-                  selectedDate={selectedDate}
-                  habits={habits}
-                  goals={goals}
-                  mindfulnessCheckins={mindfulnessCheckins}
-                  tasks={tasks}
-                  meals={meals}
-                  expenses={expenses}
-                  onDateSelect={(date) => {
-                    setSelectedDate(date);
-                    // Navigate to goal-aligned-day with selected date
-                    window.location.href = `/goal-aligned-day?date=${date.toISOString().split('T')[0]}`;
-                  }}
-                  onMonthChange={setSelectedDate}
-                />
-              )}
+              </Card>
             </div>
-          </Card>
+          </div>
         </div>
 
         {/* Random Image Card 1 - Nature */}
@@ -1703,12 +1684,6 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Quick Actions - 1x1 */}
-        <div className="col-span-1">
-          <div className="h-full">
-        <QuickActions />
-          </div>
-      </div>
 
 
 

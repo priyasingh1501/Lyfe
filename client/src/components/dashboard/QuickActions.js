@@ -72,9 +72,11 @@ const QuickActions = () => {
 
   return (
     <Card>
-
-      {/* Actions Grid */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="p-4">
+        <h3 className="font-jakarta text-lg font-semibold text-text-primary mb-4">Quick Actions</h3>
+        
+        {/* Actions Grid */}
+        <div className="grid grid-cols-1 gap-4">
         {actions.map((action, index) => {
           const IconComponent = action.icon;
           return (
@@ -101,6 +103,7 @@ const QuickActions = () => {
             </motion.a>
           );
         })}
+        </div>
       </div>
     </Card>
   );

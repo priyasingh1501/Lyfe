@@ -443,6 +443,75 @@ const GoalAlignedDay = () => {
     return taskHours + habitHours;
   };
 
+  // Get month progress for a goal (hours logged this month)
+  const getMonthHoursForGoal = (goalId) => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    // Get all tasks for this goal completed this month
+    const monthTasks = tasks.filter(task => {
+      if (!task.goalIds || !task.goalIds.includes(goalId) || !task.completedAt) return false;
+      const completedDate = new Date(task.completedAt);
+      return completedDate >= startOfMonth && completedDate <= endOfMonth;
+    });
+    
+    const taskHours = monthTasks.reduce((total, task) => {
+      const duration = task.estimatedDuration || 0;
+      return total + (duration / 60); // Convert minutes to hours
+    }, 0);
+
+    // Get all habits for this goal completed this month
+    const goalHabits = getHabitsForGoal(goalId);
+    const habitHours = goalHabits.reduce((total, habit) => {
+      if (habit.checkins && Array.isArray(habit.checkins)) {
+        const monthCheckins = habit.checkins.filter(checkin => {
+          const checkinDate = new Date(checkin.date);
+          return checkinDate >= startOfMonth && checkinDate <= endOfMonth && checkin.completed;
+        });
+        
+        const habitMonthHours = monthCheckins.reduce((sum, checkin) => {
+          const duration = habit.valueMin || 0;
+          return sum + duration / 60; // Convert minutes to hours
+        }, 0);
+        
+        return total + habitMonthHours;
+      }
+      return total;
+    }, 0);
+
+    return taskHours + habitHours;
+  };
+
+  // Get number of activities completed this month for a goal
+  const getMonthActivitiesCountForGoal = (goalId) => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    // Count completed tasks this month
+    const monthTasks = tasks.filter(task => {
+      if (!task.goalIds || !task.goalIds.includes(goalId) || !task.completedAt) return false;
+      const completedDate = new Date(task.completedAt);
+      return completedDate >= startOfMonth && completedDate <= endOfMonth;
+    }).length;
+
+    // Count completed habits this month
+    const goalHabits = getHabitsForGoal(goalId);
+    const monthHabits = goalHabits.reduce((count, habit) => {
+      if (habit.checkins && Array.isArray(habit.checkins)) {
+        const monthCheckins = habit.checkins.filter(checkin => {
+          const checkinDate = new Date(checkin.date);
+          return checkinDate >= startOfMonth && checkinDate <= endOfMonth && checkin.completed;
+        });
+        return count + monthCheckins.length;
+      }
+      return count;
+    }, 0);
+
+    return monthTasks + monthHabits;
+  };
+
 
   // Handle date selection
   const handleDateSelect = (date) => {
@@ -590,6 +659,10 @@ const GoalAlignedDay = () => {
           goals.map((goal, index) => {
             const goalTasks = getTodayTasksForGoal(goal._id);
             const goalActivities = getActivitiesForGoal(goal._id);
+            const todayHours = getTodayHoursForGoal(goal._id);
+            const monthHours = getMonthHoursForGoal(goal._id);
+            const monthActivitiesCount = getMonthActivitiesCountForGoal(goal._id);
+            
             return (
               <div key={goal._id || index} className="md:col-span-2 lg:col-span-3 xl:col-span-4">
                 <Card className="h-full min-h-[500px] group relative hover:border-[rgba(255,255,255,0.3)] hover:shadow-lg hover:shadow-[#1E49C9]/20 transition-all duration-300">
@@ -609,97 +682,133 @@ const GoalAlignedDay = () => {
                     </p>
                   </div>
 
-                  {/* Progress Section */}
-                  <div className="mb-6 bg-[#11151A]/50 rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-[#E8EEF2]">Today's Progress</span>
-                      <span className="text-lg font-bold text-[#1E49C9]">
-                        {Math.round(getTodayHoursForGoal(goal._id) * 10) / 10}h / {goal.targetHours || 0}h
-                      </span>
+                  {/* Split Layout: Left (KPIs) and Right (Activities) */}
+                  <div className="flex gap-6 mb-6">
+                    {/* Left Side - KPIs */}
+                    <div className="flex-1 space-y-4">
+                      {/* Day Progress */}
+                      <div className="bg-[#11151A]/50 rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-[#E8EEF2]">Today's Progress</span>
+                          <span className="text-lg font-bold text-[#1E49C9]">
+                            {Math.round(todayHours * 10) / 10}h / {goal.targetHours || 0}h
+                          </span>
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        <div className="w-full bg-[#2A313A] rounded-full h-3 mb-3">
+                          <div 
+                            className="bg-gradient-to-r from-[#1E49C9] to-[#3EA6FF] h-3 rounded-full transition-all duration-500"
+                            style={{ 
+                              width: `${Math.min((todayHours / (goal.targetHours || 1)) * 100, 100)}%` 
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="flex justify-between text-sm text-[#94A3B8]">
+                          <span>0h</span>
+                          <span>{goal.targetHours || 0}h target</span>
+                        </div>
+                      </div>
+
+                      {/* Month Progress */}
+                      <div className="bg-[#11151A]/50 rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-[#E8EEF2]">This Month</span>
+                          <span className="text-lg font-bold text-[#3CCB7F]">
+                            {Math.round(monthHours * 10) / 10}h
+                          </span>
+                        </div>
+                        <div className="text-xs text-[#94A3B8]">
+                          Hours logged this month
+                        </div>
+                      </div>
+
+                      {/* Activities Count */}
+                      <div className="bg-[#11151A]/50 rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-[#E8EEF2]">Activities Done</span>
+                          <span className="text-lg font-bold text-[#4ECDC4]">
+                            {monthActivitiesCount}
+                          </span>
+                        </div>
+                        <div className="text-xs text-[#94A3B8]">
+                          Completed this month
+                        </div>
+                      </div>
                     </div>
-                    
-                    {/* Progress Bar */}
-                    <div className="w-full bg-[#2A313A] rounded-full h-3 mb-3">
-                      <div 
-                        className="bg-gradient-to-r from-[#1E49C9] to-[#3EA6FF] h-3 rounded-full transition-all duration-500"
-                        style={{ 
-                          width: `${Math.min((getTodayHoursForGoal(goal._id) / (goal.targetHours || 1)) * 100, 100)}%` 
-                        }}
-                      />
-                    </div>
-                    
-                    <div className="flex justify-between text-sm text-[#94A3B8]">
-                      <span>0h</span>
-                      <span>{goal.targetHours || 0}h target</span>
-                    </div>
-                  </div>
-                  
-                  {/* Activities Section */}
-                  {goalActivities.length > 0 && (
-                    <div className="mb-6 flex-1">
+
+                    {/* Right Side - Activities */}
+                    <div className="flex-1">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-[#E8EEF2]">
-                          Activities ({goalActivities.length})
+                          All Activities ({goalActivities.length})
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {goalActivities.map((activity, activityIndex) => (
-                          <div key={`${activity.type || 'activity'}-${activity._id || activityIndex}`} className="flex flex-col p-2 bg-[#11151A]/50 rounded-lg border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] transition-colors">
-                            {/* Activity Header */}
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-medium text-[#1E49C9]">
-                                {activity.type === 'habit' ? 'Habit' : 'Task'}
-                              </span>
-                              <span className="text-xs text-[#94A3B8] bg-[#2A313A] px-1 py-0.5 rounded text-[10px]">
-                                {activity.duration}m
-                              </span>
-                            </div>
-                            
-                            {/* Activity Name */}
-                            <div className="flex-1 mb-2">
-                              <span className="text-xs text-[#E8EEF2] line-clamp-2 leading-tight">
-                                {activity.displayName}
-                              </span>
-                            </div>
-                            
-                            {/* Action Button/Status */}
-                            <div className="flex justify-center">
-                              {activity.type === 'habit' ? (
-                                activity.isCompleted || completedHabits.has(activity._id) ? (
-                                  <div className="flex items-center gap-1 text-xs text-[#1E49C9] font-medium">
-                                    <span className="text-[#1E49C9]">✓</span>
-                                    <span>Done</span>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => handleHabitComplete(activity)}
-                                    disabled={completingHabits.has(activity._id)}
-                                    className="text-xs px-2 py-1 bg-[#1E49C9]/10 border border-[#1E49C9]/30 text-[#1E49C9] rounded-md hover:bg-[#1E49C9]/20 hover:border-[#1E49C9]/50 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                                  >
-                                    {completingHabits.has(activity._id) ? (
-                                      <>
-                                        <div className="animate-spin rounded-full h-3 w-3 border-b border-[#1E49C9]"></div>
-                                        <span>Marking...</span>
-                                      </>
-                                    ) : (
-                                      'Mark'
-                                    )}
-                                  </button>
-                                )
-                              ) : (
-                                <div className="flex items-center gap-1 text-xs text-[#94A3B8]">
-                                  <span>{activity.isCompleted ? '✓' : '⏳'}</span>
-                                  <span>{activity.isCompleted ? 'Done' : 'Pending'}</span>
+                      
+                      {goalActivities.length > 0 ? (
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {goalActivities.map((activity, activityIndex) => (
+                            <div key={`${activity.type || 'activity'}-${activity._id || activityIndex}`} className="flex items-center justify-between p-3 bg-[#11151A]/50 rounded-lg border border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] transition-colors">
+                              {/* Activity Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-medium text-[#1E49C9] bg-[#1E49C9]/10 px-2 py-1 rounded">
+                                    {activity.type === 'habit' ? 'Habit' : 'Task'}
+                                  </span>
+                                  <span className="text-xs text-[#94A3B8]">
+                                    {activity.duration}m
+                                  </span>
                                 </div>
-                              )}
+                                <div className="text-sm text-[#E8EEF2] truncate">
+                                  {activity.displayName}
+                                </div>
+                              </div>
+                              
+                              {/* Action Button/Status */}
+                              <div className="ml-3 flex-shrink-0">
+                                {activity.type === 'habit' ? (
+                                  activity.isCompleted || completedHabits.has(activity._id) ? (
+                                    <div className="flex items-center gap-1 text-xs text-[#1E49C9] font-medium">
+                                      <span className="text-[#1E49C9]">✓</span>
+                                      <span>Done</span>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleHabitComplete(activity)}
+                                      disabled={completingHabits.has(activity._id)}
+                                      className="text-xs px-3 py-1 bg-[#1E49C9]/10 border border-[#1E49C9]/30 text-[#1E49C9] rounded-md hover:bg-[#1E49C9]/20 hover:border-[#1E49C9]/50 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                    >
+                                      {completingHabits.has(activity._id) ? (
+                                        <>
+                                          <div className="animate-spin rounded-full h-3 w-3 border-b border-[#1E49C9]"></div>
+                                          <span>Marking...</span>
+                                        </>
+                                      ) : (
+                                        'Mark'
+                                      )}
+                                    </button>
+                                  )
+                                ) : (
+                                  <div className="flex items-center gap-1 text-xs text-[#94A3B8]">
+                                    <span>{activity.isCompleted ? '✓' : '⏳'}</span>
+                                    <span>{activity.isCompleted ? 'Done' : 'Pending'}</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-[#94A3B8]">
+                          <div className="text-4xl mb-2">📝</div>
+                          <p className="text-sm">No activities yet</p>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 
-                  {/* Action Buttons */}
+                  {/* Action Buttons - Moved below activities */}
                   <div className="mt-auto pt-4 border-t border-[rgba(255,255,255,0.1)]">
                     <div className="flex gap-2">
                       <Button 
