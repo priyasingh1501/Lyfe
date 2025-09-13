@@ -44,31 +44,6 @@ const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [youtubePlayer, setYoutubePlayer] = useState(null);
-  const [currentGradient, setCurrentGradient] = useState('deep-blue');
-  
-  // Function to get time-based gradient
-  const getTimeBasedGradient = () => {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) {
-      return 'dawn'; // 5 AM - 12 PM
-    } else if (hour >= 12 && hour < 18) {
-      return 'warm-amber'; // 12 PM - 6 PM
-    } else {
-      return 'deep-blue'; // 6 PM - 5 AM
-    }
-  };
-
-  // Update gradient based on time
-  useEffect(() => {
-    setCurrentGradient(getTimeBasedGradient());
-    
-    // Update gradient every hour
-    const interval = setInterval(() => {
-      setCurrentGradient(getTimeBasedGradient());
-    }, 60 * 60 * 1000); // Check every hour
-    
-    return () => clearInterval(interval);
-  }, []);
   
   // Safe arrays for MonthGrid compatibility
   const safeHabits = Array.isArray(habits) ? habits : [];
@@ -761,10 +736,8 @@ const Dashboard = () => {
     
     // Mindfulness score (0-25)
     if (mindfulnessScore) {
-      const dimensions = mindfulnessScore.dimensions || {};
-      breakdown.mindfulness = Object.values(dimensions).reduce((sum, dim) => {
-        return sum + (dim.rating || 0);
-      }, 0);
+      // Use the pre-calculated totalScore from the database
+      breakdown.mindfulness = mindfulnessScore.totalScore || 0;
     }
     
     // Goal progress score (0-20)
@@ -1108,76 +1081,101 @@ const Dashboard = () => {
                       {/* Compact Stats with Pills */}
                       <div className="grid grid-cols-2 gap-2 w-full max-w-xs relative z-10">
                         {/* Mindfulness */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-white/80 font-medium">Mindfulness</span>
-                            <span className="text-xs font-medium text-white">{breakdown.mindfulness}/25</span>
+                        <Tooltip 
+                          content="Mindfulness Score (0-25): Sum of 5 dimension ratings (1-5 each): Presence, Emotion Awareness, Intentionality, Attention Quality, and Compassion. Based on your daily mindfulness check-in."
+                          position="top"
+                        >
+                          <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 cursor-help">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-white/80 font-medium">Mindfulness</span>
+                              <span className="text-xs font-medium text-white">{breakdown.mindfulness}/25</span>
+                            </div>
+                            <div className="w-full bg-white/20 rounded-full h-1 mt-1">
+                              <div 
+                                className="bg-blue-400 h-1 rounded-full transition-all duration-500"
+                                style={{ width: `${(breakdown.mindfulness / 25) * 100}%` }}
+                              ></div>
+                            </div>
                           </div>
-                          <div className="w-full bg-white/20 rounded-full h-1 mt-1">
-                            <div 
-                              className="bg-blue-400 h-1 rounded-full transition-all duration-500"
-                              style={{ width: `${(breakdown.mindfulness / 25) * 100}%` }}
-                            ></div>
-                          </div>
-                        </div>
+                        </Tooltip>
 
                         {/* Goals */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-white/80 font-medium">Goals</span>
-                            <span className="text-xs font-medium text-white">{breakdown.goalProgress}/20</span>
+                        <Tooltip 
+                          content="Goal Progress Score (0-20): +10 points for completing any goal-related task today, +5 bonus for 2+ tasks, +5 bonus for 3+ tasks. Based on tasks completed that are linked to your goals."
+                          position="top"
+                        >
+                          <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 cursor-help">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-white/80 font-medium">Goals</span>
+                              <span className="text-xs font-medium text-white">{breakdown.goalProgress}/20</span>
+                            </div>
+                            <div className="w-full bg-white/20 rounded-full h-1 mt-1">
+                              <div 
+                                className="bg-purple-400 h-1 rounded-full transition-all duration-500"
+                                style={{ width: `${(breakdown.goalProgress / 20) * 100}%` }}
+                              ></div>
+                            </div>
                           </div>
-                          <div className="w-full bg-white/20 rounded-full h-1 mt-1">
-                            <div 
-                              className="bg-purple-400 h-1 rounded-full transition-all duration-500"
-                              style={{ width: `${(breakdown.goalProgress / 20) * 100}%` }}
-                            ></div>
-                          </div>
-                        </div>
+                        </Tooltip>
 
                         {/* Habits */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-white/80 font-medium">Habits</span>
-                            <span className="text-xs font-medium text-white">{breakdown.habitCompletion}/15</span>
+                        <Tooltip 
+                          content="Habit Completion Score (0-15): Based on percentage of active habits completed today. Calculated as (completed habits / total active habits) × 15. Only counts habits that are currently active and within their date range."
+                          position="top"
+                        >
+                          <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 cursor-help">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-white/80 font-medium">Habits</span>
+                              <span className="text-xs font-medium text-white">{breakdown.habitCompletion}/15</span>
+                            </div>
+                            <div className="w-full bg-white/20 rounded-full h-1 mt-1">
+                              <div 
+                                className="bg-green-400 h-1 rounded-full transition-all duration-500"
+                                style={{ width: `${(breakdown.habitCompletion / 15) * 100}%` }}
+                              ></div>
+                            </div>
                           </div>
-                          <div className="w-full bg-white/20 rounded-full h-1 mt-1">
-                            <div 
-                              className="bg-green-400 h-1 rounded-full transition-all duration-500"
-                              style={{ width: `${(breakdown.habitCompletion / 15) * 100}%` }}
-                            ></div>
-                          </div>
-                        </div>
+                        </Tooltip>
 
                         {/* Meals */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-white/80 font-medium">Meals</span>
-                            <span className="text-xs font-medium text-white">{breakdown.mealEffects}/25</span>
+                        <Tooltip 
+                          content="Meal Effects Score (0-25): Based on positive meal effects (strength, anti-inflammatory, immunity, gut-friendly, energizing) minus negative effects (inflammation, fat-forming). Each effect contributes points based on its intensity, capped at 25 total."
+                          position="top"
+                        >
+                          <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 cursor-help">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-white/80 font-medium">Meals</span>
+                              <span className="text-xs font-medium text-white">{breakdown.mealEffects}/25</span>
+                            </div>
+                            <div className="w-full bg-white/20 rounded-full h-1 mt-1">
+                              <div 
+                                className="bg-orange-400 h-1 rounded-full transition-all duration-500"
+                                style={{ width: `${(breakdown.mealEffects / 25) * 100}%` }}
+                              ></div>
+                            </div>
                           </div>
-                          <div className="w-full bg-white/20 rounded-full h-1 mt-1">
-                            <div 
-                              className="bg-orange-400 h-1 rounded-full transition-all duration-500"
-                              style={{ width: `${(breakdown.mealEffects / 25) * 100}%` }}
-                            ></div>
-                          </div>
-                        </div>
+                        </Tooltip>
 
                         {/* Impulse - Special highlighting */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 col-span-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-white/80 font-medium">Impulse</span>
-                            <span className={`text-xs font-medium ${breakdown.impulseBuyPenalty < 0 ? 'text-red-300' : 'text-white'}`}>
-                              {breakdown.impulseBuyPenalty}
-                            </span>
+                        <Tooltip 
+                          content="Impulse Buy Penalty (0 to -10): Penalty points for impulse purchases today. Amount: >₹1000 = -3pts, >₹500 = -2pts, >₹100 = -1pt, ≤₹100 = -0.5pts. Multiple purchases add up, capped at -10 total penalty."
+                          position="top"
+                        >
+                          <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 col-span-2 cursor-help">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-white/80 font-medium">Impulse</span>
+                              <span className={`text-xs font-medium ${breakdown.impulseBuyPenalty < 0 ? 'text-red-300' : 'text-white'}`}>
+                                {breakdown.impulseBuyPenalty}
+                              </span>
+                            </div>
+                            <div className="w-full bg-white/20 rounded-full h-1 mt-1">
+                              <div 
+                                className={`h-1 rounded-full transition-all duration-500 ${breakdown.impulseBuyPenalty < 0 ? 'bg-red-400' : 'bg-teal-400'}`}
+                                style={{ width: `${Math.min(Math.abs(breakdown.impulseBuyPenalty) * 10, 100)}%` }}
+                              ></div>
+                            </div>
                           </div>
-                          <div className="w-full bg-white/20 rounded-full h-1 mt-1">
-                            <div 
-                              className={`h-1 rounded-full transition-all duration-500 ${breakdown.impulseBuyPenalty < 0 ? 'bg-red-400' : 'bg-teal-400'}`}
-                              style={{ width: `${Math.min(Math.abs(breakdown.impulseBuyPenalty) * 10, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
+                        </Tooltip>
                       </div>
                     </div>
                   );
@@ -1383,7 +1381,7 @@ const Dashboard = () => {
 
         {/* Quote Card - 1x1 */}
         <div className="col-span-1">
-          <Card className="h-full group relative">
+          <Card className="h-full group relative" animate={false}>
             <div className="h-full flex flex-col justify-center items-center p-6 relative">
               {/* Refresh Button - Only visible on hover */}
               <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -1492,6 +1490,13 @@ const Dashboard = () => {
         <div className="col-span-1">
           <div className="h-full">
             <FinancialOverview />
+          </div>
+        </div>
+
+        {/* Mindfulness Score - 1x1 */}
+        <div className="col-span-1">
+          <div className="h-full">
+            <MindfulnessScore />
           </div>
         </div>
 

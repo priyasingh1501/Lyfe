@@ -106,7 +106,13 @@ const FoodSearch = () => {
 
       {/* Results - Show only when there are results */}
       {results.length > 0 ? (
-        <SearchResults results={results} />
+        <SearchResults 
+          results={results} 
+          onFoodCreated={(food) => {
+            // Refresh search results or add to current results
+            setResults(prev => [food, ...prev]);
+          }}
+        />
       ) : (
         <>
           {/* No Results */}

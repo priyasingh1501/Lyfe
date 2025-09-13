@@ -31,7 +31,7 @@ const MindfulnessScore = () => {
       
       // Fetch weekly data
       const weeklyResponse = await axios.get(
-        buildApiUrl(`/api/mindfulness/checkins?startDate=${weekAgo}&endDate=${today}`),
+        buildApiUrl(`/api/mindfulness?startDate=${weekAgo}&endDate=${today}`),
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -39,7 +39,7 @@ const MindfulnessScore = () => {
 
       // Fetch year data
       const yearResponse = await axios.get(
-        buildApiUrl(`/api/mindfulness/checkins?startDate=${yearAgo}&endDate=${today}`),
+        buildApiUrl(`/api/mindfulness?startDate=${yearAgo}&endDate=${today}`),
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -48,7 +48,10 @@ const MindfulnessScore = () => {
       const checkins = weeklyResponse.data || [];
       const yearCheckins = yearResponse.data || [];
       
-      const todayCheckin = checkins.find(c => c.date === today);
+      const todayCheckin = checkins.find(c => {
+        const checkinDate = new Date(c.date).toISOString().split('T')[0];
+        return checkinDate === today;
+      });
       const weeklyScores = checkins.map(c => c.totalScore || 0);
       const weeklyAverage = weeklyScores.length > 0 
         ? weeklyScores.reduce((a, b) => a + b, 0) / weeklyScores.length 

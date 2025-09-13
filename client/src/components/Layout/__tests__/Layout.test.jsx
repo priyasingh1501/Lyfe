@@ -1,11 +1,12 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import { AuthProvider } from '../../../contexts/AuthContext';
 import Layout from '../Layout';
 
 // Mock framer-motion
-jest.mock('framer-motion', () => ({
+vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }) => <div {...props}>{children}</div>,
     form: ({ children, ...props }) => <form {...props}>{children}</form>,
@@ -13,13 +14,13 @@ jest.mock('framer-motion', () => ({
 }));
 
 // Mock react-hot-toast
-jest.mock('react-hot-toast', () => ({
-  success: jest.fn(),
-  error: jest.fn(),
+vi.mock('react-hot-toast', () => ({
+  success: vi.fn(),
+  error: vi.fn(),
 }));
 
 // Mock fetch
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 const renderWithProviders = (component) => {
   return render(
@@ -33,7 +34,7 @@ const renderWithProviders = (component) => {
 
 describe('Layout Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorage.clear();
   });
 

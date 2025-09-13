@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Smartphone, Download, Share2 } from 'lucide-react';
 import { Button } from './index';
@@ -7,9 +7,26 @@ const MobileInstallGuide = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showIOS, setShowIOS] = useState(false);
   const [showAndroid, setShowAndroid] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isAndroid = /Android/.test(navigator.userAgent);
+
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Don't render on desktop
+  if (!isMobile) {
+    return null;
+  }
 
   const handleInstallClick = () => {
     if (isIOS) {

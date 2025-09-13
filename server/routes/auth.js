@@ -195,6 +195,22 @@ router.post('/profile-picture', authenticateToken, async (req, res) => {
   }
 });
 
+// Complete onboarding
+router.put('/complete-onboarding', authenticateToken, async (req, res) => {
+  try {
+    req.user.onboardingCompleted = true;
+    await req.user.save();
+
+    res.json({
+      message: 'Onboarding completed successfully',
+      user: req.user.getProfile()
+    });
+  } catch (error) {
+    console.error('Onboarding completion error:', error);
+    res.status(500).json({ message: 'Error completing onboarding', error: error.message });
+  }
+});
+
 // Deactivate account
 router.put('/deactivate', authenticateToken, async (req, res) => {
   try {

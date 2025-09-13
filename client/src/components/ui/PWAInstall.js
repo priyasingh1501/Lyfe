@@ -1,11 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './index';
 import { usePWA } from '../../hooks/usePWA';
 
 const PWAInstall = () => {
   const { showInstallPrompt, installApp, isInstalled, isOnline } = usePWA();
+  const [isMobile, setIsMobile] = useState(false);
 
-  if (isInstalled || !showInstallPrompt) {
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Don't render on desktop or if installed or no prompt
+  if (!isMobile || isInstalled || !showInstallPrompt) {
     return null;
   }
 

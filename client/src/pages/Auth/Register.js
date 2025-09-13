@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Lock, Mail, User, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Button, Input, Header, Section } from '../../components/ui';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -26,10 +27,11 @@ const Register = () => {
       [e.target.name]: e.target.value
     });
     // Clear error when user starts typing
-    if (errors[e.target.name]) {
+    if (errors[e.target.name] || errors.general) {
       setErrors({
         ...errors,
-        [e.target.name]: ''
+        [e.target.name]: '',
+        general: ''
       });
     }
   };
@@ -83,10 +85,15 @@ const Register = () => {
       });
       
       if (result.success) {
-        navigate('/dashboard');
+        // Let ProtectedRoute handle the redirect logic (onboarding vs dashboard)
+        navigate('/');
+      } else {
+        // Handle registration failure - show error message
+        setErrors({ general: result.message || 'Registration failed. Please try again.' });
       }
     } catch (error) {
       console.error('Registration error:', error);
+      setErrors({ general: 'Network error. Please check your connection and try again.' });
     } finally {
       setLoading(false);
     }
@@ -108,23 +115,20 @@ const Register = () => {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="mx-auto w-20 h-20 bg-gradient-to-r from-[#FFD200] via-[#3CCB7F] to-[#4ECDC4] rounded-2xl flex items-center justify-center shadow-lg"
+            className="mx-auto w-20 h-20 bg-gradient-to-r from-accent-yellow via-accent-green to-accent-teal rounded-2xl flex items-center justify-center shadow-lg"
           >
-            <span className="text-[#0A0C0F] font-bold text-3xl">U</span>
+            <span className="text-text-inverse font-bold text-3xl">U</span>
           </motion.div>
-          <motion.h2
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-6 text-3xl font-extrabold text-[#E8EEF2] font-oswald tracking-wide"
-          >
+          
+          <Header level={2} className="mt-6">
             Create your account
-          </motion.h2>
+          </Header>
+          
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="mt-2 text-sm text-[#C9D1D9]"
+            className="mt-2 text-sm text-text-secondary"
           >
             Start managing your lifestyle with Untangle
           </motion.p>
@@ -139,7 +143,7 @@ const Register = () => {
         >
           <Link
             to="/login"
-            className="inline-flex items-center text-sm text-[#3CCB7F] hover:text-[#2BB870] transition-colors duration-200"
+            className="inline-flex items-center text-sm text-accent-green hover:text-accent-green/80 transition-colors duration-200"
           >
             <ArrowLeft size={16} className="mr-1" />
             Back to login
@@ -154,17 +158,24 @@ const Register = () => {
           className="mt-8 space-y-6"
           onSubmit={handleSubmit}
         >
+          {/* General Error Message */}
+          {errors.general && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+              <p className="text-red-400 text-sm text-center">{errors.general}</p>
+            </div>
+          )}
+          
           <div className="space-y-4">
             {/* First Name Field */}
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-[#C9D1D9] mb-2 font-oswald tracking-wide">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary">
                 First Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User size={20} className="text-[#2A313A]" />
+                  <User size={20} className="text-text-muted" />
                 </div>
-                <input
+                <motion.input
                   id="firstName"
                   name="firstName"
                   type="text"
@@ -172,12 +183,14 @@ const Register = () => {
                   required
                   value={formData.firstName}
                   onChange={handleChange}
-                  className={`appearance-none relative block w-full pl-10 pr-3 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 bg-[#11151A] text-[#E8EEF2] placeholder-[#6B7280] ${
+                  placeholder="Enter your first name"
+                  className={`bg-background-secondary border text-text-primary placeholder:text-text-muted px-4 py-3 pl-10 pr-3 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:z-10 w-full ${
                     errors.firstName 
                       ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-[#2A313A] focus:ring-[#3CCB7F] focus:border-[#3CCB7F] hover:border-[#3A414A]'
+                      : 'border-border-primary focus:ring-accent-green/50 focus:border-accent-green hover:border-border-secondary'
                   }`}
-                  placeholder="Enter your first name"
+                  whileFocus={{ scale: 1.01 }}
+                  transition={{ duration: 0.2 }}
                 />
               </div>
               {errors.firstName && (
@@ -186,15 +199,15 @@ const Register = () => {
             </div>
 
             {/* Last Name Field */}
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-[#C9D1D9] mb-2 font-oswald tracking-wide">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary">
                 Last Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User size={20} className="text-[#2A313A]" />
+                  <User size={20} className="text-text-muted" />
                 </div>
-                <input
+                <motion.input
                   id="lastName"
                   name="lastName"
                   type="text"
@@ -202,12 +215,14 @@ const Register = () => {
                   required
                   value={formData.lastName}
                   onChange={handleChange}
-                  className={`appearance-none relative block w-full pl-10 pr-3 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 bg-[#11151A] text-[#E8EEF2] placeholder-[#6B7280] ${
+                  placeholder="Enter your last name"
+                  className={`bg-background-secondary border text-text-primary placeholder:text-text-muted px-4 py-3 pl-10 pr-3 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:z-10 w-full ${
                     errors.lastName 
                       ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-[#2A313A] focus:ring-[#3CCB7F] focus:border-[#3CCB7F] hover:border-[#3A414A]'
+                      : 'border-border-primary focus:ring-accent-green/50 focus:border-accent-green hover:border-border-secondary'
                   }`}
-                  placeholder="Enter your last name"
+                  whileFocus={{ scale: 1.01 }}
+                  transition={{ duration: 0.2 }}
                 />
               </div>
               {errors.lastName && (
@@ -216,15 +231,15 @@ const Register = () => {
             </div>
 
             {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-[#C9D1D9] mb-2 font-oswald tracking-wide">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary">
                 Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail size={20} className="text-[#2A313A]" />
+                  <Mail size={20} className="text-text-muted" />
                 </div>
-                <input
+                <motion.input
                   id="email"
                   name="email"
                   type="email"
@@ -232,12 +247,14 @@ const Register = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className={`appearance-none relative block w-full pl-10 pr-3 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 bg-[#11151A] text-[#E8EEF2] placeholder-[#6B7280] ${
+                  placeholder="Enter your email"
+                  className={`bg-background-secondary border text-text-primary placeholder:text-text-muted px-4 py-3 pl-10 pr-3 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:z-10 w-full ${
                     errors.email 
                       ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-[#2A313A] focus:ring-[#3CCB7F] focus:border-[#3CCB7F] hover:border-[#3A414A]'
+                      : 'border-border-primary focus:ring-accent-green/50 focus:border-accent-green hover:border-border-secondary'
                   }`}
-                  placeholder="Enter your email"
+                  whileFocus={{ scale: 1.01 }}
+                  transition={{ duration: 0.2 }}
                 />
               </div>
               {errors.email && (
@@ -246,15 +263,15 @@ const Register = () => {
             </div>
 
             {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-[#C9D1D9] mb-2 font-oswald tracking-wide">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary">
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock size={20} className="text-[#2A313A]" />
+                  <Lock size={20} className="text-text-muted" />
                 </div>
-                <input
+                <motion.input
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
@@ -262,22 +279,25 @@ const Register = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className={`appearance-none relative block w-full pl-10 pr-12 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 bg-[#11151A] text-[#E8EEF2] placeholder-[#6B7280] ${
+                  placeholder="Create a password"
+                  className={`bg-background-secondary border text-text-primary placeholder:text-text-muted px-4 py-3 pl-10 pr-12 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:z-10 w-full ${
                     errors.password 
                       ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-[#2A313A] focus:ring-[#3CCB7F] focus:border-[#3CCB7F] hover:border-[#3A414A]'
+                      : 'border-border-primary focus:ring-accent-green/50 focus:border-accent-green hover:border-border-secondary'
                   }`}
-                  placeholder="Create a password"
+                  whileFocus={{ scale: 1.01 }}
+                  transition={{ duration: 0.2 }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors z-20 pointer-events-auto"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
-                    <EyeOff size={20} className="text-[#2A313A] hover:text-[#C9D1D9]" />
+                    <EyeOff size={18} />
                   ) : (
-                    <Eye size={20} className="text-[#2A313A] hover:text-[#C9D1D9]" />
+                    <Eye size={18} />
                   )}
                 </button>
               </div>
@@ -287,15 +307,15 @@ const Register = () => {
             </div>
 
             {/* Confirm Password Field */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#C9D1D9] mb-2 font-oswald tracking-wide">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary">
                 Confirm Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock size={20} className="text-[#2A313A]" />
+                  <Lock size={20} className="text-text-muted" />
                 </div>
-                <input
+                <motion.input
                   id="confirmPassword"
                   name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
@@ -303,22 +323,25 @@ const Register = () => {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`appearance-none relative block w-full pl-10 pr-12 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:z-10 sm:text-sm transition-all duration-200 bg-[#11151A] text-[#E8EEF2] placeholder-[#6B7280] ${
+                  placeholder="Confirm your password"
+                  className={`bg-background-secondary border text-text-primary placeholder:text-text-muted px-4 py-3 pl-10 pr-12 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:z-10 w-full ${
                     errors.confirmPassword 
                       ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-[#2A313A] focus:ring-primary-500 focus:border-[#3CCB7F] hover:border-[#3A414A]'
+                      : 'border-border-primary focus:ring-accent-green/50 focus:border-accent-green hover:border-border-secondary'
                   }`}
-                  placeholder="Confirm your password"
+                  whileFocus={{ scale: 1.01 }}
+                  transition={{ duration: 0.2 }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors z-20 pointer-events-auto"
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
                   {showConfirmPassword ? (
-                    <EyeOff size={20} className="text-[#2A313A] hover:text-[#C9D1D9]" />
+                    <EyeOff size={18} />
                   ) : (
-                    <Eye size={20} className="text-[#2A313A] hover:text-[#C9D1D9]" />
+                    <Eye size={18} />
                   )}
                 </button>
               </div>

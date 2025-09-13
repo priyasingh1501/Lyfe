@@ -12,6 +12,7 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -20,19 +21,29 @@ const Login = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+    // Clear error when user starts typing
+    if (error) {
+      setError('');
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     try {
       const result = await login(formData.email, formData.password);
       if (result.success) {
-        navigate('/overview');
+        // Let ProtectedRoute handle the redirect logic (onboarding vs dashboard)
+        navigate('/');
+      } else {
+        // Handle login failure - show error message
+        setError(result.message || 'Login failed. Please try again.');
       }
     } catch (error) {
       console.error('Login error:', error);
+      setError('Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -60,7 +71,7 @@ const Login = () => {
           </motion.div>
           
           <Header level={2} className="mt-6">
-            Welcome back to Untangle
+            Welcome to Untangle
           </Header>
           
           <motion.p
@@ -81,6 +92,13 @@ const Login = () => {
           className="mt-8 space-y-6"
           onSubmit={handleSubmit}
         >
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+              <p className="text-red-400 text-sm text-center">{error}</p>
+            </div>
+          )}
+          
           <div className="space-y-5">
             {/* Email Field */}
             <Input

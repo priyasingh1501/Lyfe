@@ -15,6 +15,7 @@ import AiChat from './pages/AiChat';
 import Profile from './pages/Profile';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import Onboarding from './pages/Onboarding';
 import './index.css';
 
 // Create a client
@@ -41,6 +42,11 @@ const ProtectedRoute = ({ children }) => {
   
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  
+  // Check if user needs to complete onboarding
+  if (user && user.onboardingCompleted !== true) {
+    return <Navigate to="/onboarding" replace />;
   }
   
   return children;
@@ -90,7 +96,7 @@ function App() {
                   duration: 3000,
                   className: 'glass-toast',
                   iconTheme: {
-                    primary: '#3CCB7F',
+                    primary: '#1E49C9',
                     secondary: '#E8EEF2',
                   },
                 },
@@ -125,6 +131,13 @@ function App() {
                 <PublicRoute>
                   <Register />
                 </PublicRoute>
+              } />
+              
+              {/* Onboarding Route */}
+              <Route path="/onboarding" element={
+                <ProtectedRoute>
+                  <Onboarding />
+                </ProtectedRoute>
               } />
                 
               {/* Protected Routes */}

@@ -33,6 +33,8 @@ const EnhancedJournalTrends = () => {
   const { token } = useAuth();
   const [trends, setTrends] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
   const [timeRange, setTimeRange] = useState('month');
   const [selectedEmotion, setSelectedEmotion] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
@@ -43,7 +45,10 @@ const EnhancedJournalTrends = () => {
   });
 
   const fetchTrends = useCallback(async () => {
+    if (!token || loading) return;
+    
     setLoading(true);
+    setError(null);
     try {
       const response = await fetch(buildApiUrl(`/api/journal/trends?limit=50&timeRange=${timeRange}`), {
         headers: {
@@ -54,22 +59,34 @@ const EnhancedJournalTrends = () => {
       if (response.ok) {
         const data = await response.json();
         setTrends(data.trendAnalysis);
+        setError(null);
       } else {
-        toast.error('Failed to fetch trends');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || 'Failed to fetch trends';
+        setError(errorMessage);
+        // Only show toast error once
+        if (!hasAttemptedFetch) {
+          toast.error(errorMessage);
+        }
       }
     } catch (error) {
       console.error('Error fetching trends:', error);
-      toast.error('Failed to fetch trends');
+      setError('Network error');
+      // Only show toast error once
+      if (!hasAttemptedFetch) {
+        toast.error('Failed to fetch trends');
+      }
     } finally {
       setLoading(false);
+      setHasAttemptedFetch(true);
     }
-  }, [token, timeRange]);
+  }, [token, timeRange, loading, hasAttemptedFetch]);
 
   useEffect(() => {
-    if (token) {
+    if (token && !hasAttemptedFetch) {
       fetchTrends();
     }
-  }, [token, fetchTrends]);
+  }, [token, fetchTrends, hasAttemptedFetch]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -135,7 +152,7 @@ const EnhancedJournalTrends = () => {
     }
   };
 
-  if (!trends) {
+  if (!trends && !error) {
     return (
       <Card>
         <div className="flex items-center justify-center py-8">
@@ -147,6 +164,26 @@ const EnhancedJournalTrends = () => {
               className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-500/90 transition-colors duration-200 disabled:opacity-50 font-jakarta leading-relaxed tracking-wider"
             >
               {loading ? 'Loading...' : 'Load Trends'}
+            </button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <Brain className="h-12 w-12 text-red-400 mx-auto mb-4" />
+            <p className="text-red-400 mb-4">{error}</p>
+            <button
+              onClick={fetchTrends}
+              disabled={loading}
+              className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-500/90 transition-colors duration-200 disabled:opacity-50 font-jakarta leading-relaxed tracking-wider"
+            >
+              {loading ? 'Retrying...' : 'Retry'}
             </button>
           </div>
         </div>

@@ -752,4 +752,350 @@ async function searchOpenFoodFacts(query, limit) {
   }
 }
 
+/**
+ * Create a custom food item
+ * POST /api/food/custom
+ */
+router.post('/custom', auth, async (req, res) => {
+  try {
+    const {
+      name,
+      nutrients,
+      portionGramsDefault = 100,
+      portionUnits = [],
+      tags = [],
+      gi = null,
+      fodmap = 'Unknown',
+      novaClass = 1,
+      aliases = []
+    } = req.body;
+
+    // Validate required fields
+    if (!name || !nutrients) {
+      return res.status(400).json({
+        message: 'Name and nutrients are required'
+      });
+    }
+
+    // Validate nutrients structure
+    const requiredNutrients = ['kcal', 'protein', 'fat', 'carbs'];
+    for (const nutrient of requiredNutrients) {
+      if (nutrients[nutrient] === undefined || nutrients[nutrient] === null) {
+        return res.status(400).json({
+          message: `Missing required nutrient: ${nutrient}`
+        });
+      }
+    }
+
+    // Validate nutrient values are reasonable
+    const nutrientValidation = {
+      kcal: { min: 0, max: 1000, name: 'Calories' },
+      protein: { min: 0, max: 100, name: 'Protein' },
+      fat: { min: 0, max: 100, name: 'Fat' },
+      carbs: { min: 0, max: 100, name: 'Carbohydrates' },
+      fiber: { min: 0, max: 100, name: 'Fiber' },
+      sugar: { min: 0, max: 100, name: 'Sugar' },
+      vitaminC: { min: 0, max: 1000, name: 'Vitamin C' },
+      zinc: { min: 0, max: 100, name: 'Zinc' },
+      selenium: { min: 0, max: 1000, name: 'Selenium' },
+      iron: { min: 0, max: 100, name: 'Iron' },
+      omega3: { min: 0, max: 50, name: 'Omega-3' }
+    };
+
+    for (const [nutrient, value] of Object.entries(nutrients)) {
+      if (value !== undefined && value !== null) {
+        const validation = nutrientValidation[nutrient];
+        if (validation) {
+          const numValue = parseFloat(value);
+          if (numValue < validation.min || numValue > validation.max) {
+            return res.status(400).json({
+              message: `${validation.name} must be between ${validation.min} and ${validation.max}`
+            });
+          }
+        }
+      }
+    }
+
+    // Validate portion size is reasonable
+    if (portionGramsDefault < 1 || portionGramsDefault > 10000) {
+      return res.status(400).json({
+        message: 'Portion size must be between 1 and 10,000 grams'
+      });
+    }
+
+    // Validate GI if provided
+    if (gi !== null && gi !== undefined) {
+      const giValue = parseFloat(gi);
+      if (giValue < 0 || giValue > 110) {
+        return res.status(400).json({
+          message: 'Glycemic Index must be between 0 and 110'
+        });
+      }
+    }
+
+    // Validate NOVA class
+    if (novaClass < 1 || novaClass > 4) {
+      return res.status(400).json({
+        message: 'NOVA classification must be between 1 and 4'
+      });
+    }
+
+    // Create nameFold for search
+    const nameFold = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // Check if food already exists
+    const existingFood = await FoodItem.findOne({
+      nameFold: nameFold,
+      source: 'CUSTOM'
+    });
+
+    if (existingFood) {
+      return res.status(409).json({
+        message: 'A food item with this name already exists',
+        food: existingFood
+      });
+    }
+
+    // Parse nutrients
+    const parsedNutrients = {
+      kcal: parseFloat(nutrients.kcal) || 0,
+      protein: parseFloat(nutrients.protein) || 0,
+      fat: parseFloat(nutrients.fat) || 0,
+      carbs: parseFloat(nutrients.carbs) || 0,
+      fiber: parseFloat(nutrients.fiber) || 0,
+      sugar: parseFloat(nutrients.sugar) || 0,
+      vitaminC: parseFloat(nutrients.vitaminC) || 0,
+      zinc: parseFloat(nutrients.zinc) || 0,
+      selenium: parseFloat(nutrients.selenium) || 0,
+      iron: parseFloat(nutrients.iron) || 0,
+      omega3: parseFloat(nutrients.omega3) || 0
+    };
+
+    // Generate quality flags
+    const qualityFlags = [];
+    
+    // Check for unrealistic nutrient combinations
+    const totalMacros = parsedNutrients.protein + parsedNutrients.fat + parsedNutrients.carbs;
+    if (totalMacros > 100) {
+      qualityFlags.push({
+        flag: 'MACRO_OVER_100',
+        level: 'warn',
+        message: 'Total macronutrients exceed 100g per 100g (impossible)',
+        value: totalMacros,
+        threshold: 100
+      });
+    }
+
+    // Check for very high calorie density
+    if (parsedNutrients.kcal > 600) {
+      qualityFlags.push({
+        flag: 'HIGH_CALORIE_DENSITY',
+        level: 'info',
+        message: 'Very high calorie density (>600 kcal/100g)',
+        value: parsedNutrients.kcal,
+        threshold: 600
+      });
+    }
+
+    // Check for missing fiber in carb-rich foods
+    if (parsedNutrients.carbs > 20 && parsedNutrients.fiber === 0) {
+      qualityFlags.push({
+        flag: 'MISSING_FIBER',
+        level: 'info',
+        message: 'High carbohydrate content but no fiber reported',
+        value: parsedNutrients.carbs,
+        threshold: 20
+      });
+    }
+
+    // Check for protein content vs NOVA class
+    if (parsedNutrients.protein > 20 && novaClass === 4) {
+      qualityFlags.push({
+        flag: 'HIGH_PROTEIN_ULTRA_PROCESSED',
+        level: 'warn',
+        message: 'High protein content in ultra-processed food (unusual)',
+        value: parsedNutrients.protein,
+        threshold: 20
+      });
+    }
+
+    // Create custom food item
+    const customFood = new FoodItem({
+      source: 'CUSTOM',
+      name: name.trim(),
+      nameFold: nameFold,
+      aliases: aliases,
+      portionGramsDefault: portionGramsDefault,
+      portionUnits: portionUnits.length > 0 ? portionUnits : [{
+        unit: 'piece',
+        grams: portionGramsDefault,
+        description: 'Standard piece',
+        isDefault: true
+      }],
+      nutrients: parsedNutrients,
+      gi: gi ? parseFloat(gi) : null,
+      gl: null, // Will be calculated if needed
+      fodmap: fodmap,
+      novaClass: parseInt(novaClass) || 1,
+      tags: tags,
+      provenance: {
+        source: 'User Created',
+        origin: 'estimated',
+        confidence: 0.5,
+        lastVerifiedAt: new Date(),
+        notes: 'Custom food item created by user'
+      },
+      qualityFlags: qualityFlags
+    });
+
+    // Save to database
+    await customFood.save();
+
+    console.log(`✅ Custom food created: ${name} by user ${req.user.userId}`);
+
+    res.status(201).json({
+      message: 'Custom food item created successfully',
+      food: customFood
+    });
+
+  } catch (error) {
+    console.error('Error creating custom food:', error);
+    res.status(500).json({
+      message: 'Error creating custom food item',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Get custom food items created by user
+ * GET /api/food/custom
+ */
+router.get('/custom', auth, async (req, res) => {
+  try {
+    const { limit = 20, page = 1 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const customFoods = await FoodItem.find({ source: 'CUSTOM' })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .select('name portionGramsDefault portionUnits nutrients tags gi fodmap novaClass provenance createdAt');
+
+    const total = await FoodItem.countDocuments({ source: 'CUSTOM' });
+
+    res.json({
+      message: 'Custom foods retrieved',
+      foods: customFoods,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching custom foods:', error);
+    res.status(500).json({
+      message: 'Error fetching custom foods',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Update a custom food item
+ * PUT /api/food/custom/:id
+ */
+router.put('/custom/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Find the custom food item
+    const customFood = await FoodItem.findOne({
+      _id: id,
+      source: 'CUSTOM'
+    });
+
+    if (!customFood) {
+      return res.status(404).json({
+        message: 'Custom food item not found'
+      });
+    }
+
+    // Update allowed fields
+    const allowedUpdates = ['name', 'nutrients', 'portionGramsDefault', 'portionUnits', 'tags', 'gi', 'fodmap', 'novaClass', 'aliases'];
+    const updates = {};
+    
+    for (const field of allowedUpdates) {
+      if (updateData[field] !== undefined) {
+        updates[field] = updateData[field];
+      }
+    }
+
+    // Update nameFold if name is being updated
+    if (updates.name) {
+      updates.nameFold = updates.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    // Update the food item
+    const updatedFood = await FoodItem.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
+
+    console.log(`✅ Custom food updated: ${updatedFood.name} by user ${req.user.userId}`);
+
+    res.json({
+      message: 'Custom food item updated successfully',
+      food: updatedFood
+    });
+
+  } catch (error) {
+    console.error('Error updating custom food:', error);
+    res.status(500).json({
+      message: 'Error updating custom food item',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Delete a custom food item
+ * DELETE /api/food/custom/:id
+ */
+router.delete('/custom/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find and delete the custom food item
+    const customFood = await FoodItem.findOneAndDelete({
+      _id: id,
+      source: 'CUSTOM'
+    });
+
+    if (!customFood) {
+      return res.status(404).json({
+        message: 'Custom food item not found'
+      });
+    }
+
+    console.log(`✅ Custom food deleted: ${customFood.name} by user ${req.user.userId}`);
+
+    res.json({
+      message: 'Custom food item deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting custom food:', error);
+    res.status(500).json({
+      message: 'Error deleting custom food item',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

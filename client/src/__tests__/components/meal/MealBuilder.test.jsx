@@ -1,10 +1,11 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import MealBuilder from '../../../components/meal/MealBuilder';
 
 // Mock the AuthContext
-jest.mock('../../../contexts/AuthContext', () => ({
+vi.mock('../../../contexts/AuthContext', () => ({
   useAuth: () => ({
     token: 'mock-token',
     user: { _id: 'mock-user-id' }
@@ -12,18 +13,18 @@ jest.mock('../../../contexts/AuthContext', () => ({
 }));
 
 // Mock the config
-jest.mock('../../../config', () => ({
+vi.mock('../../../config', () => ({
   buildApiUrl: (endpoint) => `http://localhost:5002${endpoint}`
 }));
 
 // Mock react-hot-toast
-jest.mock('react-hot-toast', () => ({
-  success: jest.fn(),
-  error: jest.fn()
+vi.mock('react-hot-toast', () => ({
+  success: vi.fn(),
+  error: vi.fn()
 }));
 
 // Mock framer-motion
-jest.mock('framer-motion', () => ({
+vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }) => <div {...props}>{children}</div>,
     button: ({ children, ...props }) => <button {...props}>{children}</button>

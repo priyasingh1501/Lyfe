@@ -19,35 +19,67 @@ const JournalTrends = () => {
   const { token } = useAuth();
   const [trends, setTrends] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
-  const fetchTrends = useCallback(async () => {
+  const fetchTrends = useCallback(async (forceRefresh = false) => {
+    if (!token || loading) return;
+    
     setLoading(true);
+    setError(null);
     try {
-      const response = await fetch(buildApiUrl('/api/journal/trends?limit=20'), {
+      const url = forceRefresh 
+        ? buildApiUrl('/api/journal/trends/refresh')
+        : buildApiUrl('/api/journal/trends?limit=20');
+      
+      const method = forceRefresh ? 'POST' : 'GET';
+      const body = forceRefresh ? JSON.stringify({ timeRange: 'month', limit: 20 }) : undefined;
+      
+      const response = await fetch(url, {
+        method,
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body
       });
       
       if (response.ok) {
         const data = await response.json();
         setTrends(data.trendAnalysis);
+        setError(null);
+        
+        // Show success message for refresh
+        if (forceRefresh) {
+          toast.success('Trends refreshed successfully');
+        }
       } else {
-        toast.error('Failed to fetch trends');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || 'Failed to fetch trends';
+        setError(errorMessage);
+        // Only show toast error once
+        if (!hasAttemptedFetch) {
+          toast.error(errorMessage);
+        }
       }
     } catch (error) {
       console.error('Error fetching trends:', error);
-      toast.error('Failed to fetch trends');
+      setError('Network error');
+      // Only show toast error once
+      if (!hasAttemptedFetch) {
+        toast.error('Failed to fetch trends');
+      }
     } finally {
       setLoading(false);
+      setHasAttemptedFetch(true);
     }
-  }, [token]);
+  }, [token, loading, hasAttemptedFetch]);
 
   useEffect(() => {
-    if (token) {
+    if (token && !hasAttemptedFetch) {
       fetchTrends();
     }
-  }, [token, fetchTrends]);
+  }, [token, fetchTrends, hasAttemptedFetch]);
 
   const getTrendIcon = (trend) => {
     switch (trend) {
@@ -76,38 +108,78 @@ const JournalTrends = () => {
     }
   };
 
-  if (!trends) {
-  return (
-    <Card
-    >
-      <div className="flex items-center justify-center py-8">
-        <div className="text-center">
-          <Brain className="h-12 w-12 text-text-secondary mx-auto mb-4" />
-          <button
-            onClick={fetchTrends}
-            disabled={loading}
-            className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-500/90 transition-colors duration-200 disabled:opacity-50 font-jakarta leading-relaxed tracking-wider"
-          >
-            {loading ? 'Loading...' : 'Load Trends'}
-          </button>
+  if (!trends && !error) {
+    return (
+      <Card>
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <Brain className="h-12 w-12 text-text-secondary mx-auto mb-4" />
+            <button
+              onClick={fetchTrends}
+              disabled={loading}
+              className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-500/90 transition-colors duration-200 disabled:opacity-50 font-jakarta leading-relaxed tracking-wider"
+            >
+              {loading ? 'Loading...' : 'Load Trends'}
+            </button>
+          </div>
         </div>
-      </div>
-    </Card>
-  );
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <Brain className="h-12 w-12 text-red-400 mx-auto mb-4" />
+            <p className="text-red-400 mb-4">{error}</p>
+            <button
+              onClick={fetchTrends}
+              disabled={loading}
+              className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-500/90 transition-colors duration-200 disabled:opacity-50 font-jakarta leading-relaxed tracking-wider"
+            >
+              {loading ? 'Retrying...' : 'Retry'}
+            </button>
+          </div>
+        </div>
+      </Card>
+    );
   }
 
   return (
     <Card
     >
-      {/* Header Action */}
-      <div className="flex justify-end mb-6">
-        <button
-          onClick={fetchTrends}
-          disabled={loading}
-          className="p-2 text-text-secondary hover:text-text-primary transition-colors duration-200"
-        >
-          <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+      {/* Header Actions */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center space-x-2">
+          <div className="p-2 bg-primary-500 bg-opacity-20 rounded-lg">
+            <Brain className="h-5 w-5 text-primary-500" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide">Journal Trends</h3>
+            <p className="text-sm text-text-secondary">Your emotional patterns and insights</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => fetchTrends(true)}
+            disabled={loading}
+            className="px-3 py-1.5 text-xs bg-primary-500 text-white rounded-lg hover:bg-primary-500/90 transition-colors duration-200 disabled:opacity-50 font-jakarta leading-relaxed tracking-wider"
+            title="Refresh trends"
+          >
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button
+            onClick={() => fetchTrends(false)}
+            disabled={loading}
+            className="p-2 text-text-secondary hover:text-text-primary transition-colors duration-200"
+            title="Reload trends"
+          >
+            <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4 relative z-10">

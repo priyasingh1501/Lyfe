@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Badge } from '../components/ui';
+import { Card, Button, Badge, Section } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { buildApiUrl } from '../config';
 import { CreateHabitPopup } from '../components/habits';

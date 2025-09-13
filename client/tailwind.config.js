@@ -43,11 +43,14 @@ module.exports = {
           'info': '#1E49C9',
         },
         
-        // Accent colors - Only Primary Blue
+        // Accent colors
         'accent': {
           'primary': '#1E49C9',
           'blue': '#1E49C9',
           'opal': '#1E49C9',
+          'yellow': '#FFD200',
+          'purple': '#8B5CF6',
+          'pink': '#EC4899',
         },
         
         // Primary colors - Only Blue

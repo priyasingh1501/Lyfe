@@ -417,12 +417,13 @@ const MealBuilder = ({ onMealSaved }) => {
               </form>
 
               {/* Search Results */}
-              <FoodSearch
-                results={searchResults}
-                isSearching={isSearching}
-                hasSearched={hasSearched}
-                onAddFood={addFoodToMeal}
-              />
+            <FoodSearch
+              results={searchResults}
+              isSearching={isSearching}
+              hasSearched={hasSearched}
+              onAddFood={addFoodToMeal}
+              searchQuery={searchQuery}
+            />
           </Card>
         </motion.div>
 

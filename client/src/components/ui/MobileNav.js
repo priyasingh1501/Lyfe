@@ -1,11 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Home, Target, Heart, DollarSign, FileText, Users, MessageCircle, BookOpen, Calendar, ShoppingCart, Brain, Settings } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const MobileNav = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
+
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Don't render on desktop
+  if (!isMobile) {
+    return null;
+  }
 
   const navItems = [
     { path: '/overview', icon: Home, label: 'Overview' },

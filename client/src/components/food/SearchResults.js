@@ -1,8 +1,11 @@
-import React from 'react';
-import { Plus, Info, Database, Globe, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Info, Database, Globe, TrendingUp, PlusCircle } from 'lucide-react';
 import { Card, Button, Badge } from '../ui';
+import CreateCustomFood from './CreateCustomFood';
 
-const SearchResults = ({ results }) => {
+const SearchResults = ({ results, onFoodCreated }) => {
+  const [showCreateCustom, setShowCreateCustom] = useState(false);
+  const [createCustomQuery, setCreateCustomQuery] = useState('');
   // Helper function to normalize nutrient data from different sources
   const getNormalizedNutrients = (food) => {
     if (!food) return null;
@@ -89,16 +92,39 @@ const SearchResults = ({ results }) => {
     console.log('Adding to meal:', food);
   };
 
+  const handleCreateCustom = (query = '') => {
+    setCreateCustomQuery(query);
+    setShowCreateCustom(true);
+  };
+
+  const handleCustomFoodCreated = (food) => {
+    setShowCreateCustom(false);
+    if (onFoodCreated) {
+      onFoodCreated(food);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-700">
           Search Results ({results.length})
         </h3>
-        <Badge variant="info" className="flex items-center gap-1">
-          <Info className="w-3 h-3" />
-          Combined from all sources
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => handleCreateCustom()}
+            className="flex items-center gap-2"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Add Missing Food
+          </Button>
+          <Badge variant="info" className="flex items-center gap-1">
+            <Info className="w-3 h-3" />
+            Combined from all sources
+          </Badge>
+        </div>
       </div>
 
       <div className="grid gap-4">
@@ -225,6 +251,14 @@ const SearchResults = ({ results }) => {
           </Card>
         ))}
       </div>
+
+      {/* Create Custom Food Modal */}
+      <CreateCustomFood
+        isOpen={showCreateCustom}
+        onClose={() => setShowCreateCustom(false)}
+        onFoodCreated={handleCustomFoodCreated}
+        searchQuery={createCustomQuery}
+      />
     </div>
   );
 };

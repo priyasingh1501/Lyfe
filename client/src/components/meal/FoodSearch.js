@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PlusCircle } from 'lucide-react';
+import CreateCustomFood from '../food/CreateCustomFood';
 
-const FoodSearch = ({ results, isSearching, hasSearched, onAddFood }) => {
+const FoodSearch = ({ results, isSearching, hasSearched, onAddFood, searchQuery = '' }) => {
+  const [showCreateCustom, setShowCreateCustom] = useState(false);
   // Don't show anything until user has searched
   if (!hasSearched) {
     return null;
@@ -30,11 +32,32 @@ const FoodSearch = ({ results, isSearching, hasSearched, onAddFood }) => {
           <h3 className="text-lg font-medium text-[#E8EEF2]">
             Search Results
           </h3>
+          <button
+            onClick={() => setShowCreateCustom(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-[#FFD200] text-black text-sm font-medium rounded-lg hover:bg-[#FFE55C] transition-colors"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Add Missing Food
+          </button>
         </div>
         <div className="text-center py-8 text-[#6B7280]">
           <p className="text-sm text-red-400">No results found. Try a different search term.</p>
           <p className="text-xs mt-2 text-[#6B7280]">Try: idli, roti, paneer, dal, etc.</p>
+          <p className="text-xs mt-2 text-[#6B7280]">Or create a custom food item if it's not in our database.</p>
         </div>
+        
+        {/* Create Custom Food Modal */}
+        <CreateCustomFood
+          isOpen={showCreateCustom}
+          onClose={() => setShowCreateCustom(false)}
+          onFoodCreated={(food) => {
+            setShowCreateCustom(false);
+            if (onAddFood) {
+              onAddFood(food);
+            }
+          }}
+          searchQuery={searchQuery}
+        />
       </div>
     );
   }
@@ -79,9 +102,18 @@ const FoodSearch = ({ results, isSearching, hasSearched, onAddFood }) => {
         <h3 className="text-lg font-medium text-[#E8EEF2]">
           Search Results
         </h3>
-        <span className="text-sm text-[#6B7280]">
-          Showing {results.length} results
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-[#6B7280]">
+            Showing {results.length} results
+          </span>
+          <button
+            onClick={() => setShowCreateCustom(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-[#FFD200] text-black text-sm font-medium rounded-lg hover:bg-[#FFE55C] transition-colors"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Add Missing Food
+          </button>
+        </div>
       </div>
       
       <AnimatePresence>
@@ -122,6 +154,18 @@ const FoodSearch = ({ results, isSearching, hasSearched, onAddFood }) => {
         ))}
       </AnimatePresence>
       
+      {/* Create Custom Food Modal */}
+      <CreateCustomFood
+        isOpen={showCreateCustom}
+        onClose={() => setShowCreateCustom(false)}
+        onFoodCreated={(food) => {
+          setShowCreateCustom(false);
+          if (onAddFood) {
+            onAddFood(food);
+          }
+        }}
+        searchQuery={searchQuery}
+      />
     </div>
   );
 };

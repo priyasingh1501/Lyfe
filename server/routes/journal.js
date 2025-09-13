@@ -1,5 +1,6 @@
 const express = require('express');
 const Journal = require('../models/Journal');
+const JournalTrends = require('../models/JournalTrends');
 const JournalAnalysisService = require('../services/journalAnalysisService');
 const router = express.Router();
 
@@ -401,9 +402,121 @@ router.post('/entries/:entryId/analyze', authenticateToken, async (req, res) => 
 // Get trend analysis for user's journal
 router.get('/trends', authenticateToken, async (req, res) => {
   try {
-    const { limit = 10 } = req.query;
+    const { limit = 10, timeRange = 'month' } = req.query;
+    const userId = req.user._id;
     
-    const journal = await Journal.findOne({ userId: req.user._id });
+    // Try to get cached trends first
+    const cachedTrends = await JournalTrends.getOrCreateTrends(userId, timeRange, parseInt(limit));
+    
+    if (cachedTrends && !cachedTrends.needsRefresh()) {
+      return res.json({
+        message: 'Trend analysis retrieved from cache',
+        trendAnalysis: cachedTrends.trendAnalysis,
+        analyzedEntries: cachedTrends.metadata.analyzedEntries,
+        totalEntries: cachedTrends.metadata.totalEntries,
+        cached: true,
+        lastUpdated: cachedTrends.metadata.lastUpdated
+      });
+    }
+    
+    // If no cache or needs refresh, generate new trends
+    const journal = await Journal.findOne({ userId });
+    if (!journal) {
+      return res.status(404).json({ message: 'Journal not found' });
+    }
+    
+    // Get recent entries with analysis
+    const recentEntries = journal.entries
+      .filter(entry => entry.alfredAnalysis)
+      .slice(0, parseInt(limit));
+    
+    if (recentEntries.length === 0) {
+      // Store empty trends to avoid repeated API calls
+      const emptyTrends = new JournalTrends({
+        userId,
+        timeRange,
+        trendAnalysis: {
+          sentimentTrend: 'stable',
+          commonTopics: [],
+          evolvingBeliefs: [],
+          summary: 'No entries available for trend analysis.'
+        },
+        metadata: {
+          analyzedEntries: 0,
+          totalEntries: journal.entries.length,
+          analysisDate: new Date(),
+          lastUpdated: new Date()
+        },
+        cacheKey: JournalTrends.generateCacheKey(userId, timeRange, parseInt(limit))
+      });
+      
+      await emptyTrends.save();
+      
+      return res.json({
+        message: 'No analyzed entries found',
+        trendAnalysis: emptyTrends.trendAnalysis,
+        analyzedEntries: 0,
+        totalEntries: journal.entries.length,
+        cached: false
+      });
+    }
+    
+    // Generate trend analysis
+    const analyses = recentEntries.map(entry => ({
+      _id: entry._id,
+      analysis: entry.alfredAnalysis
+    }));
+    
+    const trendAnalysis = await analysisService.generateTrendAnalysis(analyses);
+    
+    // Store the generated trends
+    const newTrends = new JournalTrends({
+      userId,
+      timeRange,
+      trendAnalysis,
+      metadata: {
+        analyzedEntries: recentEntries.length,
+        totalEntries: journal.entries.length,
+        analysisDate: new Date(),
+        lastUpdated: new Date()
+      },
+      cacheKey: JournalTrends.generateCacheKey(userId, timeRange, parseInt(limit))
+    });
+    
+    // Remove old trends for this user and timeRange
+    await JournalTrends.deleteMany({ 
+      userId, 
+      timeRange,
+      _id: { $ne: newTrends._id }
+    });
+    
+    await newTrends.save();
+    
+    res.json({
+      message: 'Trend analysis completed',
+      trendAnalysis,
+      analyzedEntries: recentEntries.length,
+      totalEntries: journal.entries.length,
+      cached: false,
+      lastUpdated: new Date()
+    });
+  } catch (error) {
+    console.error('Error generating trend analysis:', error);
+    res.status(500).json({ message: 'Error generating trend analysis' });
+  }
+});
+
+// Force refresh trends (bypass cache)
+router.post('/trends/refresh', authenticateToken, async (req, res) => {
+  try {
+    const { timeRange = 'month', limit = 10 } = req.body;
+    const userId = req.user._id;
+    
+    // Delete existing trends for this user and timeRange
+    await JournalTrends.deleteMany({ userId, timeRange });
+    
+    // Get journal entries
+    const journal = await Journal.findOne({ userId });
     if (!journal) {
       return res.status(404).json({ message: 'Journal not found' });
     }
@@ -433,15 +546,32 @@ router.get('/trends', authenticateToken, async (req, res) => {
     
     const trendAnalysis = await analysisService.generateTrendAnalysis(analyses);
     
+    // Store the new trends
+    const newTrends = new JournalTrends({
+      userId,
+      timeRange,
+      trendAnalysis,
+      metadata: {
+        analyzedEntries: recentEntries.length,
+        totalEntries: journal.entries.length,
+        analysisDate: new Date(),
+        lastUpdated: new Date()
+      },
+      cacheKey: JournalTrends.generateCacheKey(userId, timeRange, parseInt(limit))
+    });
+    
+    await newTrends.save();
+    
     res.json({
-      message: 'Trend analysis completed',
+      message: 'Trend analysis refreshed',
       trendAnalysis,
       analyzedEntries: recentEntries.length,
-      totalEntries: journal.entries.length
+      totalEntries: journal.entries.length,
+      lastUpdated: new Date()
     });
   } catch (error) {
-    console.error('Error generating trend analysis:', error);
-    res.status(500).json({ message: 'Error generating trend analysis' });
+    console.error('Error refreshing trend analysis:', error);
+    res.status(500).json({ message: 'Error refreshing trend analysis' });
   }
 });
 

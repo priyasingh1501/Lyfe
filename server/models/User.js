@@ -74,6 +74,10 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date,
     default: Date.now
+  },
+  onboardingCompleted: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
