@@ -634,7 +634,7 @@ code {
 }
 
 .badge-success {
-  @apply badge bg-green-100 text-green-800;
+  @apply badge bg-[#1E49C9]/20 text-[#1E49C9];
 }
 
 .badge-warning {
@@ -894,7 +894,7 @@ code {
 }
 
 .progress-bar-success {
-  @apply progress-bar-fill bg-green-600;
+  @apply progress-bar-fill bg-[#1E49C9];
 }
 
 .progress-bar-warning {
@@ -911,7 +911,7 @@ code {
 }
 
 .alert-success {
-  @apply alert bg-green-50 border-green-200 text-green-800;
+  @apply alert bg-[#1E49C9]/10 border-[#1E49C9]/30 text-[#1E49C9];
 }
 
 .alert-warning {

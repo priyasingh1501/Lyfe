@@ -579,7 +579,7 @@ const MealAnalysis = ({ mealItems, context }) => {
         <div className="grid grid-cols-2 gap-3">
           <div className={`text-center p-3 rounded-lg border-2 ${
             badges.protein 
-              ? 'bg-green-900/30 border-green-600 text-green-300' 
+              ? 'bg-[#1E49C9]/30 border-[#1E49C9] text-[#1E49C9]' 
               : 'bg-gray-900/30 border-gray-600 text-gray-400'
           }`}>
             <div className="text-lg font-bold">{badges.protein ? '✓' : '✗'}</div>
@@ -588,7 +588,7 @@ const MealAnalysis = ({ mealItems, context }) => {
           
           <div className={`text-center p-3 rounded-lg border-2 ${
             badges.veg 
-              ? 'bg-green-900/30 border-green-600 text-green-300' 
+              ? 'bg-[#1E49C9]/30 border-[#1E49C9] text-[#1E49C9]' 
               : 'bg-gray-900/30 border-gray-600 text-gray-400'
           }`}>
             <div className="text-lg font-bold">{badges.veg ? '✓' : '✗'}</div>
@@ -602,7 +602,7 @@ const MealAnalysis = ({ mealItems, context }) => {
           
           <div className={`text-center p-3 rounded-lg border-2 ${
             badges.fodmap === 'Low' 
-              ? 'bg-green-900/30 border-green-600 text-green-300'
+              ? 'bg-[#1E49C9]/30 border-[#1E49C9] text-[#1E49C9]'
               : badges.fodmap === 'Medium'
               ? 'bg-yellow-900/30 border-yellow-600 text-yellow-300'
               : badges.fodmap === 'High'
@@ -617,7 +617,7 @@ const MealAnalysis = ({ mealItems, context }) => {
         <div className="mt-3 text-center">
           <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
             badges.nova === 1 
-              ? 'bg-green-900/30 text-green-300 border border-green-600'
+              ? 'bg-[#1E49C9]/30 text-[#1E49C9] border border-[#1E49C9]'
               : badges.nova === 2
               ? 'bg-blue-900/30 text-blue-300 border border-blue-600'
               : badges.nova === 3

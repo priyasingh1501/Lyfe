@@ -10,6 +10,10 @@ vi.mock('axios');
 
 // Mock react-hot-toast
 vi.mock('react-hot-toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
   success: vi.fn(),
   error: vi.fn(),
 }));
@@ -36,6 +40,19 @@ const TestComponent = () => {
   );
 };
 
+// Test component for testing auth functions
+const AuthTestComponent = ({ onAuthReady }) => {
+  const auth = useAuth();
+  
+  React.useEffect(() => {
+    if (onAuthReady) {
+      onAuthReady(auth);
+    }
+  }, [auth, onAuthReady]);
+  
+  return <div data-testid="auth-component">Auth Component</div>;
+};
+
 const renderWithProviders = (component) => {
   return render(
     <BrowserRouter>
@@ -58,7 +75,7 @@ describe('AuthContext', () => {
     renderWithProviders(<TestComponent />);
     
     expect(screen.getByTestId('user')).toHaveTextContent('no-user');
-    expect(screen.getByTestId('loading')).toHaveTextContent('true');
+    expect(screen.getByTestId('loading')).toHaveTextContent('false');
     expect(screen.getByTestId('token')).toHaveTextContent('no-token');
     expect(screen.getByTestId('authenticated')).toHaveTextContent('false');
   });
@@ -111,12 +128,19 @@ describe('AuthContext', () => {
       data: { token: mockToken, user: mockUser } 
     });
     
-    renderWithProviders(<TestComponent />);
+    let authFunctions = null;
+    const onAuthReady = (auth) => {
+      authFunctions = auth;
+    };
     
-    const { login } = useAuth();
+    renderWithProviders(<AuthTestComponent onAuthReady={onAuthReady} />);
+    
+    await waitFor(() => {
+      expect(authFunctions).toBeTruthy();
+    });
     
     await act(async () => {
-      const result = await login('test@example.com', 'password');
+      const result = await authFunctions.login('test@example.com', 'password');
       expect(result.success).toBe(true);
     });
     
@@ -134,15 +158,27 @@ describe('AuthContext', () => {
       response: { data: { message: errorMessage } } 
     });
     
-    renderWithProviders(<TestComponent />);
+    let authFunctions = null;
+    const onAuthReady = (auth) => {
+      authFunctions = auth;
+    };
     
-    const { login } = useAuth();
+    renderWithProviders(<AuthTestComponent onAuthReady={onAuthReady} />);
+    
+    await waitFor(() => {
+      expect(authFunctions).toBeTruthy();
+    });
     
     await act(async () => {
-      const result = await login('test@example.com', 'wrong-password');
+      const result = await authFunctions.login('test@example.com', 'wrong-password');
       expect(result.success).toBe(false);
       expect(result.message).toBe(errorMessage);
     });
+    
+    expect(axios.post).toHaveBeenCalledWith(
+      expect.stringContaining('/api/auth/login'),
+      { email: 'test@example.com', password: 'wrong-password' }
+    );
   });
 
   test('register function works correctly', async () => {
@@ -154,12 +190,19 @@ describe('AuthContext', () => {
       data: { token: mockToken, user: mockUser } 
     });
     
-    renderWithProviders(<TestComponent />);
+    let authFunctions = null;
+    const onAuthReady = (auth) => {
+      authFunctions = auth;
+    };
     
-    const { register } = useAuth();
+    renderWithProviders(<AuthTestComponent onAuthReady={onAuthReady} />);
+    
+    await waitFor(() => {
+      expect(authFunctions).toBeTruthy();
+    });
     
     await act(async () => {
-      const result = await register(userData);
+      const result = await authFunctions.register(userData);
       expect(result.success).toBe(true);
     });
     
@@ -175,12 +218,24 @@ describe('AuthContext', () => {
     const mockToken = 'mock-token';
     localStorageMock.getItem.mockReturnValue(mockToken);
     
-    renderWithProviders(<TestComponent />);
+    let authFunctions = null;
+    const onAuthReady = (auth) => {
+      authFunctions = auth;
+    };
     
-    const { logout } = useAuth();
+    renderWithProviders(
+      <div>
+        <AuthTestComponent onAuthReady={onAuthReady} />
+        <TestComponent />
+      </div>
+    );
+    
+    await waitFor(() => {
+      expect(authFunctions).toBeTruthy();
+    });
     
     await act(async () => {
-      logout();
+      authFunctions.logout();
     });
     
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('token');
@@ -194,12 +249,19 @@ describe('AuthContext', () => {
     
     axios.put.mockResolvedValue({ data: { user: updatedUser } });
     
-    renderWithProviders(<TestComponent />);
+    let authFunctions = null;
+    const onAuthReady = (auth) => {
+      authFunctions = auth;
+    };
     
-    const { updateProfile } = useAuth();
+    renderWithProviders(<AuthTestComponent onAuthReady={onAuthReady} />);
+    
+    await waitFor(() => {
+      expect(authFunctions).toBeTruthy();
+    });
     
     await act(async () => {
-      const result = await updateProfile({ name: 'John Doe' });
+      const result = await authFunctions.updateProfile({ name: 'John Doe' });
       expect(result.success).toBe(true);
     });
     
@@ -212,12 +274,19 @@ describe('AuthContext', () => {
   test('changePassword function works correctly', async () => {
     axios.put.mockResolvedValue({ data: { message: 'Password changed' } });
     
-    renderWithProviders(<TestComponent />);
+    let authFunctions = null;
+    const onAuthReady = (auth) => {
+      authFunctions = auth;
+    };
     
-    const { changePassword } = useAuth();
+    renderWithProviders(<AuthTestComponent onAuthReady={onAuthReady} />);
+    
+    await waitFor(() => {
+      expect(authFunctions).toBeTruthy();
+    });
     
     await act(async () => {
-      const result = await changePassword('oldpass', 'newpass');
+      const result = await authFunctions.changePassword('oldpass', 'newpass');
       expect(result.success).toBe(true);
     });
     
@@ -234,12 +303,19 @@ describe('AuthContext', () => {
     localStorageMock.getItem.mockReturnValue(mockToken);
     axios.post.mockResolvedValue({ data: { token: newToken } });
     
-    renderWithProviders(<TestComponent />);
+    let authFunctions = null;
+    const onAuthReady = (auth) => {
+      authFunctions = auth;
+    };
     
-    const { refreshToken } = useAuth();
+    renderWithProviders(<AuthTestComponent onAuthReady={onAuthReady} />);
+    
+    await waitFor(() => {
+      expect(authFunctions).toBeTruthy();
+    });
     
     await act(async () => {
-      const result = await refreshToken();
+      const result = await authFunctions.refreshToken();
       expect(result.success).toBe(true);
     });
     

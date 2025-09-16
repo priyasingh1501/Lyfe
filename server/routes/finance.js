@@ -402,7 +402,7 @@ router.post('/goals', auth, async (req, res) => {
       amount: parseFloat(amount),
       period: period || 'monthly',
       notes,
-      color: color || '#3CCB7F'
+      color: color || '#1E49C9'
     });
     
     await goal.save();

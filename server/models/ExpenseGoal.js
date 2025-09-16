@@ -36,7 +36,7 @@ const expenseGoalSchema = new mongoose.Schema({
   notes: String,
   color: {
     type: String,
-    default: '#3CCB7F'
+    default: '#1E49C9'
   }
 }, {
   timestamps: true

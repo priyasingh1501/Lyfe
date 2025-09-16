@@ -9,6 +9,15 @@ export default defineConfig({
     globals: true,
     css: true,
     exclude: ['**/node_modules/**', '**/e2e-tests/**'],
+    include: ['**/*.{test,spec}.{js,jsx,ts,tsx}'],
+  },
+  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },
+  esbuild: {
+    jsx: 'automatic',
   },
 });
 
