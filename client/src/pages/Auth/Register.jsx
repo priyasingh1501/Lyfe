@@ -85,7 +85,7 @@ const Register = () => {
       });
       
       if (result.success) {
-        // Let ProtectedRoute handle the redirect logic (onboarding vs dashboard)
+        // Redirect to dashboard
         navigate('/');
       } else {
         // Handle registration failure - show error message

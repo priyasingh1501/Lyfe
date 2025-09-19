@@ -114,17 +114,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const completeOnboarding = async () => {
-    try {
-      const response = await axios.put(buildApiUrl('/api/auth/complete-onboarding'));
-      setUser(response.data.user);
-      return { success: true };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to complete onboarding';
-      toast.error(message);
-      return { success: false, message };
-    }
-  };
 
   const refreshToken = async () => {
     try {
@@ -176,7 +165,6 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     changePassword,
-    completeOnboarding,
     refreshToken,
     isAuthenticated: !!user,
   };

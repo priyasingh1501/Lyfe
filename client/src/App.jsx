@@ -15,7 +15,6 @@ import AiChat from './pages/AiChat';
 import Profile from './pages/Profile';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
-import Onboarding from './pages/Onboarding';
 import './index.css';
 
 // Create a client
@@ -44,15 +43,11 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
   
-  // Check if user needs to complete onboarding
-  if (user && user.onboardingCompleted !== true) {
-    return <Navigate to="/onboarding" replace />;
-  }
   
   return children;
 };
 
-// Auth-only Route: requires auth but does NOT enforce onboarding completion
+// Auth-only Route: requires authentication
 const AuthOnlyRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
@@ -152,12 +147,6 @@ function App() {
                 </PublicRoute>
               } />
               
-              {/* Onboarding Route */}
-              <Route path="/onboarding" element={
-                <AuthOnlyRoute>
-                  <Onboarding />
-                </AuthOnlyRoute>
-              } />
                 
               {/* Protected Routes */}
               <Route path="/" element={

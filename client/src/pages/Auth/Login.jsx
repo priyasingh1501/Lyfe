@@ -35,7 +35,7 @@ const Login = () => {
     try {
       const result = await login(formData.email, formData.password);
       if (result.success) {
-        // Let ProtectedRoute handle the redirect logic (onboarding vs dashboard)
+        // Redirect to dashboard
         navigate('/');
       } else {
         // Handle login failure - show error message
