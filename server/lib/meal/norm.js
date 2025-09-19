@@ -12,7 +12,8 @@ function foldName(str) {
   
   return str
     .toLowerCase()
-    .replace(/[^\w]/g, '') // Remove all non-word characters including spaces
+    .replace(/[^\w\s]/g, ' ') // Replace punctuation with spaces
+    .replace(/\s+/g, ' ')     // Replace multiple spaces with single space
     .trim();
 }
 
@@ -132,7 +133,7 @@ function containsKeywords(text, keywords) {
   );
 }
 
-export {
+module.exports = {
   foldName,
   aliasMatch,
   stringSimilarity,

@@ -39,7 +39,7 @@ async function fetchExternalFoodData(externalId) {
       console.log('🔍 Making USDA API call for FDC ID:', fdcId);
       const response = await axios.get(
         `https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${usdaApiKey}`,
-        { timeout: 10000 }
+        { timeout: 3000 }
       );
 
       if (!response.data) {
@@ -97,7 +97,7 @@ async function fetchExternalFoodData(externalId) {
       try {
         const response = await axios.get(
           `https://world.openfoodfacts.org/api/v0/product/${offId}.json`,
-          { timeout: 10000 }
+          { timeout: 3000 }
         );
 
         if (!response.data || response.data.status !== 1) {
@@ -171,7 +171,8 @@ router.post('/', auth, async (req, res) => {
     console.log('🍽️ MEAL CREATION REQUEST RECEIVED');
     console.log('🍽️ Request body:', JSON.stringify(req.body, null, 2));
     const userId = req.user.userId;
-    const { ts, items, notes, context } = req.body;
+    const { ts, items, notes, context, skipAI: skipAIBody } = req.body;
+    const skipAI = (req.query.skipAI === 'true') || skipAIBody === true || (req.headers['x-skip-ai'] === 'true');
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
@@ -223,16 +224,25 @@ router.post('/', auth, async (req, res) => {
           externalFoods.push(food);
         } else {
           console.warn('⚠️ Failed to fetch external food:', externalFoodIds[index].foodId, result.reason?.message);
+          // Create a lightweight placeholder so save doesn't block
+          const placeholder = {
+            _id: externalFoodIds[index].foodId,
+            name: 'Unknown External Food',
+            source: 'external',
+            nutrients: { kcal: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, sugar: 0, vitaminC: 0, zinc: 0, selenium: 0, iron: 0, omega3: 0 },
+            gi: null,
+            gl: null,
+            fodmap: 'Unknown',
+            novaClass: 1,
+            tags: [],
+          };
+          foodMap.set(externalFoodIds[index].foodId, placeholder);
+          externalFoods.push(placeholder);
         }
       });
     }
 
-    // Check if all items were found
-    if (localFoods.length + externalFoods.length !== items.length) {
-      return res.status(400).json({
-        message: 'Some food items were not found'
-      });
-    }
+    // No longer block save if some external foods were not fetched; placeholders were added above
 
     // Prepare items with food data
     const mealItems = items.map(item => ({
@@ -264,10 +274,14 @@ router.post('/', auth, async (req, res) => {
     // Enhance with AI analysis
     let enhancedEffects = ruleBasedEffects;
     try {
-      // Check if OpenAI API key is available
-      if (!process.env.OPENAI_API_KEY) {
-        console.warn('⚠️ OPENAI_API_KEY not found, skipping AI analysis');
-        // Skip AI analysis entirely instead of throwing error
+      // Respect skip flag or missing API key
+      if (skipAI || !process.env.OPENAI_API_KEY) {
+        if (!process.env.OPENAI_API_KEY) {
+          console.warn('⚠️ OPENAI_API_KEY not found, skipping AI analysis');
+        }
+        if (skipAI) {
+          console.log('⏭️ Skipping AI analysis by request');
+        }
         enhancedEffects = ruleBasedEffects;
       } else {
 

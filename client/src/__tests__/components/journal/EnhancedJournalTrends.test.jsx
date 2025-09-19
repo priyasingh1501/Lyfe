@@ -43,7 +43,12 @@ describe('EnhancedJournalTrends', () => {
 
     render(<EnhancedJournalTrends />);
 
-    // Wait for initial load to complete
+    // Initial state shows Load Trends button
+    expect(screen.getByText('Load Trends')).toBeInTheDocument();
+
+    // Click to fetch
+    fireEvent.click(screen.getByText('Load Trends'));
+
     await waitFor(() => {
       expect(screen.getByText('Personal Insights')).toBeInTheDocument();
       expect(screen.getByText('Growth Overview')).toBeInTheDocument();
@@ -58,7 +63,8 @@ describe('EnhancedJournalTrends', () => {
 
     render(<EnhancedJournalTrends />);
 
-    // Wait for initial load to complete
+    fireEvent.click(screen.getByText('Load Trends'));
+
     await screen.findByText('Personal Insights');
 
     const select = screen.getByDisplayValue('This Month');
