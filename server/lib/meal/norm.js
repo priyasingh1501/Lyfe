@@ -141,4 +141,3 @@ module.exports = {
   parseTags,
   containsKeywords
 };
-// Force update to ensure correct syntax
