@@ -10,6 +10,7 @@ class GoalAlignedDayService {
    */
   static async calculateDailyMetrics(userId, date = new Date()) {
     try {
+      console.log('🔍 calculateDailyMetrics called for user:', userId, 'at', new Date().toISOString());
       // Convert date to IST and get day boundaries
       const istDate = new Date(date);
       // Create IST day boundaries (UTC+5:30)
@@ -89,22 +90,69 @@ class GoalAlignedDayService {
         });
       });
 
-      // 3. Habit check-ins (legacy support)
-      const habitCheckins = await HabitCheckin.find({
+      // 3. Habit check-ins from embedded habit documents
+      const habits = await require('../models/Habit').find({
         userId,
-        date: { $gte: todayStart, $lte: todayEnd },
+        isActive: true,
         goalId: { $exists: true, $ne: null }
       });
 
       let habitMinutes = 0;
       const habitGoalMinutes = new Map();
+      const processedCheckins = new Set(); // Track processed check-ins to avoid double counting
       
-      habitCheckins.forEach(checkin => {
-        if (checkin.goalId && checkin.valueMin) {
-          habitMinutes += checkin.valueMin;
-          const goalIdStr = checkin.goalId.toString();
-          habitGoalMinutes.set(goalIdStr, (habitGoalMinutes.get(goalIdStr) || 0) + checkin.valueMin);
+      habits.forEach(habit => {
+        if (habit.goalId && habit.checkins && Array.isArray(habit.checkins)) {
+          habit.checkins.forEach(checkin => {
+            const checkinDate = new Date(checkin.date);
+            const checkinKey = `${habit._id}-${checkinDate.toISOString()}-${checkin.completed}`;
+            
+            // Skip if this check-in has already been processed
+            if (processedCheckins.has(checkinKey)) {
+              return;
+            }
+            
+            if (checkinDate >= todayStart && checkinDate <= todayEnd && checkin.completed) {
+              const duration = checkin.duration || habit.valueMin || 0;
+              const previousHabitMinutes = habitMinutes;
+              habitMinutes += duration;
+              const goalIdStr = habit.goalId.toString();
+              habitGoalMinutes.set(goalIdStr, (habitGoalMinutes.get(goalIdStr) || 0) + duration);
+              processedCheckins.add(checkinKey);
+              
+              console.log('🔍 Habit checkin processed:', {
+                habitId: habit._id,
+                habitName: habit.habit,
+                checkinDate: checkinDate,
+                duration: duration,
+                previousHabitMinutes: previousHabitMinutes,
+                currentHabitMinutes: habitMinutes,
+                addedMinutes: duration,
+                currentHabitGoalMinutes: Object.fromEntries(habitGoalMinutes),
+                checkinKey: checkinKey
+              });
+            }
+          });
         }
+      });
+
+      // Debug: Let's see what habit check-ins are found
+      console.log('🔍 Habit check-ins debugging:', {
+        habitsCount: habits.length,
+        habitMinutes,
+        habitGoalMinutes: Object.fromEntries(habitGoalMinutes),
+        processedCheckinsCount: processedCheckins.size,
+        habitDetails: habits.map(h => ({
+          id: h._id,
+          name: h.habit,
+          goalId: h.goalId,
+          checkinsCount: h.checkins ? h.checkins.length : 0,
+          checkins: h.checkins ? h.checkins.map(c => ({
+            date: c.date,
+            completed: c.completed,
+            duration: c.duration
+          })) : []
+        }))
       });
 
       // 4. Task minutes (unified model - tasks and habits)
@@ -112,6 +160,20 @@ class GoalAlignedDayService {
         userId,
         completedAt: { $gte: todayStart, $lte: todayEnd },
         goalIds: { $exists: true, $ne: [] }
+      });
+
+      // Debug: Let's see what completed tasks are found
+      console.log('🔍 Completed tasks debugging:', {
+        completedTasksCount: completedTasks.length,
+        taskDetails: completedTasks.map(t => ({
+          id: t._id,
+          title: t.title,
+          goalIds: t.goalIds,
+          completedAt: t.completedAt,
+          estimatedDuration: t.estimatedDuration,
+          actualDuration: t.actualDuration,
+          status: t.status
+        }))
       });
 
       let taskMinutes = 0;
@@ -149,6 +211,9 @@ class GoalAlignedDayService {
           });
         }
       });
+
+      console.log('🔍 Task minutes calculated:', taskMinutes);
+      console.log('🔍 Task goal minutes map:', Object.fromEntries(goalTaskMinutes));
 
       // Calculate total goal-aligned minutes
       const totalGoalAlignedMinutes = blockMinutes + habitMinutes + taskMinutes;
@@ -226,6 +291,10 @@ class GoalAlignedDayService {
 
       // Sort breakdown by minutes (descending)
       goalBreakdown.sort((a, b) => b.minutes - a.minutes);
+
+      console.log('🔍 Final total minutes:', totalGoalAlignedMinutes);
+      console.log('🔍 Final goal minutes map:', Object.fromEntries(goalMinutes));
+      console.log('🔍 Goal breakdown:', goalBreakdown);
 
       // Get or create today's record
       let todayRecord = await GoalAlignedDay.findOne({ userId, date: { $gte: todayStart, $lte: todayEnd } });

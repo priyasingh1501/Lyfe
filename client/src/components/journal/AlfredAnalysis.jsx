@@ -13,6 +13,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import Card from '../ui/Card';
+import { SafeRender } from '../ui';
 
 const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -123,6 +124,9 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
     }
   };
 
+  // Alias for getSentimentBgColor to fix the undefined error
+  const getSentimentBgColor = getEmotionBgColor;
+
   const getEmotionLabel = (emotion) => {
     if (!emotion) return 'Unknown';
     return emotion.charAt(0).toUpperCase() + emotion.slice(1);
@@ -142,13 +146,25 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
 
   const getBeliefCategoryColor = (category) => {
     switch (category) {
-      case 'personal_values': return 'text-primary-500';
-      case 'life_philosophy': return 'text-primary-500';
-      case 'relationships': return 'text-primary-500';
-      case 'work_ethics': return 'text-primary-500';
-      case 'spirituality': return 'text-primary-500';
-      case 'health_wellness': return 'text-primary-500';
+      case 'personal_values': return 'text-pink-400';
+      case 'life_philosophy': return 'text-yellow-400';
+      case 'relationships': return 'text-blue-400';
+      case 'work_ethics': return 'text-green-400';
+      case 'spirituality': return 'text-purple-400';
+      case 'health_wellness': return 'text-emerald-400';
       default: return 'text-text-tertiary';
+    }
+  };
+
+  const getBeliefCategoryBgColor = (category) => {
+    switch (category) {
+      case 'personal_values': return 'bg-pink-500/10 border-pink-500/20';
+      case 'life_philosophy': return 'bg-yellow-500/10 border-yellow-500/20';
+      case 'relationships': return 'bg-blue-500/10 border-blue-500/20';
+      case 'work_ethics': return 'bg-green-500/10 border-green-500/20';
+      case 'spirituality': return 'bg-purple-500/10 border-purple-500/20';
+      case 'health_wellness': return 'bg-emerald-500/10 border-emerald-500/20';
+      default: return 'bg-gray-500/10 border-gray-500/20';
     }
   };
 
@@ -251,22 +267,42 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
               {/* Topics */}
               {analysis?.topics && analysis.topics.length > 0 && (
                 <div>
-                  <h5 className="text-sm font-semibold text-text-primary mb-2 font-jakarta tracking-wide flex items-center">
+                  <h5 className="text-sm font-semibold text-text-primary mb-3 font-jakarta tracking-wide flex items-center">
                     <Target className="h-4 w-4 mr-2 text-purple-400" />
                     Main Topics
                   </h5>
                   <div className="flex flex-wrap gap-2">
-                    {analysis.topics.map((topic, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-2 py-1 bg-purple-500 bg-opacity-20 text-purple-300 text-xs rounded-full"
-                      >
-                        {topic.name}
-                        <span className="ml-1 text-purple-400">
-                          ({(topic.confidence * 100).toFixed(0)}%)
-                        </span>
-                      </span>
-                    ))}
+                    {(analysis.topics || []).map((topic, index) => {
+                      // Enhanced safety check: ensure topic is an object and never render objects directly
+                      try {
+                        if (typeof topic !== 'object' || topic === null) {
+                          return null;
+                        }
+                        
+                        const topicName = String(topic.name || 'Unknown topic');
+                        const confidence = Number(topic.confidence || 0);
+                        
+                        // Extra safety: ensure we're not rendering objects and have valid values
+                        if (typeof topicName !== 'string' || isNaN(confidence)) {
+                          return null;
+                        }
+                        
+                        return (
+                          <span
+                            key={`topic-${index}-${topicName}`}
+                            className="inline-flex items-center px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs rounded-lg font-medium"
+                          >
+                            <SafeRender>{topicName}</SafeRender>
+                            <span className="ml-2 text-purple-400 font-semibold">
+                              <SafeRender>{Math.min(100, Math.max(0, confidence * 100)).toFixed(0)}%</SafeRender>
+                            </span>
+                          </span>
+                        );
+                      } catch (error) {
+                        console.warn('Error rendering topic:', topic, error);
+                        return null;
+                      }
+                    }).filter(Boolean)}
                   </div>
                 </div>
               )}
@@ -274,30 +310,56 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
               {/* Beliefs and Values */}
               {analysis?.beliefs && analysis.beliefs.length > 0 && (
                 <div>
-                  <h5 className="text-sm font-semibold text-text-primary mb-2 font-jakarta tracking-wide flex items-center">
+                  <h5 className="text-sm font-semibold text-text-primary mb-3 font-jakarta tracking-wide flex items-center">
                     <Heart className="h-4 w-4 mr-2 text-pink-400" />
                     Beliefs & Values
                   </h5>
-                  <div className="space-y-2">
-                    {analysis.beliefs.map((belief, index) => {
-                      const IconComponent = getBeliefCategoryIcon(belief.category);
-                      return (
-                        <div key={index} className="flex items-start space-x-2 p-2 bg-gray-700 rounded-lg">
-                          <IconComponent className={`h-4 w-4 mt-0.5 ${getBeliefCategoryColor(belief.category)}`} />
-                          <div className="flex-1">
-                            <p className="text-sm text-text-secondary font-jakarta">{belief.belief}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <span className="text-xs text-text-tertiary capitalize">
-                                {belief.category.replace('_', ' ')}
-                              </span>
-                              <span className="text-xs text-text-muted">
-                                ({(belief.confidence * 100).toFixed(0)}% confidence)
-                              </span>
+                  <div className="space-y-3">
+                    {(analysis.beliefs || []).map((belief, index) => {
+                      // Enhanced safety check: ensure belief is an object and never render objects directly
+                      try {
+                        if (typeof belief !== 'object' || belief === null) {
+                          return null;
+                        }
+                        
+                        const beliefText = String(belief.belief || 'Unknown belief');
+                        const category = String(belief.category || 'general');
+                        const confidence = Number(belief.confidence || 0);
+                        
+                        // Extra safety: ensure we're not rendering objects and have valid values
+                        if (typeof beliefText !== 'string' || typeof category !== 'string' || isNaN(confidence)) {
+                          return null;
+                        }
+                        
+                        const IconComponent = getBeliefCategoryIcon(category);
+                        const bgColor = getBeliefCategoryBgColor(category);
+                        const textColor = getBeliefCategoryColor(category);
+                        
+                        return (
+                          <div key={`belief-${index}-${category}`} className={`flex items-start space-x-3 p-3 rounded-lg border ${bgColor}`}>
+                            <div className={`p-2 rounded-lg ${bgColor.replace('bg-', 'bg-').replace('/10', '/20')}`}>
+                              <IconComponent className={`h-4 w-4 ${textColor}`} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-text-primary font-jakarta leading-relaxed mb-2">
+                                <SafeRender>{beliefText}</SafeRender>
+                              </p>
+                              <div className="flex items-center justify-between">
+                                <span className={`text-xs font-medium ${textColor} capitalize`}>
+                                  <SafeRender>{category.replace('_', ' ')}</SafeRender>
+                                </span>
+                                <span className="text-xs text-text-muted">
+                                  {Math.min(100, Math.max(0, confidence * 100)).toFixed(0)}% confidence
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      } catch (error) {
+                        console.warn('Error rendering belief:', belief, error);
+                        return null;
+                      }
+                    }).filter(Boolean)}
                   </div>
                 </div>
               )}
@@ -305,15 +367,17 @@ const AlfredAnalysis = ({ analysis, entryId, onAnalyze }) => {
               {/* Insights */}
               {analysis?.insights && analysis.insights.length > 0 && (
                 <div>
-                  <h5 className="text-sm font-semibold text-text-primary mb-2 font-jakarta tracking-wide flex items-center">
+                  <h5 className="text-sm font-semibold text-text-primary mb-3 font-jakarta tracking-wide flex items-center">
                     <Lightbulb className="h-4 w-4 mr-2 text-yellow-400" />
                     Insights
                   </h5>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {analysis.insights.map((insight, index) => (
-                      <div key={index} className="flex items-start space-x-2 p-2 bg-yellow-500 bg-opacity-10 rounded-lg">
-                        <Sparkles className="h-4 w-4 mt-0.5 text-yellow-400" />
-                        <p className="text-sm text-text-secondary font-jakarta">{insight}</p>
+                      <div key={index} className="flex items-start space-x-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                        <div className="p-2 rounded-lg bg-yellow-500/20">
+                          <Sparkles className="h-4 w-4 text-yellow-400" />
+                        </div>
+                        <p className="text-sm text-text-primary font-jakarta leading-relaxed"><SafeRender>{insight}</SafeRender></p>
                       </div>
                     ))}
                   </div>

@@ -28,6 +28,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { buildApiUrl } from '../../config';
 import toast from 'react-hot-toast';
 import Card from '../ui/Card';
+import { SafeRender } from '../ui';
 
 const EnhancedJournalTrends = () => {
   const { token } = useAuth();
@@ -58,6 +59,9 @@ const EnhancedJournalTrends = () => {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('EnhancedJournalTrends: Received trends data:', data);
+        console.log('EnhancedJournalTrends: Evolving beliefs count:', data.trendAnalysis?.evolvingBeliefs?.length || 0);
+        console.log('EnhancedJournalTrends: Common topics count:', data.trendAnalysis?.commonTopics?.length || 0);
         setTrends(data.trendAnalysis);
         setError(null);
       } else {
@@ -145,10 +149,10 @@ const EnhancedJournalTrends = () => {
 
   const getGrowthIndicator = (trend) => {
     switch (trend) {
-      case 'improving': return { icon: CheckCircle, color: 'text-[#1E49C9]', text: 'Positive Growth' };
-      case 'declining': return { icon: AlertTriangle, color: 'text-red-400', text: 'Needs Attention' };
-      case 'volatile': return { icon: Zap, color: 'text-yellow-400', text: 'High Variability' };
-      default: return { icon: Minus, color: 'text-gray-400', text: 'Stable' };
+      case 'improving': return { icon: CheckCircle, color: 'text-[#1E49C9]', text: 'Thriving & Growing' };
+      case 'declining': return { icon: Target, color: 'text-orange-400', text: 'Learning & Evolving' };
+      case 'volatile': return { icon: Zap, color: 'text-purple-400', text: 'Dynamic & Adaptable' };
+      default: return { icon: Activity, color: 'text-blue-400', text: 'Steady Progress' };
     }
   };
 
@@ -177,7 +181,7 @@ const EnhancedJournalTrends = () => {
         <div className="flex items-center justify-center py-8">
           <div className="text-center">
             <Brain className="h-12 w-12 text-red-400 mx-auto mb-4" />
-            <p className="text-red-400 mb-4">{error}</p>
+            <p className="text-red-400 mb-4"><SafeRender>{error}</SafeRender></p>
             <button
               onClick={fetchTrends}
               disabled={loading}
@@ -192,86 +196,104 @@ const EnhancedJournalTrends = () => {
   }
 
   return (
-    <Card>
-      {/* Header with Controls */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-primary-500 bg-opacity-20 rounded-lg">
-            <Brain className="h-5 w-5 text-primary-500" />
+    <Card className="overflow-hidden">
+      {/* Header with Enhanced Gradient Background */}
+      <div className="relative bg-gradient-to-r from-primary-500/10 via-purple-500/10 to-pink-500/10 p-6 -m-6 mb-6">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-500/5 to-transparent"></div>
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl shadow-lg">
+              <Brain className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-text-primary font-jakarta tracking-wide">Personal Insights</h3>
+              <p className="text-sm text-text-secondary">Your emotional journey and growth patterns</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide">Personal Insights</h3>
-            <p className="text-sm text-text-secondary">Your emotional journey and growth patterns</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          {/* Time Range Selector */}
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-1 bg-background-primary border border-border-primary rounded-lg text-text-primary text-sm focus:border-primary-500 focus:outline-none"
-          >
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="quarter">This Quarter</option>
-            <option value="year">This Year</option>
-          </select>
           
-          <button
-            onClick={fetchTrends}
-            disabled={loading}
-            className="p-2 text-text-secondary hover:text-text-primary transition-colors duration-200"
-            title="Refresh Analysis"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center space-x-3">
+            {/* Enhanced Time Range Selector */}
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-text-primary text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all duration-200"
+            >
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="quarter">This Quarter</option>
+              <option value="year">This Year</option>
+            </select>
+            
+            <button
+              onClick={fetchTrends}
+              disabled={loading}
+              className="p-2 text-text-secondary hover:text-text-primary transition-colors duration-200 hover:bg-white/10 rounded-lg"
+              title="Refresh Analysis"
+            >
+              <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="space-y-4">
-        {/* Growth Overview */}
-        <Card className="p-4 bg-gradient-to-r from-primary-500/10 to-purple-500/10 border-primary-500/20">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-text-primary font-jakarta tracking-wide flex items-center">
-              <Target className="h-4 w-4 mr-2 text-primary-400" />
-              Growth Overview
-            </h4>
-            <div className="flex items-center space-x-2">
-              {(() => {
-                const indicator = getGrowthIndicator(trends.sentimentTrend);
-                return (
-                  <>
-                    <indicator.icon className={`h-4 w-4 ${indicator.color}`} />
-                    <span className={`text-sm font-medium ${indicator.color}`}>
-                      {indicator.text}
-                    </span>
-                  </>
-                );
-              })()}
+        {/* Growth Overview with Enhanced Design */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="p-6 bg-gradient-to-br from-primary-500/15 to-purple-500/15 border-primary-500/30 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide flex items-center">
+                <div className="p-2 bg-primary-500/20 rounded-lg mr-3">
+                  <Target className="h-5 w-5 text-primary-400" />
+                </div>
+                Growth Overview
+              </h4>
+              <div className="flex items-center space-x-3">
+                {(() => {
+                  const indicator = getGrowthIndicator(trends.sentimentTrend);
+                  return (
+                    <>
+                      <indicator.icon className={`h-5 w-5 ${indicator.color}`} />
+                      <span className={`text-lg font-bold px-3 py-1 rounded-full ${indicator.color} bg-opacity-20`}>
+                        {indicator.text}
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
             </div>
-          </div>
-          <p className="text-sm text-text-secondary font-jakarta">
-            {trends.summary || 'Your emotional patterns show interesting trends that reflect your personal growth journey.'}
-          </p>
-        </Card>
+            <p className="text-sm text-text-secondary font-jakarta leading-relaxed">
+              {trends.summary || 'Your emotional patterns reveal beautiful insights about your personal growth journey and inner strength.'}
+            </p>
+          </Card>
+        </motion.div>
 
-        {/* Emotion Analysis */}
-        <Card className="p-4">
-          <div 
-            className="flex items-center justify-between cursor-pointer hover:bg-gray-700/50 transition-colors duration-200 rounded-lg p-2 -m-2"
-            onClick={() => toggleSection('emotions')}
-          >
-            <h4 className="text-sm font-semibold text-text-primary font-jakarta tracking-wide flex items-center">
-              <Heart className="h-4 w-4 mr-2 text-pink-400" />
-              Emotional Patterns
-            </h4>
-            {expandedSections.emotions ? (
-              <ChevronDown className="h-4 w-4 text-text-tertiary" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-text-tertiary" />
-            )}
-          </div>
+        {/* Emotion Analysis with Enhanced Design */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <Card className="p-6 bg-gradient-to-br from-pink-500/10 to-rose-500/10 border-pink-500/20">
+            <div 
+              className="flex items-center justify-between cursor-pointer hover:bg-pink-500/10 transition-colors duration-200 rounded-lg p-2 -m-2"
+              onClick={() => toggleSection('emotions')}
+            >
+              <h4 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide flex items-center">
+                <div className="p-2 bg-pink-500/20 rounded-lg mr-3">
+                  <Heart className="h-5 w-5 text-pink-400" />
+                </div>
+                Emotional Patterns
+              </h4>
+              {expandedSections.emotions ? (
+                <ChevronDown className="h-5 w-5 text-text-tertiary" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-text-tertiary" />
+              )}
+            </div>
           
           <AnimatePresence>
             {expandedSections.emotions && (
@@ -287,25 +309,71 @@ const EnhancedJournalTrends = () => {
                   <div>
                     <h5 className="text-xs font-medium text-text-tertiary mb-2 font-jakarta">Most Common Emotions</h5>
                     <div className="space-y-2">
-                      {trends.emotionFrequency.slice(0, 5).map((emotion, index) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <div className={`w-3 h-3 rounded-full ${getEmotionBgColor(emotion.name)}`}></div>
-                            <span className={`text-sm font-medium ${getEmotionColor(emotion.name)}`}>
-                              {emotion.name.charAt(0).toUpperCase() + emotion.name.slice(1)}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-16 bg-gray-700 rounded-full h-2">
-                              <div 
-                                className={`h-2 rounded-full ${getEmotionBgColor(emotion.name)}`}
-                                style={{ width: `${(emotion.frequency / trends.emotionFrequency[0].frequency) * 100}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs text-text-tertiary">{emotion.frequency}</span>
-                          </div>
-                        </div>
-                      ))}
+                      {(trends.emotionFrequency || []).slice(0, 5).map((emotion, index) => {
+                        // Enhanced safety check: ensure emotion is processed properly and never render objects directly
+                        try {
+                          if (typeof emotion === 'object' && emotion !== null) {
+                            const emotionName = String(emotion?.name || emotion?.emotion || 'Unknown');
+                            const emotionFrequency = Number(emotion?.frequency || 0);
+                            const maxFrequency = Number(trends.emotionFrequency[0]?.frequency || 1);
+                            
+                            // Extra safety: ensure we're not rendering objects
+                            if (typeof emotionName !== 'string' || isNaN(emotionFrequency) || isNaN(maxFrequency)) {
+                              return null;
+                            }
+                            
+                            return (
+                              <div key={`emotion-${index}-${emotionName}`} className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                  <div className={`w-3 h-3 rounded-full ${getEmotionBgColor(emotionName)}`}></div>
+                                  <span className={`text-sm font-medium ${getEmotionColor(emotionName)}`}>
+                                    <SafeRender>{emotionName.charAt(0).toUpperCase() + emotionName.slice(1)}</SafeRender>
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-16 bg-gray-700 rounded-full h-2">
+                                    <div 
+                                      className={`h-2 rounded-full ${getEmotionBgColor(emotionName)}`}
+                                      style={{ width: `${Math.min(100, (emotionFrequency / maxFrequency) * 100)}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-xs text-text-tertiary"><SafeRender>{emotionFrequency}</SafeRender></span>
+                                </div>
+                              </div>
+                            );
+                          } else if (typeof emotion === 'string' && emotion.trim()) {
+                            const emotionName = String(emotion);
+                            const emotionFrequency = 1;
+                            const maxFrequency = Number(trends.emotionFrequency[0]?.frequency || 1);
+                            
+                            return (
+                              <div key={`emotion-string-${index}-${emotionName}`} className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                  <div className={`w-3 h-3 rounded-full ${getEmotionBgColor(emotionName)}`}></div>
+                                  <span className={`text-sm font-medium ${getEmotionColor(emotionName)}`}>
+                                    {emotionName.charAt(0).toUpperCase() + emotionName.slice(1)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-16 bg-gray-700 rounded-full h-2">
+                                    <div 
+                                      className={`h-2 rounded-full ${getEmotionBgColor(emotionName)}`}
+                                      style={{ width: `${Math.min(100, (emotionFrequency / maxFrequency) * 100)}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-xs text-text-tertiary"><SafeRender>{emotionFrequency}</SafeRender></span>
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            // Skip invalid entries
+                            return null;
+                          }
+                        } catch (error) {
+                          console.warn('Error rendering emotion:', emotion, error);
+                          return null;
+                        }
+                      }).filter(Boolean)}
                     </div>
                   </div>
                 )}
@@ -335,22 +403,29 @@ const EnhancedJournalTrends = () => {
           </AnimatePresence>
         </Card>
 
-        {/* Topic Analysis */}
-        <Card className="p-4">
-          <div 
-            className="flex items-center justify-between cursor-pointer hover:bg-gray-700/50 transition-colors duration-200 rounded-lg p-2 -m-2"
-            onClick={() => toggleSection('topics')}
-          >
-            <h4 className="text-sm font-semibold text-text-primary font-jakarta tracking-wide flex items-center">
-              <Lightbulb className="h-4 w-4 mr-2 text-yellow-400" />
-              Recurring Themes
-            </h4>
-            {expandedSections.topics ? (
-              <ChevronDown className="h-4 w-4 text-text-tertiary" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-text-tertiary" />
-            )}
-          </div>
+        {/* Topic Analysis with Enhanced Design */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Card className="p-6 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/20">
+            <div 
+              className="flex items-center justify-between cursor-pointer hover:bg-yellow-500/10 transition-colors duration-200 rounded-lg p-2 -m-2"
+              onClick={() => toggleSection('topics')}
+            >
+              <h4 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide flex items-center">
+                <div className="p-2 bg-yellow-500/20 rounded-lg mr-3">
+                  <Lightbulb className="h-5 w-5 text-yellow-400" />
+                </div>
+                Recurring Themes
+              </h4>
+              {expandedSections.topics ? (
+                <ChevronDown className="h-5 w-5 text-text-tertiary" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-text-tertiary" />
+              )}
+            </div>
           
           <AnimatePresence>
             {expandedSections.topics && (
@@ -363,40 +438,50 @@ const EnhancedJournalTrends = () => {
               >
                 {trends.commonTopics && trends.commonTopics.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {trends.commonTopics.map((topic, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-3 py-1 bg-yellow-500 bg-opacity-20 text-yellow-300 text-sm rounded-full hover:bg-opacity-30 transition-colors duration-200 cursor-pointer"
-                        onClick={() => setSelectedEmotion(topic)}
-                      >
-                        {topic}
-                      </span>
-                    ))}
+                    {trends.commonTopics.map((topic, index) => {
+                      const topicName = typeof topic === 'string' ? topic : (topic?.name || topic?.belief || 'Unknown Topic');
+                      return (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 bg-yellow-500 bg-opacity-20 text-yellow-300 text-sm rounded-full hover:bg-opacity-30 transition-colors duration-200 cursor-pointer"
+                          onClick={() => setSelectedEmotion(topic)}
+                        >
+                          <SafeRender>{topicName}</SafeRender>
+                        </span>
+                      );
+                    })}
                   </div>
                 ) : (
-                  <p className="text-sm text-text-secondary font-jakarta">No recurring themes identified yet.</p>
+                  <p className="text-sm text-text-secondary font-jakarta">Your unique themes are emerging as you continue your journey.</p>
                 )}
               </motion.div>
             )}
           </AnimatePresence>
         </Card>
 
-        {/* Belief Evolution */}
-        <Card className="p-4">
-          <div 
-            className="flex items-center justify-between cursor-pointer hover:bg-gray-700/50 transition-colors duration-200 rounded-lg p-2 -m-2"
-            onClick={() => toggleSection('beliefs')}
-          >
-            <h4 className="text-sm font-semibold text-text-primary font-jakarta tracking-wide flex items-center">
-              <Heart className="h-4 w-4 mr-2 text-pink-400" />
-              Evolving Beliefs
-            </h4>
-            {expandedSections.beliefs ? (
-              <ChevronDown className="h-4 w-4 text-text-tertiary" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-text-tertiary" />
-            )}
-          </div>
+        {/* Belief Evolution with Enhanced Design */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <Card className="p-6 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border-purple-500/20">
+            <div 
+              className="flex items-center justify-between cursor-pointer hover:bg-purple-500/10 transition-colors duration-200 rounded-lg p-2 -m-2"
+              onClick={() => toggleSection('beliefs')}
+            >
+              <h4 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide flex items-center">
+                <div className="p-2 bg-purple-500/20 rounded-lg mr-3">
+                  <Heart className="h-5 w-5 text-purple-400" />
+                </div>
+                Values & Beliefs
+              </h4>
+              {expandedSections.beliefs ? (
+                <ChevronDown className="h-5 w-5 text-text-tertiary" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-text-tertiary" />
+              )}
+            </div>
           
           <AnimatePresence>
             {expandedSections.beliefs && (
@@ -408,36 +493,48 @@ const EnhancedJournalTrends = () => {
                 className="mt-4 space-y-2"
               >
                 {trends.evolvingBeliefs && trends.evolvingBeliefs.length > 0 ? (
-                  trends.evolvingBeliefs.map((belief, index) => (
-                    <div key={index} className="flex items-start space-x-2 p-3 bg-pink-500 bg-opacity-10 rounded-lg hover:bg-opacity-20 transition-colors duration-200">
-                      <Heart className="h-4 w-4 mt-0.5 text-pink-400 flex-shrink-0" />
-                      <p className="text-sm text-text-secondary font-jakarta">{belief}</p>
-                    </div>
-                  ))
+                  trends.evolvingBeliefs.map((belief, index) => {
+                    const beliefText = typeof belief === 'string' ? belief : (belief?.belief || belief?.name || 'Unknown Belief');
+                    return (
+                      <div key={index} className="flex items-start space-x-2 p-3 bg-pink-500 bg-opacity-10 rounded-lg hover:bg-opacity-20 transition-colors duration-200">
+                        <Heart className="h-4 w-4 mt-0.5 text-pink-400 flex-shrink-0" />
+                        <p className="text-sm text-text-secondary font-jakarta">
+                          <SafeRender>{beliefText}</SafeRender>
+                        </p>
+                      </div>
+                    );
+                  })
                 ) : (
-                  <p className="text-sm text-text-secondary font-jakarta">No evolving beliefs identified yet.</p>
+                  <p className="text-sm text-text-secondary font-jakarta">Your values and beliefs are taking shape beautifully as you grow.</p>
                 )}
               </motion.div>
             )}
           </AnimatePresence>
         </Card>
 
-        {/* Actionable Insights */}
-        <Card className="p-4 bg-gradient-to-r from-[#1E49C9]/10 to-blue-500/10 border-[#1E49C9]/20">
-          <div 
-            className="flex items-center justify-between cursor-pointer hover:bg-gray-700/50 transition-colors duration-200 rounded-lg p-2 -m-2"
-            onClick={() => toggleSection('insights')}
-          >
-            <h4 className="text-sm font-semibold text-text-primary font-jakarta tracking-wide flex items-center">
-              <Zap className="h-4 w-4 mr-2 text-[#1E49C9]" />
-              Actionable Insights
-            </h4>
-            {expandedSections.insights ? (
-              <ChevronDown className="h-4 w-4 text-text-tertiary" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-text-tertiary" />
-            )}
-          </div>
+        {/* Actionable Insights with Enhanced Design */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <Card className="p-6 bg-gradient-to-br from-[#1E49C9]/15 to-blue-500/15 border-[#1E49C9]/30 shadow-lg">
+            <div 
+              className="flex items-center justify-between cursor-pointer hover:bg-[#1E49C9]/10 transition-colors duration-200 rounded-lg p-2 -m-2"
+              onClick={() => toggleSection('insights')}
+            >
+              <h4 className="text-lg font-semibold text-text-primary font-jakarta tracking-wide flex items-center">
+                <div className="p-2 bg-[#1E49C9]/20 rounded-lg mr-3">
+                  <Zap className="h-5 w-5 text-[#1E49C9]" />
+                </div>
+                Actionable Insights
+              </h4>
+              {expandedSections.insights ? (
+                <ChevronDown className="h-5 w-5 text-text-tertiary" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-text-tertiary" />
+              )}
+            </div>
           
           <AnimatePresence>
             {expandedSections.insights && (
@@ -456,7 +553,7 @@ const EnhancedJournalTrends = () => {
                       {trends.growthAreas.map((area, index) => (
                         <div key={index} className="flex items-center space-x-2 p-2 bg-[#1E49C9] bg-opacity-10 rounded-lg">
                           <CheckCircle className="h-4 w-4 text-[#1E49C9]" />
-                          <span className="text-sm text-text-secondary font-jakarta">{area}</span>
+                          <span className="text-sm text-text-secondary font-jakarta"><SafeRender>{area}</SafeRender></span>
                         </div>
                       ))}
                     </div>
@@ -471,7 +568,7 @@ const EnhancedJournalTrends = () => {
                       {trends.recommendations.map((rec, index) => (
                         <div key={index} className="flex items-start space-x-2 p-2 bg-blue-500 bg-opacity-10 rounded-lg">
                           <Lightbulb className="h-4 w-4 text-blue-400 mt-0.5" />
-                          <span className="text-sm text-text-secondary font-jakarta">{rec}</span>
+                          <span className="text-sm text-text-secondary font-jakarta"><SafeRender>{rec}</SafeRender></span>
                         </div>
                       ))}
                     </div>

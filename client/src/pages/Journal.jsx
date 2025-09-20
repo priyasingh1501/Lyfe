@@ -20,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import AlfredAnalysis from '../components/journal/AlfredAnalysis';
 import JournalTrends from '../components/journal/JournalTrends';
+import EmotionalJourneyChart from '../components/journal/EmotionalJourneyChart';
 import MindfulnessCheckin from '../components/mindfulness/MindfulnessCheckin';
 import { buildApiUrl } from '../config';
 import { Button, Input, Card, Section, Header } from '../components/ui';
@@ -163,7 +164,7 @@ const Journal = () => {
   // Load user's habits
   const loadHabits = useCallback(async () => {
     try {
-      const response = await fetch(buildApiUrl('/api/habits'), {
+      const response = await fetch(buildApiUrl('/api/habits?all=true'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -786,6 +787,13 @@ const Journal = () => {
           </div>
         </div>
 
+        {/* Emotional Journey Chart - Full Width */}
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
+          <div className="h-full">
+            <EmotionalJourneyChart />
+          </div>
+        </div>
+
         {/* Stats Overview Cards */}
         {stats && (
           <>
@@ -938,7 +946,6 @@ const Journal = () => {
                       </div>
                     </div>
                   )}
-                  {console.log('Rendering AlfredAnalysis for entry:', entry._id, entry.title)}
 
                   {entry.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-4">

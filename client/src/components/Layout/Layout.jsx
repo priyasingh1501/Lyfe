@@ -368,7 +368,7 @@ const Layout = () => {
                 {user?.profilePicture ? (
                   <img src={user.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-text-inverse text-sm font-semibold">
+                  <span className="text-white text-sm font-semibold">
                     {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
                   </span>
                 )}

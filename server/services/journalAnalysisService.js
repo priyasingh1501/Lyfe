@@ -19,10 +19,19 @@ class JournalAnalysisService {
             content: `You are Alfred, an AI assistant that analyzes journal entries to provide insights about the user's emotional state, topics of interest, and underlying beliefs or values. 
 
 Your analysis should be:
-- Accurate and empathetic
-- Focused on understanding the user's perspective
-- Helpful for personal growth and self-reflection
+- Always positive, encouraging, and uplifting in tone
+- Focus on growth, learning, and personal development opportunities
+- Celebrate the user's strength, resilience, and inner wisdom
+- Frame challenges as learning experiences and growth opportunities
+- Use warm, supportive language that builds confidence
 - Respectful of privacy and sensitive topics
+- Helpful for personal growth and self-reflection
+
+IMPORTANT: Always maintain a positive, encouraging tone. Even when discussing difficult emotions or challenges, frame them as:
+- Opportunities for growth and learning
+- Signs of strength and resilience
+- Natural parts of a beautiful human journey
+- Moments of self-discovery and wisdom
 
 Available emotions: joy, sadness, anger, fear, surprise, disgust, love, anxiety, excitement, contentment, frustration, gratitude, loneliness, hope, disappointment, pride, shame, relief, confusion, peace, overwhelmed, confident, vulnerable, motivated, tired, energetic, calm, stressed, curious, nostalgic
 
@@ -47,8 +56,8 @@ Return your analysis in the following JSON format:
       "category": "personal_values|life_philosophy|relationships|work_ethics|spirituality|health_wellness|other"
     }
   ],
-  "summary": "brief summary of the entry",
-  "insights": ["insight 1", "insight 2", "insight 3"]
+  "summary": "brief positive summary highlighting growth and insights",
+  "insights": ["encouraging insight 1", "uplifting insight 2", "positive insight 3"]
 }`
           },
           {
@@ -104,10 +113,11 @@ Focus on understanding the writer's emotional state, concerns, and underlying va
   validateAnalysis(analysis) {
     // Ensure all required fields exist with proper structure
     const validated = {
-      sentiment: {
-        score: Math.max(-1, Math.min(1, analysis.sentiment?.score || 0)),
-        label: analysis.sentiment?.label || 'neutral',
-        confidence: Math.max(0, Math.min(1, analysis.sentiment?.confidence || 0.5))
+      emotion: {
+        primary: analysis.emotion?.primary || 'contentment',
+        secondary: analysis.emotion?.secondary || null,
+        intensity: Math.max(1, Math.min(10, analysis.emotion?.intensity || 5)),
+        confidence: Math.max(0, Math.min(1, analysis.emotion?.confidence || 0.5))
       },
       topics: (analysis.topics || []).map(topic => ({
         name: topic.name || 'Unknown',
@@ -122,10 +132,15 @@ Focus on understanding the writer's emotional state, concerns, and underlying va
       insights: (analysis.insights || []).slice(0, 3) // Limit to top 3 insights
     };
 
-    // Validate sentiment label
-    const validSentimentLabels = ['very_negative', 'negative', 'neutral', 'positive', 'very_positive'];
-    if (!validSentimentLabels.includes(validated.sentiment.label)) {
-      validated.sentiment.label = 'neutral';
+    // Validate emotion primary
+    const validEmotions = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'love', 'anxiety', 'excitement', 'contentment', 'frustration', 'gratitude', 'loneliness', 'hope', 'disappointment', 'pride', 'shame', 'relief', 'confusion', 'peace', 'overwhelmed', 'confident', 'vulnerable', 'motivated', 'tired', 'energetic', 'calm', 'stressed', 'curious', 'nostalgic'];
+    if (!validEmotions.includes(validated.emotion.primary)) {
+      validated.emotion.primary = 'contentment';
+    }
+
+    // Validate emotion secondary
+    if (validated.emotion.secondary && !validEmotions.includes(validated.emotion.secondary)) {
+      validated.emotion.secondary = null;
     }
 
     // Validate belief categories
@@ -193,22 +208,43 @@ Focus on understanding the writer's emotional state, concerns, and underlying va
   async generateTrendAnalysis(analyses) {
     try {
       if (analyses.length === 0) {
-        return {
-          emotionTrend: 'stable',
-          commonTopics: [],
-          evolvingBeliefs: [],
-          summary: 'No entries available for trend analysis.'
-        };
+        console.log('No analyses provided for trend generation');
+        return this.getEmptyTrendAnalysis('Your journey is just beginning! Keep writing to discover beautiful patterns in your growth.');
       }
 
-      const prompt = this.buildTrendAnalysisPrompt(analyses);
+      console.log(`Generating trend analysis for ${analyses.length} entries`);
+      
+      // Filter out invalid analyses
+      const validAnalyses = analyses.filter(item => item && item.analysis);
+      if (validAnalyses.length === 0) {
+        console.log('No valid analyses found for trend generation');
+        return this.getEmptyTrendAnalysis('Your insights are taking shape beautifully! Continue your journey to unlock deeper patterns.');
+      }
+
+      const prompt = this.buildTrendAnalysisPrompt(validAnalyses);
       
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4',
         messages: [
           {
             role: 'system',
-            content: `You are Alfred, analyzing patterns across multiple journal entries to identify trends in the user's emotional state, recurring topics, and evolving beliefs. Provide insights that help the user understand their personal growth and patterns.`
+            content: `You are Alfred, analyzing patterns across multiple journal entries to identify beautiful trends in the user's emotional journey, recurring themes, and evolving values. 
+
+Your analysis should be:
+- Always positive, encouraging, and uplifting in tone
+- Focus on growth, learning, and personal development opportunities
+- Celebrate the user's strength, resilience, and inner wisdom
+- Frame challenges as learning experiences and growth opportunities
+- Use warm, supportive language that builds confidence
+- Highlight the user's progress and positive patterns
+
+IMPORTANT: Always maintain a positive, encouraging tone. Even when discussing difficult emotions or challenges, frame them as:
+- Opportunities for growth and learning
+- Signs of strength and resilience
+- Natural parts of a beautiful human journey
+- Moments of self-discovery and wisdom
+
+Provide insights that help the user understand their personal growth journey in a positive, empowering way.`
           },
           {
             role: 'user',
@@ -220,25 +256,28 @@ Focus on understanding the writer's emotional state, concerns, and underlying va
       });
 
       const trendText = response.choices[0].message.content;
+      console.log('OpenAI response received for trend analysis');
       
       try {
-        return JSON.parse(trendText);
+        const parsed = JSON.parse(trendText);
+        console.log('Trend analysis JSON parsed successfully');
+        
+        // Transform the data to match the JournalTrends schema
+        const transformed = this.transformTrendAnalysis(parsed);
+        return transformed;
       } catch (parseError) {
-        return {
-          emotionTrend: 'stable',
-          commonTopics: [],
-          evolvingBeliefs: [],
-          summary: 'Trend analysis completed but detailed insights are not available.'
-        };
+        console.error('Error parsing trend analysis JSON:', parseError);
+        console.log('Raw response:', trendText);
+        return this.getEmptyTrendAnalysis('Your growth patterns are emerging beautifully! Keep journaling to reveal deeper insights.');
       }
     } catch (error) {
       console.error('Error generating trend analysis:', error);
-      return {
-        emotionTrend: 'stable',
-        commonTopics: [],
-        evolvingBeliefs: [],
-        summary: 'Unable to complete trend analysis at this time.'
-      };
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        analysesCount: analyses ? analyses.length : 0
+      });
+      return this.getEmptyTrendAnalysis('Your journey continues to unfold beautifully! We\'ll have more insights ready soon.');
     }
   }
 
@@ -247,24 +286,104 @@ Focus on understanding the writer's emotional state, concerns, and underlying va
     
     analyses.forEach((item, index) => {
       prompt += `Entry ${index + 1}:\n`;
-      prompt += `- Emotion: ${item.analysis.emotion.primary} (intensity: ${item.analysis.emotion.intensity})\n`;
-      if (item.analysis.emotion.secondary) {
-        prompt += `- Secondary Emotion: ${item.analysis.emotion.secondary}\n`;
+      
+      // Safely access analysis data with fallbacks
+      const analysis = item.analysis || {};
+      const emotion = analysis.emotion || {};
+      const topics = analysis.topics || [];
+      const beliefs = analysis.beliefs || [];
+      
+      prompt += `- Emotion: ${emotion.primary || 'unknown'} (intensity: ${emotion.intensity || 0})\n`;
+      if (emotion.secondary) {
+        prompt += `- Secondary Emotion: ${emotion.secondary}\n`;
       }
-      prompt += `- Topics: ${item.analysis.topics.map(t => t.name).join(', ')}\n`;
-      prompt += `- Beliefs: ${item.analysis.beliefs.map(b => b.belief).join(', ')}\n`;
-      prompt += `- Summary: ${item.analysis.summary}\n\n`;
+      prompt += `- Topics: ${topics.map(t => t.name || 'unknown').join(', ')}\n`;
+      prompt += `- Beliefs: ${beliefs.map(b => b.belief || 'unknown').join(', ')}\n`;
+      prompt += `- Summary: ${analysis.summary || 'No summary available'}\n\n`;
     });
     
-    prompt += `Please provide a trend analysis in JSON format:
+    prompt += `Please provide a trend analysis in JSON format with positive, encouraging language:
 {
   "emotionTrend": "improving|declining|stable|volatile",
   "commonTopics": ["topic1", "topic2", "topic3"],
   "evolvingBeliefs": ["belief1", "belief2"],
-  "summary": "overall trend summary"
-}`;
+  "summary": "positive summary highlighting growth and insights",
+  "insights": ["encouraging insight 1", "uplifting insight 2", "positive insight 3"]
+}
+
+IMPORTANT: Use only positive, encouraging language. Frame everything as growth opportunities and celebrate the user's journey.`;
     
     return prompt;
+  }
+
+  transformTrendAnalysis(analysis) {
+    // Transform the AI response to match the JournalTrends schema
+    const transformed = {
+      emotionTrend: analysis.emotionTrend || 'stable',
+      commonTopics: [],
+      evolvingBeliefs: [],
+      summary: analysis.summary || 'No summary available',
+      insights: analysis.insights || [],
+      sentimentTrend: analysis.emotionTrend || 'stable', // Map emotionTrend to sentimentTrend
+      emotionalRange: {
+        min: 1,
+        max: 10,
+        average: 5
+      },
+      topicEvolution: [],
+      beliefChanges: []
+    };
+
+    // Transform commonTopics from string array to object array
+    if (Array.isArray(analysis.commonTopics)) {
+      transformed.commonTopics = analysis.commonTopics.map((topic, index) => ({
+        name: typeof topic === 'string' ? topic : topic.name || `Topic ${index + 1}`,
+        frequency: typeof topic === 'object' ? topic.frequency || 1 : 1,
+        confidence: typeof topic === 'object' ? topic.confidence || 0.5 : 0.5
+      }));
+    }
+
+    // Transform evolvingBeliefs from string array to object array
+    if (Array.isArray(analysis.evolvingBeliefs)) {
+      transformed.evolvingBeliefs = analysis.evolvingBeliefs.map((belief, index) => ({
+        belief: typeof belief === 'string' ? belief : belief.belief || `Belief ${index + 1}`,
+        category: typeof belief === 'object' ? belief.category || 'other' : 'other',
+        confidence: typeof belief === 'object' ? belief.confidence || 0.5 : 0.5,
+        trend: typeof belief === 'object' ? belief.trend || 'stable' : 'stable'
+      }));
+    }
+
+    // Transform insights to ensure it's an array
+    if (!Array.isArray(transformed.insights)) {
+      transformed.insights = [transformed.insights].filter(Boolean);
+    }
+
+    console.log('Transformed trend analysis:', {
+      emotionTrend: transformed.emotionTrend,
+      commonTopicsCount: transformed.commonTopics.length,
+      evolvingBeliefsCount: transformed.evolvingBeliefs.length,
+      insightsCount: transformed.insights.length
+    });
+
+    return transformed;
+  }
+
+  getEmptyTrendAnalysis(summary) {
+    return {
+      emotionTrend: 'stable',
+      commonTopics: [],
+      evolvingBeliefs: [],
+      summary: summary || 'Your beautiful journey of self-discovery continues to unfold with each entry.',
+      insights: [],
+      sentimentTrend: 'stable',
+      emotionalRange: {
+        min: 1,
+        max: 10,
+        average: 5
+      },
+      topicEvolution: [],
+      beliefChanges: []
+    };
   }
 }
 

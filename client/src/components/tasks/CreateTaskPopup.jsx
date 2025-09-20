@@ -31,7 +31,11 @@ const CreateTaskPopup = ({ isOpen, onClose, onTaskCreated, goalId, goalName }) =
     const taskData = {
       ...formData,
       goalIds: goalId ? [goalId] : [],
-      estimatedDuration: parseInt(formData.estimatedDuration) || 30
+      estimatedDuration: parseInt(formData.estimatedDuration) || 30,
+      // Auto-complete tasks created in Goal Aligned Day
+      status: 'completed',
+      completedAt: new Date().toISOString(),
+      actualDuration: parseInt(formData.estimatedDuration) || 30
     };
 
     console.log('Creating task with data:', taskData);
@@ -135,7 +139,7 @@ const CreateTaskPopup = ({ isOpen, onClose, onTaskCreated, goalId, goalName }) =
             disabled={loading || !formData.title}
             className={componentStyles.button.primary + " flex-1"}
           >
-            {loading ? 'CREATING...' : 'ADD TASK'}
+            {loading ? 'CREATING...' : 'ADD & COMPLETE TASK'}
           </button>
         </div>
       </form>

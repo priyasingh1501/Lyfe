@@ -17,3 +17,4 @@ export { default as MindfulnessGlass } from './MindfulnessGlass.jsx';
 export { default as PWAInstall } from './PWAInstall.jsx';
 export { default as MobileNav } from './MobileNav.jsx';
 export { default as MobileInstallGuide } from './MobileInstallGuide.jsx';
+export { default as SafeRender } from './SafeRender.jsx';

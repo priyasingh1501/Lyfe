@@ -13,10 +13,9 @@ import toast from 'react-hot-toast';
 // Note: Food page has its own DailyMealKPIs. Dashboard renders its own compact summary.
 import JournalTrends from '../components/journal/JournalTrends';
 import {
-  FinancialOverview,
-  MindfulnessScore
+  FinancialOverview
 } from '../components/dashboard';
-import { Button, Card, Tooltip, MonthGrid } from '../components/ui';
+import { Button, Card, Tooltip, MonthGrid, SafeRender } from '../components/ui';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -44,6 +43,8 @@ const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [youtubePlayer, setYoutubePlayer] = useState(null);
+  const [showDaySummary, setShowDaySummary] = useState(false);
+  const [selectedDayData, setSelectedDayData] = useState(null);
   
   // Safe arrays for MonthGrid compatibility
   const safeHabits = Array.isArray(habits) ? habits : [];
@@ -237,7 +238,7 @@ const Dashboard = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await axios.get(buildApiUrl('/api/habits'), {
+      const response = await axios.get(buildApiUrl('/api/habits?all=true'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -842,6 +843,96 @@ const Dashboard = () => {
     return { totalScore, breakdown };
   };
 
+  // Get detailed day data for popup
+  const getDetailedDayData = (date) => {
+    const dateStr = date.toLocaleDateString('en-CA');
+    
+    // Get mindfulness data for the day
+    const mindfulnessCheckin = safeMindfulnessCheckins.find(checkin => {
+      if (!checkin || !checkin.date) return false;
+      const checkinDate = new Date(checkin.date).toLocaleDateString('en-CA');
+      return dateStr === checkinDate;
+    });
+    
+    // Get tasks completed on this day
+    const dayTasks = safeTasks.filter(task => {
+      if (task.status !== 'completed') return false;
+      const taskDate = new Date(task.completedAt || task.updatedAt).toLocaleDateString('en-CA');
+      return taskDate === dateStr;
+    });
+    
+    // Get habits completed on this day
+    const dayHabits = safeHabits.filter(habit => {
+      if (!habit.isActive) return false;
+      const checkin = habit.checkins?.find(c => {
+        const checkinDate = new Date(c.date).toLocaleDateString('en-CA');
+        return checkinDate === dateStr && c.completed;
+      });
+      return !!checkin;
+    });
+    
+    // Get meals logged on this day
+    const dayMeals = safeMeals.filter(meal => {
+      const mealDate = new Date(meal.ts).toLocaleDateString('en-CA');
+      return mealDate === dateStr;
+    });
+    
+    // Get expenses for this day
+    const dayExpenses = safeExpenses.filter(expense => {
+      const expenseDate = new Date(expense.date).toLocaleDateString('en-CA');
+      return expenseDate === dateStr;
+    });
+    
+    // Get journal entries for this day
+    const dayJournalEntries = []; // Add journal data if available
+    
+    // Calculate nutrition totals
+    const nutritionTotals = dayMeals.reduce((acc, meal) => {
+      const totals = meal.computed && meal.computed.totals ? meal.computed.totals : {};
+      Object.keys(totals).forEach(key => {
+        acc[key] = (acc[key] || 0) + (totals[key] || 0);
+      });
+      return acc;
+    }, {});
+    
+    // Calculate meal effects
+    const mealEffects = dayMeals.reduce((acc, meal) => {
+      const effects = meal.computed && meal.computed.effects ? meal.computed.effects : {};
+      Object.entries(effects).forEach(([effectKey, effectData]) => {
+        if (!acc[effectKey]) {
+          acc[effectKey] = { score: 0, why: [] };
+        }
+        acc[effectKey].score += effectData.score || 0;
+        if (Array.isArray(effectData.why)) {
+          effectData.why.forEach(reason => {
+            if (!acc[effectKey].why.includes(reason)) acc[effectKey].why.push(reason);
+          });
+        }
+      });
+      return acc;
+    }, {});
+    
+    return {
+      date: date,
+      dateStr: dateStr,
+      mindfulnessCheckin,
+      tasks: dayTasks,
+      habits: dayHabits,
+      meals: dayMeals,
+      expenses: dayExpenses,
+      journalEntries: dayJournalEntries,
+      nutritionTotals,
+      mealEffects
+    };
+  };
+
+  // Handle day click to show popup
+  const handleDayClick = (date) => {
+    const dayData = getDetailedDayData(date);
+    setSelectedDayData(dayData);
+    setShowDaySummary(true);
+  };
+
   // Get goals progress for today
   const getGoalsProgress = () => {
     if (isDataLoading || !goals || goals.length === 0) return [];
@@ -919,276 +1010,155 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-6">
-      {/* Bento Grid Layout - Pinterest Style */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-[minmax(200px,auto)] [&>*:nth-child(odd)]:animate-fade-in [&>*:nth-child(even)]:animate-fade-in-delayed">
-        
-        {/* Welcome Card - 2x1 on large screens */}
-        <div className="md:col-span-2 lg:col-span-2 xl:col-span-2">
-          <Card className="h-full overflow-hidden">
-            <div className="relative h-full">
-              {/* Background Image with Overlay */}
-              <div className="absolute inset-0">
-                <img 
-                  src="/images/dashboard/minimalist.jpg"
-                  alt="Minimalist Design"
-                  className="w-full h-full object-contain"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"></div>
-              </div>
-
-              {/* Content */}
-              <div className="relative z-10 flex h-full p-6">
-                {/* Left Side - Greeting with Dark Overlay and Blur */}
-                <div className="flex-1 flex flex-col justify-center space-y-3 relative">
-                  {/* Dark overlay and blur for text area */}
-                  <div className="absolute inset-0 bg-black/40 backdrop-blur-sm rounded-xl -m-2"></div>
-                  <div className="relative z-10 p-4">
-                    <div>
-                      <h3 className="font-jakarta text-xl text-white/90 font-medium">
-                        {getTimeBasedGreeting()}, {user?.firstName || 'User'}!
-                      </h3>
-                      <p className="font-jakarta text-sm text-white/70 mt-1">
-                        Here's your day at a glance
-                      </p>
+    <div className="min-h-screen bg-gradient-to-br from-[#0A0C0F] via-[#11151A] to-[#0A0C0F] p-4 md:p-6">
+      {/* Enhanced Header Section */}
+      <div className="mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="font-jakarta text-3xl md:text-4xl font-bold text-white mb-2">
+              {getTimeBasedGreeting()}, {user?.firstName || 'User'}! 👋
+            </h1>
+            <p className="font-jakarta text-lg text-white/70">
+              {new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </p>
+          </div>
+          
+          {/* Today's Score Only */}
+          <div className="flex flex-wrap gap-4">
+            {(() => {
+              const todaysScore = getTodaysScore();
+              if (!todaysScore) return null;
+              
+              const { totalScore, breakdown } = todaysScore;
+              return (
+                <div className="relative group">
+                  <div className="flex items-center bg-white/5 backdrop-blur-md rounded-xl px-6 py-3 border border-white/10 hover:bg-white/10 transition-all duration-200 cursor-help">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-white">{totalScore || 0}</div>
+                      <div className="text-xs text-white/60">Today's Score</div>
                     </div>
-
-                    {/* Motivational Message */}
-                    {(() => {
-                      const todaysScore = getTodaysScore();
-                      if (!todaysScore) return null;
-                      
-                      const { totalScore, breakdown } = todaysScore;
-                      const getMotivationalMessage = () => {
-                        // No activities logged
-                        if (totalScore === 0) {
-                          const hasAnyActivity = breakdown.mindfulness > 0 || breakdown.goalProgress > 0 || 
-                                               breakdown.habitCompletion > 0 || breakdown.mealEffects > 0;
-                          if (!hasAnyActivity) {
-                            return "Let's get your first log in! 🚀";
-                          }
-                        }
-                        
-                        // Halfway point (around 40-45 points)
-                        if (totalScore >= 40 && totalScore < 60) {
-                          return "You're halfway there! Keep pushing! 💪";
-                        }
-                        
-                        // Done/Excellent (60+ points)
-                        if (totalScore >= 60) {
-                          return "Boom! You crushed today's goals! 🎉";
-                        }
-                        
-                        // Early progress states
-                        if (totalScore <= 5) return "Nice start! You've logged some activities today. 💪";
-                        if (totalScore <= 15) return "Great progress! You're building momentum. 🚀";
-                        if (totalScore <= 25) return "Excellent work! You're on fire today! 🔥";
-                        if (totalScore <= 35) return "Outstanding! You're crushing your goals! 🎯";
-                        if (totalScore <= 45) return "Incredible! You're in the zone today! ⚡";
-                        
-                        return "Perfect! You're absolutely unstoppable! 🌟";
-                      };
-
-                      return (
-                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 mt-3">
-                          <p className="text-white/90 text-sm font-medium">
-                            {getMotivationalMessage()}
-                          </p>
+                  </div>
+                  
+                  {/* Custom Tooltip */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                    <div className="bg-gray-900/95 backdrop-blur-md border border-white/20 rounded-lg p-4 space-y-3 min-w-[280px] shadow-2xl">
+                      <div className="text-lg font-semibold text-white mb-3">Score Breakdown</div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/80">Mindfulness</span>
+                          <span className="text-white font-medium">{breakdown.mindfulness}/25</span>
                         </div>
-                      );
-                    })()}
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/80">Goal Progress</span>
+                          <span className="text-white font-medium">{breakdown.goalProgress}/20</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/80">Habit Completion</span>
+                          <span className="text-white font-medium">{breakdown.habitCompletion}/15</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/80">Meal Effects</span>
+                          <span className="text-white font-medium">{breakdown.mealEffects}/25</span>
+                        </div>
+                        {breakdown.impulseBuyPenalty > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-red-400">Impulse Buy Penalty</span>
+                            <span className="text-red-400 font-medium">-{breakdown.impulseBuyPenalty}</span>
+                          </div>
+                        )}
+                        <div className="border-t border-white/20 pt-2 mt-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-white font-semibold">Total Score</span>
+                            <span className="text-white font-bold text-lg">{totalScore || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Arrow */}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-t-gray-900/95 border-t-4 border-x-4 border-x-transparent"></div>
                   </div>
                 </div>
+              );
+            })()}
+          </div>
+        </div>
+      </div>
 
-                {/* Right Side - Score Display */}
-                {(() => {
-                  const todaysScore = getTodaysScore();
-                  if (!todaysScore) return null;
-                  
-                  const { totalScore, breakdown } = todaysScore;
-                  const getScoreGradient = (score) => {
-                    if (score === 0) return 'from-red-500 to-red-600';
-                    if (score <= 10) return 'from-red-400 to-orange-500';
-                    if (score <= 20) return 'from-orange-400 to-yellow-500';
-                    if (score <= 30) return 'from-yellow-400 to-yellow-500';
-                    if (score <= 40) return 'from-yellow-300 to-green-400';
-                    if (score <= 50) return 'from-green-400 to-green-500';
-                    if (score <= 60) return 'from-green-500 to-emerald-500';
-                    return 'from-emerald-500 to-green-600';
-                  };
+      {/* Enhanced Bento Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-[minmax(200px,auto)] [&>*:nth-child(odd)]:animate-fade-in [&>*:nth-child(even)]:animate-fade-in-delayed">
+        
 
-                  const getScoreRingColor = (score) => {
-                    if (score === 0) return '#ef4444'; // Red - no activity
-                    if (score <= 15) return '#ef4444'; // Red - low score
-                    if (score <= 30) return '#f59e0b'; // Yellow - needs push
-                    if (score <= 50) return '#10b981'; // Green - on track
-                    return '#059669'; // Dark green - excellent
-                  };
-
-                  const getScoreState = (score) => {
-                    if (score === 0) return { label: "No Activity", color: "text-red-400" };
-                    if (score <= 15) return { label: "Low Score", color: "text-red-400" };
-                    if (score <= 30) return { label: "Needs Push", color: "text-yellow-400" };
-                    if (score <= 50) return { label: "On Track", color: "text-[#1E49C9]" };
-                    return { label: "Excellent", color: "text-[#1E49C9]" };
-                  };
-
-                  const circumference = 2 * Math.PI * 45; // radius = 45
-                  const strokeDasharray = circumference;
-                  const strokeDashoffset = circumference - (totalScore / 85) * circumference;
-                  const scoreState = getScoreState(totalScore);
-
-                  return (
-                    <div className="flex-shrink-0 flex flex-col items-center justify-center space-y-4 relative">
-                      {/* Blur background for score area */}
-                      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl -m-4"></div>
-                      {/* Circular Score Indicator */}
-                      <div className="relative z-10">
-                        <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
-                          {/* Background circle */}
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="45"
-                            stroke="rgba(255,255,255,0.2)"
-                            strokeWidth="8"
-                            fill="none"
-                          />
-                          {/* Progress circle */}
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="45"
-                            stroke={getScoreRingColor(totalScore)}
-                            strokeWidth="8"
-                            fill="none"
-                            strokeLinecap="round"
-                            strokeDasharray={strokeDasharray}
-                            strokeDashoffset={strokeDashoffset}
-                            className="transition-all duration-1000 ease-out"
-                          />
-                        </svg>
-                        {/* Score text with label */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-2xl font-bold text-white">{totalScore}</span>
-                          <span className="text-xs text-white/70">/85</span>
-                          <span className={`text-xs font-medium mt-1 ${scoreState.color}`}>
-                            {scoreState.label}
-                          </span>
-                        </div>
+         {/* Quick Actions Card - 1x1 */}
+        <div className="col-span-1">
+          <Card className="h-full group hover:shadow-xl transition-all duration-300">
+            <div className="p-6 h-full flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-jakarta text-lg font-semibold text-white">Quick Actions</h3>
+                <div className="w-8 h-8 bg-[#1E49C9]/20 rounded-full flex items-center justify-center">
+                  <span className="text-sm">⚡</span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 flex-1">
+                {[
+                  { label: 'Add Task', icon: '📝', href: '/goal-aligned-day', color: 'bg-blue-500/20 border-blue-500/30' },
+                  { label: 'Log Meal', icon: '🍽️', href: '/food', color: 'bg-green-500/20 border-green-500/30' },
+                  { label: 'Journal', icon: '📖', href: '/journal', color: 'bg-purple-500/20 border-purple-500/30' },
+                  { label: 'Mindfulness', icon: '🧘', href: '/goal-aligned-day', color: 'bg-orange-500/20 border-orange-500/30' },
+                  { label: 'Add Expense', icon: '💰', href: '/finance', color: 'bg-yellow-500/20 border-yellow-500/30' },
+                  { label: 'Set Goal', icon: '🎯', href: '/goal-aligned-day', color: 'bg-pink-500/20 border-pink-500/30' }
+                ].map((action, index) => (
+                  <motion.a
+                    key={action.label}
+                    href={action.href}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`${action.color} backdrop-blur-sm rounded-xl p-3 border hover:scale-105 transition-all duration-200 group cursor-pointer`}
+                  >
+                    <div className="text-center">
+                      <div className="text-2xl mb-1 group-hover:scale-110 transition-transform duration-200">
+                        {action.icon}
                       </div>
-
-                      {/* Compact Stats with Pills */}
-                      <div className="grid grid-cols-2 gap-2 w-full max-w-xs relative z-10">
-                        {/* Mindfulness */}
-                        <Tooltip 
-                          content="Mindfulness Score (0-25): Sum of 5 dimension ratings (1-5 each): Presence, Emotion Awareness, Intentionality, Attention Quality, and Compassion. Based on your daily mindfulness check-in."
-                          position="top"
-                        >
-                          <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 cursor-help">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-white/80 font-medium">Mindfulness</span>
-                              <span className="text-xs font-medium text-white">{breakdown.mindfulness}/25</span>
-                            </div>
-                            <div className="w-full bg-white/20 rounded-full h-1 mt-1">
-                              <div 
-                                className="bg-blue-400 h-1 rounded-full transition-all duration-500"
-                                style={{ width: `${(breakdown.mindfulness / 25) * 100}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        </Tooltip>
-
-                        {/* Goals */}
-                        <Tooltip 
-                          content="Goal Progress Score (0-20): +10 points for completing any goal-related task today, +5 bonus for 2+ tasks, +5 bonus for 3+ tasks. Based on tasks completed that are linked to your goals."
-                          position="top"
-                        >
-                          <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 cursor-help">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-white/80 font-medium">Goals</span>
-                              <span className="text-xs font-medium text-white">{breakdown.goalProgress}/20</span>
-                            </div>
-                            <div className="w-full bg-white/20 rounded-full h-1 mt-1">
-                              <div 
-                                className="bg-purple-400 h-1 rounded-full transition-all duration-500"
-                                style={{ width: `${(breakdown.goalProgress / 20) * 100}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        </Tooltip>
-
-                        {/* Habits */}
-                        <Tooltip 
-                          content="Habit Completion Score (0-15): Based on percentage of active habits completed today. Calculated as (completed habits / total active habits) × 15. Only counts habits that are currently active and within their date range."
-                          position="top"
-                        >
-                          <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 cursor-help">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-white/80 font-medium">Habits</span>
-                              <span className="text-xs font-medium text-white">{breakdown.habitCompletion}/15</span>
-                            </div>
-                            <div className="w-full bg-white/20 rounded-full h-1 mt-1">
-                              <div 
-                                className="bg-[#1E49C9] h-1 rounded-full transition-all duration-500"
-                                style={{ width: `${(breakdown.habitCompletion / 15) * 100}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        </Tooltip>
-
-                        {/* Meals */}
-                        <Tooltip 
-                          content="Meal Effects Score (0-25): Based on positive meal effects (strength, anti-inflammatory, immunity, gut-friendly, energizing) minus negative effects (inflammation, fat-forming). Each effect contributes points based on its intensity, capped at 25 total."
-                          position="top"
-                        >
-                          <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 cursor-help">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-white/80 font-medium">Meals</span>
-                              <span className="text-xs font-medium text-white">{breakdown.mealEffects}/25</span>
-                            </div>
-                            <div className="w-full bg-white/20 rounded-full h-1 mt-1">
-                              <div 
-                                className="bg-orange-400 h-1 rounded-full transition-all duration-500"
-                                style={{ width: `${(breakdown.mealEffects / 25) * 100}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        </Tooltip>
-
-                        {/* Impulse - Special highlighting */}
-                        <Tooltip 
-                          content="Impulse Buy Penalty (0 to -10): Penalty points for impulse purchases today. Amount: >₹1000 = -3pts, >₹500 = -2pts, >₹100 = -1pt, ≤₹100 = -0.5pts. Multiple purchases add up, capped at -10 total penalty."
-                          position="top"
-                        >
-                          <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 col-span-2 cursor-help">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-white/80 font-medium">Impulse</span>
-                              <span className={`text-xs font-medium ${breakdown.impulseBuyPenalty < 0 ? 'text-red-300' : 'text-white'}`}>
-                                {breakdown.impulseBuyPenalty}
-                              </span>
-                            </div>
-                            <div className="w-full bg-white/20 rounded-full h-1 mt-1">
-                              <div 
-                                className={`h-1 rounded-full transition-all duration-500 ${breakdown.impulseBuyPenalty < 0 ? 'bg-red-400' : 'bg-teal-400'}`}
-                                style={{ width: `${Math.min(Math.abs(breakdown.impulseBuyPenalty) * 10, 100)}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        </Tooltip>
+                      <div className="text-xs font-medium text-white/90">
+                        {action.label}
                       </div>
                     </div>
-                  );
-                })()}
+                  </motion.a>
+                ))}
               </div>
             </div>
           </Card>
         </div>
 
-         {/* Music Card - 1x1 */}
-         <div className="col-span-1">
-           <Card className="h-full group relative">
-        <div className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] rounded-xl p-4 backdrop-blur-[28px] backdrop-saturate-[140%] shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_4px_6px_-1px_rgba(0,0,0,0.1)]">
+        {/* Random Image Card 1 - Nature */}
+        <div className="col-span-1 animate-fade-in">
+          <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+            <div className="relative h-full bg-gradient-to-br from-[#1E49C9]/20 to-[#3EA6FF]/20">
+              <img 
+                src="/images/dashboard/nature.jpg"
+                alt="Nature Inspiration"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
+                <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                  <h3 className="font-jakarta text-lg font-semibold mb-1">Nature's Wisdom</h3>
+                  <p className="text-sm opacity-90">Find peace in simplicity</p>
+                </div>
+              </div>
+              <div className="absolute top-4 right-4 w-3 h-3 bg-[#1E49C9] rounded-full animate-pulse-glow"></div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Music Card - 1x1 */}
+        <div className="col-span-1">
+          <Card className="h-full group relative">
+            <div className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] rounded-xl p-4 backdrop-blur-[28px] backdrop-saturate-[140%] shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_4px_6px_-1px_rgba(0,0,0,0.1)]">
               {/* Music Link Input */}
               {showMusicInput ? (
                 <div className="space-y-3">
@@ -1235,149 +1205,148 @@ const Dashboard = () => {
                           {getPlatformIcon()}
                         </div>
                         <h4 className="font-jakarta text-sm font-semibold text-text-primary">
-                      Now Playing
+                          Now Playing
                         </h4>
                       </div>
                       
-                   {/* Gramophone Player */}
-                   <div className="flex flex-col items-center justify-center py-8">
-                     {/* Hidden YouTube Player for Audio */}
-                     {musicPlatform === 'youtube' && (
-                       <div
-                         ref={youtubePlayerRef}
-                         className="absolute opacity-0 pointer-events-none w-1 h-1"
-                         id="youtube-player"
-                       ></div>
-                     )}
-                     
-                     {/* Gramophone Base */}
-                     <div className="relative flex flex-col items-center">
-                       
-                       {/* Glassmorphic Gramophone Visual with Primary Color */}
-                       <div className="relative w-32 h-32 mx-auto">
-                         {/* Gramophone Base - Glassmorphic with Primary Color */}
-                         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-16 bg-gradient-to-t from-[rgba(30,73,201,0.2)] to-[rgba(30,73,201,0.1)] backdrop-blur-md rounded-t-full border border-[rgba(30,73,201,0.3)] shadow-[0_8px_32px_rgba(30,73,201,0.2)]">
-                           <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-20 h-2 bg-[rgba(30,73,201,0.3)] backdrop-blur-sm rounded-full"></div>
-                         </div>
-                         
-                         {/* Horn - Glassmorphic with Primary Color */}
-                         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[40px] border-b-[rgba(30,73,201,0.2)] backdrop-blur-sm"></div>
-                         
-                         {/* Record - Glassmorphic with Primary Color */}
-                         <div className={`absolute top-8 left-1/2 transform -translate-x-1/2 w-20 h-20 bg-gradient-to-br from-[rgba(30,73,201,0.15)] to-[rgba(30,73,201,0.08)] backdrop-blur-md rounded-full border border-[rgba(30,73,201,0.3)] shadow-[0_8px_32px_rgba(30,73,201,0.2)] ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }}>
-                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full border border-[rgba(30,73,201,0.2)]"></div>
-                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-[rgba(30,73,201,0.6)] rounded-full"></div>
-                           {/* Grooves - Glassmorphic with Primary Color */}
-                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-[rgba(30,73,201,0.2)] rounded-full opacity-30"></div>
-                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 border border-[rgba(30,73,201,0.2)] rounded-full opacity-20"></div>
-                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 border border-[rgba(30,73,201,0.2)] rounded-full opacity-10"></div>
-                         </div>
-                         
-                         {/* Tonearm - Glassmorphic with Primary Color */}
-                         <div className={`absolute top-12 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-[rgba(30,73,201,0.3)] backdrop-blur-sm rounded-full origin-left border border-[rgba(30,73,201,0.2)] ${isPlaying ? 'animate-pulse' : ''}`} style={{ transform: 'translateX(-50%) rotate(-15deg)' }}>
-                           <div className="absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-2 h-2 bg-[rgba(30,73,201,0.5)] backdrop-blur-sm rounded-full border border-[rgba(30,73,201,0.2)]"></div>
-                         </div>
-                         
-                         {/* Sound Waves - Glassmorphic with Primary Color */}
-                         {isPlaying && (
-                           <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                             <div className="flex space-x-1">
-                               <div className="w-1 h-4 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0s' }}></div>
-                               <div className="w-1 h-6 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0.1s' }}></div>
-                               <div className="w-1 h-3 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0.2s' }}></div>
-                               <div className="w-1 h-5 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0.3s' }}></div>
-                               <div className="w-1 h-2 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0.4s' }}></div>
-                             </div>
-                           </div>
-                         )}
-                       </div>
-                       
-                       {/* Play/Pause Button - Glassmorphic with Primary Color - Centered */}
-                       <div className="flex justify-center mt-6">
-                         <button
-                           onClick={handlePlayPause}
-                           disabled={isMusicLoading}
-                           className="w-12 h-12 bg-[rgba(30,73,201,0.2)] backdrop-blur-md border border-[rgba(30,73,201,0.3)] rounded-full flex items-center justify-center text-white hover:bg-[rgba(30,73,201,0.3)] transition-all duration-300 shadow-[0_8px_32px_rgba(30,73,201,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
-                         >
-                           {isMusicLoading ? (
-                             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                           ) : isPlaying ? (
-                             <div className="flex space-x-1">
-                               <div className="w-1 h-4 bg-white rounded"></div>
-                               <div className="w-1 h-4 bg-white rounded"></div>
-                             </div>
-                           ) : (
-                             <div className="w-0 h-0 border-l-[6px] border-l-white border-y-[4px] border-y-transparent ml-1"></div>
-                           )}
-                         </button>
-                       </div>
-                       
-                       {/* Track Info */}
-                       <div className="mt-4 text-center">
-                         <h4 className="font-jakarta text-sm font-semibold text-text-primary">
-                           {musicPlatform === 'youtube' ? 'YouTube Music' : 
-                            musicPlatform === 'spotify' ? 'Spotify' : 
-                            musicPlatform === 'apple' ? 'Apple Music' : 'Custom Track'}
-                         </h4>
-                         <p className="font-jakarta text-xs text-text-secondary">
-                           {isMusicLoading ? 'Loading...' : isPlaying ? 'Now Playing' : 'Paused'}
-                         </p>
-                       </div>
-                     </div>
-                   </div>
+                      {/* Gramophone Player */}
+                      <div className="flex flex-col items-center justify-center py-8">
+                        {/* Hidden YouTube Player for Audio */}
+                        {musicPlatform === 'youtube' && (
+                          <div
+                            ref={youtubePlayerRef}
+                            className="absolute opacity-0 pointer-events-none w-1 h-1"
+                            id="youtube-player"
+                          ></div>
+                        )}
+                        
+                        {/* Gramophone Base */}
+                        <div className="relative flex flex-col items-center">
+                          {/* Glassmorphic Gramophone Visual with Primary Color */}
+                          <div className="relative w-32 h-32 mx-auto">
+                            {/* Gramophone Base - Glassmorphic with Primary Color */}
+                            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-16 bg-gradient-to-t from-[rgba(30,73,201,0.2)] to-[rgba(30,73,201,0.1)] backdrop-blur-md rounded-t-full border border-[rgba(30,73,201,0.3)] shadow-[0_8px_32px_rgba(30,73,201,0.2)]">
+                              <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-20 h-2 bg-[rgba(30,73,201,0.3)] backdrop-blur-sm rounded-full"></div>
+                            </div>
+                            
+                            {/* Horn - Glassmorphic with Primary Color */}
+                            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[40px] border-b-[rgba(30,73,201,0.2)] backdrop-blur-sm"></div>
+                            
+                            {/* Record - Glassmorphic with Primary Color */}
+                            <div className={`absolute top-8 left-1/2 transform -translate-x-1/2 w-20 h-20 bg-gradient-to-br from-[rgba(30,73,201,0.15)] to-[rgba(30,73,201,0.08)] backdrop-blur-md rounded-full border border-[rgba(30,73,201,0.3)] shadow-[0_8px_32px_rgba(30,73,201,0.2)] ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }}>
+                              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full border border-[rgba(30,73,201,0.2)]"></div>
+                              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-[rgba(30,73,201,0.6)] rounded-full"></div>
+                              {/* Grooves - Glassmorphic with Primary Color */}
+                              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-[rgba(30,73,201,0.2)] rounded-full opacity-30"></div>
+                              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 border border-[rgba(30,73,201,0.2)] rounded-full opacity-20"></div>
+                              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 border border-[rgba(30,73,201,0.2)] rounded-full opacity-10"></div>
+                            </div>
+                            
+                            {/* Tonearm - Glassmorphic with Primary Color */}
+                            <div className={`absolute top-12 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-[rgba(30,73,201,0.3)] backdrop-blur-sm rounded-full origin-left border border-[rgba(30,73,201,0.2)] ${isPlaying ? 'animate-pulse' : ''}`} style={{ transform: 'translateX(-50%) rotate(-15deg)' }}>
+                              <div className="absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-2 h-2 bg-[rgba(30,73,201,0.5)] backdrop-blur-sm rounded-full border border-[rgba(30,73,201,0.2)]"></div>
+                            </div>
+                            
+                            {/* Sound Waves - Glassmorphic with Primary Color */}
+                            {isPlaying && (
+                              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                                <div className="flex space-x-1">
+                                  <div className="w-1 h-4 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0s' }}></div>
+                                  <div className="w-1 h-6 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0.1s' }}></div>
+                                  <div className="w-1 h-3 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0.2s' }}></div>
+                                  <div className="w-1 h-5 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0.3s' }}></div>
+                                  <div className="w-1 h-2 bg-[rgba(30,73,201,0.4)] backdrop-blur-sm rounded-full animate-pulse border border-[rgba(30,73,201,0.2)]" style={{ animationDelay: '0.4s' }}></div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Play/Pause Button - Glassmorphic with Primary Color - Centered */}
+                          <div className="flex justify-center mt-6">
+                            <button
+                              onClick={handlePlayPause}
+                              disabled={isMusicLoading}
+                              className="w-12 h-12 bg-[rgba(30,73,201,0.2)] backdrop-blur-md border border-[rgba(30,73,201,0.3)] rounded-full flex items-center justify-center text-white hover:bg-[rgba(30,73,201,0.3)] transition-all duration-300 shadow-[0_8px_32px_rgba(30,73,201,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isMusicLoading ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                              ) : isPlaying ? (
+                                <div className="flex space-x-1">
+                                  <div className="w-1 h-4 bg-white rounded"></div>
+                                  <div className="w-1 h-4 bg-white rounded"></div>
+                                </div>
+                              ) : (
+                                <div className="w-0 h-0 border-l-[6px] border-l-white border-y-[4px] border-y-transparent ml-1"></div>
+                              )}
+                            </button>
+                          </div>
+                          
+                          {/* Track Info */}
+                          <div className="mt-4 text-center">
+                            <h4 className="font-jakarta text-sm font-semibold text-text-primary">
+                              {musicPlatform === 'youtube' ? 'YouTube Music' : 
+                               musicPlatform === 'spotify' ? 'Spotify' : 
+                               musicPlatform === 'apple' ? 'Apple Music' : 'Custom Track'}
+                            </h4>
+                            <p className="font-jakarta text-xs text-text-secondary">
+                              {isMusicLoading ? 'Loading...' : isPlaying ? 'Now Playing' : 'Paused'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                   
-               {/* Music Controls - Hover Icons */}
-               {musicLink && (
-                 <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                   <Tooltip content="Change Music Link" position="bottom">
-                     <button
-                       onClick={handleChangeMusic}
-                       className="w-8 h-8 bg-[#1E49C9] text-white rounded-full flex items-center justify-center hover:bg-[#1E49C9]/80 transition-colors shadow-lg"
-                     >
-                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                         <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 01-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/>
-                       </svg>
-                     </button>
-                   </Tooltip>
-                   <Tooltip content="Remove Music Link" position="bottom">
-                     <button 
-                       onClick={handleRemoveMusic}
-                       className="w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors shadow-lg"
-                     >
-                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                         <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd"/>
-                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
-                       </svg>
-                     </button>
-                   </Tooltip>
-                 </div>
-               )}
-              
-              {/* No Music State */}
-              {!musicLink && (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-[#2A313A] rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <svg className="h-8 w-8 text-[#C9D1D9]" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.369 4.369 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/>
+                  {/* Music Controls - Hover Icons */}
+                  {musicLink && (
+                    <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <Tooltip content="Change Music Link" position="bottom">
+                        <button
+                          onClick={handleChangeMusic}
+                          className="w-8 h-8 bg-[#1E49C9] text-white rounded-full flex items-center justify-center hover:bg-[#1E49C9]/80 transition-colors shadow-lg"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 01-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/>
+                          </svg>
+                        </button>
+                      </Tooltip>
+                      <Tooltip content="Remove Music Link" position="bottom">
+                        <button 
+                          onClick={handleRemoveMusic}
+                          className="w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors shadow-lg"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd"/>
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+                          </svg>
+                        </button>
+                      </Tooltip>
+                    </div>
+                  )}
+                
+                  {/* No Music State */}
+                  {!musicLink && (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 bg-[#2A313A] rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <svg className="h-8 w-8 text-[#C9D1D9]" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.369 4.369 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/>
                         </svg>
-                  </div>
-                  <h3 className="font-jakarta text-lg font-semibold text-text-primary mb-2">No Music Added</h3>
-                  <p className="font-jakarta text-text-secondary mb-4">Add your favorite music to get started</p>
+                      </div>
+                      <h3 className="font-jakarta text-lg font-semibold text-text-primary mb-2">No Music Added</h3>
+                      <p className="font-jakarta text-text-secondary mb-4">Add your favorite music to get started</p>
                       <button
-                    onClick={() => setShowMusicInput(true)}
-                    className="px-4 py-2 bg-[#1E49C9] text-white text-sm rounded-lg hover:bg-[#1E49C9]/80 transition-colors"
+                        onClick={() => setShowMusicInput(true)}
+                        className="px-4 py-2 bg-[#1E49C9] text-white text-sm rounded-lg hover:bg-[#1E49C9]/80 transition-colors"
                       >
-                    ADD MUSIC
+                        ADD MUSIC
                       </button>
                     </div>
-              )}
+                  )}
                 </div>
               )}
+            </div>
+          </Card>
         </div>
-      </Card>
-         </div>
 
         {/* Quote Card - 1x1 */}
         <div className="col-span-1">
@@ -1431,6 +1400,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
+
         {/* Year Grid Row */}
         <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
           <div className="h-full">
@@ -1452,11 +1422,7 @@ const Dashboard = () => {
                       tasks={tasks}
                       meals={meals}
                       expenses={expenses}
-                      onDateSelect={(date) => {
-                        setSelectedDate(date);
-                        // Navigate to goal-aligned-day with selected date
-                        window.location.href = `/goal-aligned-day?date=${date.toISOString().split('T')[0]}`;
-                      }}
+                      onDateSelect={handleDayClick}
                       onMonthChange={setSelectedDate}
                     />
                   )}
@@ -1466,39 +1432,15 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Random Image Card 1 - Nature */}
-        <div className="col-span-1 lg:row-span-2 animate-fade-in">
-          <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-            <div className="relative h-full bg-gradient-to-br from-[#1E49C9]/20 to-[#3EA6FF]/20">
-              <img 
-                src="/images/dashboard/nature.jpg"
-                alt="Nature Inspiration"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
-                <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                  <h3 className="font-jakarta text-lg font-semibold mb-1">Nature's Wisdom</h3>
-                  <p className="text-sm opacity-90">Find peace in simplicity</p>
-                </div>
-              </div>
-              <div className="absolute top-4 right-4 w-3 h-3 bg-[#1E49C9] rounded-full animate-pulse-glow"></div>
-            </div>
-          </Card>
-        </div>
 
-        {/* Financial Overview - 1x1 */}
-        <div className="col-span-1">
+
+        {/* Financial Overview - 2x1 */}
+        <div className="md:col-span-2 lg:col-span-2 xl:col-span-2">
           <div className="h-full">
             <FinancialOverview />
           </div>
         </div>
 
-        {/* Mindfulness Score - 1x1 */}
-        <div className="col-span-1">
-          <div className="h-full">
-            <MindfulnessScore />
-          </div>
-        </div>
 
         {/* Random Image Card 2 - Abstract */}
         <div className="col-span-1 animate-fade-in-delayed">
@@ -1599,11 +1541,13 @@ const Dashboard = () => {
 
         {/* Daily Nutrition (Dashboard summary) - 1x1 */}
         <div className="col-span-1">
-          <Card className="h-full">
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-jakarta text-lg font-semibold text-text-primary">Daily Nutrition</h3>
-                <a href="/food" className="text-xs text-[#1E49C9] hover:text-[#1E49C9]/80">Open Food</a>
+          <Card className="h-full group hover:shadow-xl transition-all duration-300">
+            <div className="p-6 h-full flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-jakarta text-lg font-semibold text-white">Daily Nutrition</h3>
+                <div className="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center">
+                  <span className="text-sm">🍎</span>
+                </div>
               </div>
               {(() => {
                 const totals = getTodayNutritionTotals();
@@ -1611,44 +1555,51 @@ const Dashboard = () => {
                 const dayMeals = getTodayMeals();
                 if (dayMeals.length === 0) {
                   return (
-                    <div className="text-center py-6">
-                      <div className="w-12 h-12 bg-[#2A313A] rounded-full mx-auto mb-3 flex items-center justify-center">
-                        <svg className="h-5 w-5 text-[#C9D1D9]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16"/><path d="M5 2l14 4-1 7H6L5 2z"/></svg>
+                    <div className="text-center py-8 flex-1 flex flex-col justify-center">
+                      <div className="w-16 h-16 bg-white/5 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <span className="text-2xl">🍽️</span>
                       </div>
-                      <p className="text-sm text-text-secondary">No meals logged today</p>
+                      <h4 className="font-jakarta text-lg font-semibold text-white mb-2">No Meals Logged</h4>
+                      <p className="font-jakarta text-sm text-white/60 mb-4">Start tracking your nutrition today</p>
+                      <a 
+                        href="/food" 
+                        className="inline-flex items-center px-4 py-2 bg-[#1E49C9] text-white text-sm rounded-lg hover:bg-[#1E49C9]/80 transition-colors"
+                      >
+                        Log Meal
+                      </a>
                     </div>
                   );
                 }
                 return (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-text-primary">{Math.round(totals.kcal || 0)}</div>
-                        <div className="text-xs text-text-secondary">kcal</div>
+                  <div className="space-y-4 flex-1">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
+                        <div className="text-xl font-bold text-white">{Math.round(totals.kcal || 0)}</div>
+                        <div className="text-xs text-white/60">kcal</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-text-primary">{Math.round(totals.protein || 0)}g</div>
-                        <div className="text-xs text-text-secondary">protein</div>
+                      <div className="text-center p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
+                        <div className="text-xl font-bold text-white">{Math.round(totals.protein || 0)}g</div>
+                        <div className="text-xs text-white/60">protein</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-text-primary">{Math.round(totals.carbs || 0)}g</div>
-                        <div className="text-xs text-text-secondary">carbs</div>
+                      <div className="text-center p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
+                        <div className="text-xl font-bold text-white">{Math.round(totals.carbs || 0)}g</div>
+                        <div className="text-xs text-white/60">carbs</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-text-primary">{Math.round(totals.fat || 0)}g</div>
-                        <div className="text-xs text-text-secondary">fat</div>
+                      <div className="text-center p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
+                        <div className="text-xl font-bold text-white">{Math.round(totals.fat || 0)}g</div>
+                        <div className="text-xs text-white/60">fat</div>
                       </div>
                     </div>
                     {Object.keys(effects).length > 0 && (
                       <div>
-                        <div className="text-xs text-text-secondary mb-1">Meal effects</div>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="text-xs text-white/60 mb-2 font-medium">Meal Effects</div>
+                        <div className="flex flex-wrap gap-2">
                           {Object.entries(effects)
                             .filter(([, d]) => (d.score || 0) > 0)
                             .sort((a, b) => (b[1].score || 0) - (a[1].score || 0))
                             .slice(0, 6)
                             .map(([key, d]) => (
-                              <span key={key} className="px-2 py-0.5 text-xs rounded bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)]">
+                              <span key={key} className="px-3 py-1 text-xs rounded-full bg-white/10 border border-white/20 text-white/80 font-medium">
                                 {key} ({Math.round(d.score)})
                               </span>
                             ))}
@@ -1662,59 +1613,379 @@ const Dashboard = () => {
           </Card>
         </div>
         
-        {/* Journal Trends - 1x1 */}
-        <div className="col-span-1">
-          <div className="h-full">
-        <JournalTrends />
+        {/* Bottom Section Divider */}
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
+          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6"></div>
+        </div>
+
+        {/* Bottom Section - Improved Layout */}
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            
+            {/* Journal Trends - Now in a proper card container */}
+            <div className="md:col-span-2 lg:col-span-2 xl:col-span-2">
+              <Card className="h-full">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-jakarta text-lg font-semibold text-white">Journal Insights</h3>
+                    <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
+                      <span className="text-sm">📊</span>
+                    </div>
+                  </div>
+                  <JournalTrends />
+                </div>
+              </Card>
+            </div>
+
+            {/* Urban Image Card - Better positioned */}
+            <div className="col-span-1 lg:col-span-1 xl:col-span-1 animate-fade-in-delayed">
+              <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+                <div className="relative h-full bg-gradient-to-br from-[#3EA6FF]/20 to-[#FFD200]/20">
+                  <img 
+                    src="/images/dashboard/urban.jpg"
+                    alt="Urban Landscape"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
+                    <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                      <h3 className="font-jakarta text-lg font-semibold mb-1">Urban Energy</h3>
+                      <p className="text-sm opacity-90">Thrive in the chaos</p>
+                    </div>
+                  </div>
+                  <div className="absolute top-4 right-4 w-3 h-3 bg-[#3EA6FF] rounded-full animate-pulse-glow"></div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Zen Image Card - Better positioned */}
+            <div className="col-span-1 lg:col-span-1 xl:col-span-1 animate-fade-in">
+              <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+                <div className="relative h-full bg-gradient-to-br from-[#1E49C9]/20 to-[#1E49C9]/20">
+                  <img 
+                    src="/images/dashboard/zen.jpg"
+                    alt="Zen Garden"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
+                    <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                      <h3 className="font-jakarta text-lg font-semibold mb-1">Inner Peace</h3>
+                      <p className="text-sm opacity-90">Find your center</p>
+                    </div>
+                  </div>
+                  <div className="absolute top-4 right-4 w-3 h-3 bg-[#1E49C9] rounded-full animate-pulse-glow"></div>
+                </div>
+              </Card>
+            </div>
+
           </div>
         </div>
 
-        {/* Random Image Card 4 - Urban */}
-        <div className="col-span-1 lg:row-span-2 animate-fade-in-delayed">
-          <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-            <div className="relative h-full bg-gradient-to-br from-[#3EA6FF]/20 to-[#FFD200]/20">
-              <img 
-                src="/images/dashboard/urban.jpg"
-                alt="Urban Landscape"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
-                <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                  <h3 className="font-jakarta text-lg font-semibold mb-1">Urban Energy</h3>
-                  <p className="text-sm opacity-90">Thrive in the chaos</p>
+        {/* Additional Bottom Section - Quick Summary Cards */}
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            {/* Today's Focus */}
+            <Card className="h-full group hover:shadow-xl transition-all duration-300">
+              <div className="p-4 h-full flex flex-col">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-jakarta text-sm font-semibold text-white">Today's Focus</h4>
+                  <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-xs">🎯</span>
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col justify-center">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-white mb-1">
+                      {(() => {
+                        const todaysScore = getTodaysScore();
+                        return todaysScore ? todaysScore.totalScore : '--';
+                      })()}
+                    </div>
+                    <div className="text-xs text-white/60">Overall Score</div>
+                  </div>
                 </div>
               </div>
-              <div className="absolute top-4 right-4 w-3 h-3 bg-[#3EA6FF] rounded-full animate-pulse-glow"></div>
-            </div>
-          </Card>
-        </div>
+            </Card>
 
-
-
-
-        {/* Random Image Card 5 - Zen */}
-        <div className="col-span-1 animate-fade-in">
-          <Card className="h-full overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-            <div className="relative h-full bg-gradient-to-br from-[#1E49C9]/20 to-[#1E49C9]/20">
-              <img 
-                src="/images/dashboard/zen.jpg"
-                alt="Zen Garden"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 p-4">
-                <div className="text-center text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                  <h3 className="font-jakarta text-lg font-semibold mb-1">Inner Peace</h3>
-                  <p className="text-sm opacity-90">Find your center</p>
+            {/* Quick Stats */}
+            <Card className="h-full group hover:shadow-xl transition-all duration-300">
+              <div className="p-4 h-full flex flex-col">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-jakarta text-sm font-semibold text-white">Quick Stats</h4>
+                  <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-xs">📈</span>
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col justify-center space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/60">Tasks Done:</span>
+                    <span className="text-white font-medium">{todayTasks.length}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/60">Meals Logged:</span>
+                    <span className="text-white font-medium">{getTodayMeals().length}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/60">Goals Active:</span>
+                    <span className="text-white font-medium">{goals.filter(g => g.isActive).length}</span>
+                  </div>
                 </div>
               </div>
-              <div className="absolute top-4 right-4 w-3 h-3 bg-[#1E49C9] rounded-full animate-pulse-glow"></div>
-            </div>
-          </Card>
+            </Card>
+
+            {/* Weekly Progress */}
+            <Card className="h-full group hover:shadow-xl transition-all duration-300">
+              <div className="p-4 h-full flex flex-col">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-jakarta text-sm font-semibold text-white">This Week</h4>
+                  <div className="w-6 h-6 bg-purple-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-xs">📅</span>
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col justify-center">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-white mb-1">
+                      {new Date().toLocaleDateString('en-US', { weekday: 'short' })}
+                    </div>
+                    <div className="text-xs text-white/60">Current Day</div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Next Action */}
+            <Card className="h-full group hover:shadow-xl transition-all duration-300">
+              <div className="p-4 h-full flex flex-col">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-jakarta text-sm font-semibold text-white">Next Action</h4>
+                  <div className="w-6 h-6 bg-orange-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-xs">⚡</span>
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col justify-center">
+                  <div className="text-center">
+                    <div className="text-sm text-white/80 mb-2">Ready to continue your journey?</div>
+                    <a 
+                      href="/goal-aligned-day" 
+                      className="inline-block px-3 py-1 bg-[#1E49C9] text-white text-xs rounded-lg hover:bg-[#1E49C9]/80 transition-colors"
+                    >
+                      Plan Today
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+          </div>
         </div>
       </div>
 
+      {/* Day Summary Modal */}
+      <AnimatePresence>
+        {showDaySummary && selectedDayData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowDaySummary(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#11151A] border-2 border-[#2A313A] rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="font-jakarta text-2xl font-bold text-white">
+                    {selectedDayData.date.toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </h3>
+                  <p className="text-white/60 text-sm mt-1">Daily Summary</p>
+                </div>
+                <button
+                  onClick={() => setShowDaySummary(false)}
+                  className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                >
+                  <span className="text-white text-lg">×</span>
+                </button>
+              </div>
+
+              {/* Content Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Tasks Completed */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="text-lg">✅</span>
+                    <h4 className="font-jakarta text-lg font-semibold text-white">Tasks Completed</h4>
+                    <span className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">
+                      {selectedDayData.tasks.length}
+                    </span>
+                  </div>
+                  {selectedDayData.tasks.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedDayData.tasks.slice(0, 3).map((task, index) => (
+                        <div key={index} className="text-sm text-white/80 bg-white/5 rounded-lg p-2">
+{task.title || 'Task completed'}
+                        </div>
+                      ))}
+                      {selectedDayData.tasks.length > 3 && (
+                        <div className="text-xs text-white/60">
+                          +{selectedDayData.tasks.length - 3} more tasks
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-white/60 text-sm">No tasks completed this day</p>
+                  )}
+                </div>
+
+                {/* Habits Tracked */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="text-lg">🔄</span>
+                    <h4 className="font-jakarta text-lg font-semibold text-white">Habits Tracked</h4>
+                    <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded-full">
+                      {selectedDayData.habits.length}
+                    </span>
+                  </div>
+                  {selectedDayData.habits.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedDayData.habits.slice(0, 3).map((habit, index) => (
+                        <div key={index} className="text-sm text-white/80 bg-white/5 rounded-lg p-2">
+{habit.name || 'Habit completed'}
+                        </div>
+                      ))}
+                      {selectedDayData.habits.length > 3 && (
+                        <div className="text-xs text-white/60">
+                          +{selectedDayData.habits.length - 3} more habits
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-white/60 text-sm">No habits tracked this day</p>
+                  )}
+                </div>
+
+                {/* Mindfulness Check-in */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="text-lg">🧘</span>
+                    <h4 className="font-jakarta text-lg font-semibold text-white">Mindfulness</h4>
+                    {selectedDayData.mindfulnessCheckin ? (
+                      <span className="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded-full">
+                        {selectedDayData.mindfulnessCheckin.totalScore || 0}/25
+                      </span>
+                    ) : (
+                      <span className="bg-gray-500/20 text-gray-400 text-xs px-2 py-1 rounded-full">
+                        No check-in
+                      </span>
+                    )}
+                  </div>
+                  {selectedDayData.mindfulnessCheckin ? (
+                    <div className="space-y-2">
+                      <div className="text-sm text-white/80">
+                        Overall Score: {selectedDayData.mindfulnessCheckin.totalScore || 0}/25
+                      </div>
+                      {selectedDayData.mindfulnessCheckin.dimensions && (
+                        <div className="text-xs text-white/60">
+                          Dimensions: {Object.keys(selectedDayData.mindfulnessCheckin.dimensions).length} rated
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-white/60 text-sm">No mindfulness check-in this day</p>
+                  )}
+                </div>
+
+                {/* Meals Logged */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="text-lg">🍽️</span>
+                    <h4 className="font-jakarta text-lg font-semibold text-white">Meals Logged</h4>
+                    <span className="bg-orange-500/20 text-orange-400 text-xs px-2 py-1 rounded-full">
+                      {selectedDayData.meals.length}
+                    </span>
+                  </div>
+                  {selectedDayData.meals.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="text-sm text-white/80">
+                        Calories: {Math.round(selectedDayData.nutritionTotals.kcal || 0)} kcal
+                      </div>
+                      <div className="text-sm text-white/80">
+                        Protein: {Math.round(selectedDayData.nutritionTotals.protein || 0)}g
+                      </div>
+                      {Object.keys(selectedDayData.mealEffects).length > 0 && (
+                        <div className="text-xs text-white/60">
+                          {Object.keys(selectedDayData.mealEffects).length} effects tracked
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-white/60 text-sm">No meals logged this day</p>
+                  )}
+                </div>
+
+                {/* Expenses */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="text-lg">💰</span>
+                    <h4 className="font-jakarta text-lg font-semibold text-white">Expenses</h4>
+                    <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded-full">
+                      {selectedDayData.expenses.length}
+                    </span>
+                  </div>
+                  {selectedDayData.expenses.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="text-sm text-white/80">
+                        Total: ₹{selectedDayData.expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0)}
+                      </div>
+                      {selectedDayData.expenses.filter(exp => exp.impulseBuy).length > 0 && (
+                        <div className="text-xs text-red-400">
+                          {selectedDayData.expenses.filter(exp => exp.impulseBuy).length} impulse buys
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-white/60 text-sm">No expenses recorded this day</p>
+                  )}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="text-lg">⚡</span>
+                    <h4 className="font-jakarta text-lg font-semibold text-white">Quick Actions</h4>
+                  </div>
+                  <div className="space-y-2">
+                    <a
+                      href={`/goal-aligned-day?date=${selectedDayData.dateStr}`}
+                      className="block w-full text-center bg-[#1E49C9] text-white text-sm py-2 px-4 rounded-lg hover:bg-[#1E49C9]/80 transition-colors"
+                    >
+                      View Full Day Details
+                    </a>
+                    <a
+                      href="/goal-aligned-day"
+                      className="block w-full text-center bg-white/10 text-white text-sm py-2 px-4 rounded-lg hover:bg-white/20 transition-colors"
+                    >
+                      Add New Activity
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Image Upload Modal */}
-      {console.log('Dashboard showImageUpload state:', showImageUpload)}
       <AnimatePresence>
         {showImageUpload && (
           <motion.div

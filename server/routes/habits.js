@@ -8,7 +8,7 @@ const HabitCheckin = require('../models/HabitCheckin');
 router.get('/', auth, async (req, res) => {
   try {
     console.log('🔍 GET /api/habits - User ID:', req.user.userId);
-    console.log('🔍 GET /api/habits - User object:', req.user);
+    console.log('🔍 GET /api/habits - Query params:', req.query);
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -21,17 +21,29 @@ router.get('/', auth, async (req, res) => {
       return res.status(401).json({ message: 'User ID not found in token' });
     }
     
-    // Get habits that are active today (within date range)
-    const habits = await Habit.find({ 
-      userId, 
-      isActive: true,
-      startDate: { $lte: today },
-      endDate: { $gte: today }
-    })
+    // Check if we should get all habits (for Goal Aligned Day) or just active ones
+    const getAllHabits = req.query.all === 'true';
+    
+    let query = { userId };
+    
+    if (!getAllHabits) {
+      // Get habits that are active today (within date range)
+      query = { 
+        userId, 
+        isActive: true,
+        startDate: { $lte: today },
+        endDate: { $gte: today }
+      };
+    } else {
+      // Get all habits for the user (for Goal Aligned Day)
+      query = { userId };
+    }
+    
+    const habits = await Habit.find(query)
       .sort({ startDate: -1 })
       .populate('goalId');
     
-    console.log(`✅ Found ${habits.length} active habits for user`);
+    console.log(`✅ Found ${habits.length} habits for user (getAllHabits: ${getAllHabits})`);
     
     // Validate and clean the data before sending
     const validatedHabits = habits.map(habit => {

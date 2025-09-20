@@ -10,6 +10,7 @@
     "seed:all": "node scripts/seedUpgrader.js",
     "seed:qa": "node scripts/seedUpgrader.js --qa-only",
     "seed:ifct": "node scripts/seedFoodData.js",
+    "demo:create": "node scripts/runDemoUser.js",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",

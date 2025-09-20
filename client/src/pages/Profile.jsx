@@ -260,7 +260,9 @@ const Profile = () => {
                         className="w-full h-full rounded-full object-cover"
                       />
                     ) : (
-                      (profileData.firstName?.[0] || 'U').toUpperCase()
+                      <span className="text-white text-2xl font-bold">
+                        {(profileData.firstName?.[0] || 'U').toUpperCase()}
+                      </span>
                     )}
                   </div>
                   {isEditing && (

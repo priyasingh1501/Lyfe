@@ -436,10 +436,19 @@ router.get('/trends', authenticateToken, async (req, res) => {
         userId,
         timeRange,
         trendAnalysis: {
-          sentimentTrend: 'stable',
+          emotionTrend: 'stable',
           commonTopics: [],
           evolvingBeliefs: [],
-          summary: 'No entries available for trend analysis.'
+          summary: 'No entries available for trend analysis.',
+          insights: [],
+          sentimentTrend: 'stable',
+          emotionalRange: {
+            min: 1,
+            max: 10,
+            average: 5
+          },
+          topicEvolution: [],
+          beliefChanges: []
         },
         metadata: {
           analyzedEntries: 0,

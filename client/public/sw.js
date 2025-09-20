@@ -53,10 +53,14 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip API calls and external resources
+  // Skip API calls, external resources, and video files
   if (url.pathname.startsWith('/api/') || 
       url.hostname !== self.location.hostname ||
-      request.method !== 'GET') {
+      request.method !== 'GET' ||
+      url.pathname.startsWith('/videos/') ||
+      url.pathname.endsWith('.mp4') ||
+      url.pathname.endsWith('.webm') ||
+      url.pathname.endsWith('.ogg')) {
     return;
   }
 
@@ -88,12 +92,20 @@ self.addEventListener('fetch', (event) => {
 
             return response;
           })
-          .catch(() => {
-            // Return offline page if fetch fails
+          .catch((error) => {
+            console.error('❌ Fetch failed for:', request.url, error);
+            // Return offline page if fetch fails for document requests
             if (request.destination === 'document') {
               return caches.match('/');
             }
+            // For other requests, throw error to let browser handle
+            throw error;
           });
+      })
+      .catch((error) => {
+        console.error('❌ Cache match failed for:', request.url, error);
+        // If cache match fails, let the browser handle the request
+        throw error;
       })
   );
 });

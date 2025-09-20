@@ -489,8 +489,14 @@ const MealBuilder = ({ onMealSaved }) => {
           transition={{ delay: 0.4 }}
           className="text-center text-sm text-text-muted"
         >
-          <p>
-            Data: IFCT/USDA/OpenFoodFacts + heuristics; see info for details.
+          <p className="flex items-center justify-center gap-2">
+            <span>Powered by</span>
+            <span className="font-medium text-text-secondary">IFCT</span>
+            <span>•</span>
+            <span className="font-medium text-text-secondary">USDA</span>
+            <span>•</span>
+            <span className="font-medium text-text-secondary">OpenFoodFacts</span>
+            <span className="text-xs opacity-75">+ AI analysis</span>
           </p>
         </motion.div>
       </div>

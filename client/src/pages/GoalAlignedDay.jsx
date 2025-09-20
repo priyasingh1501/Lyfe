@@ -4,7 +4,7 @@ import { Card, Button, Badge } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { buildApiUrl } from '../config';
 import { CreateHabitPopup } from '../components/habits';
-import { CreateGoalPopup } from '../components/goals';
+import { CreateGoalPopup, EditGoalPopup } from '../components/goals';
 import { CreateTaskPopup } from '../components/tasks';
 
 const GoalAlignedDay = () => {
@@ -17,8 +17,11 @@ const GoalAlignedDay = () => {
   const [showCreateHabitPopup, setShowCreateHabitPopup] = useState(false);
   const [showCreateGoalPopup, setShowCreateGoalPopup] = useState(false);
   const [showCreateTaskPopup, setShowCreateTaskPopup] = useState(false);
+  const [showEditGoalPopup, setShowEditGoalPopup] = useState(false);
   const [selectedGoalForTask, setSelectedGoalForTask] = useState(null);
   const [selectedGoalForHabit, setSelectedGoalForHabit] = useState(null);
+  const [selectedGoalForEdit, setSelectedGoalForEdit] = useState(null);
+  const [deletingGoal, setDeletingGoal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [completingHabits, setCompletingHabits] = useState(new Set());
@@ -55,7 +58,7 @@ const GoalAlignedDay = () => {
   // Load user's habits
   const loadHabits = useCallback(async () => {
     try {
-      const response = await fetch(buildApiUrl('/api/habits'), {
+      const response = await fetch(buildApiUrl('/api/habits?all=true'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -136,6 +139,51 @@ const GoalAlignedDay = () => {
     setTasks(prev => [newTask, ...prev]);
   };
 
+  // Handle goal update
+  const handleGoalUpdated = (updatedGoal) => {
+    setGoals(prev => prev.map(goal => 
+      goal._id === updatedGoal._id ? updatedGoal : goal
+    ));
+  };
+
+  // Handle goal deletion
+  const handleDeleteGoal = async (goal) => {
+    if (!window.confirm(`Are you sure you want to delete the goal "${goal.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingGoal(goal._id);
+    
+    try {
+      const response = await fetch(buildApiUrl(`/api/goals/${goal._id}`), {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        console.log('✅ Goal deleted successfully');
+        setGoals(prev => prev.filter(g => g._id !== goal._id));
+      } else {
+        const error = await response.json();
+        console.error('❌ Goal deletion failed:', error);
+        alert(`Error deleting goal: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('❌ Error deleting goal:', error);
+      alert('Error deleting goal. Please try again.');
+    } finally {
+      setDeletingGoal(null);
+    }
+  };
+
+  // Handle opening edit goal popup
+  const handleEditGoal = (goal) => {
+    setSelectedGoalForEdit(goal);
+    setShowEditGoalPopup(true);
+  };
+
   // Handle opening task creation popup for a specific goal
   const handleAddTaskToGoal = (goal) => {
     console.log('🎯 Opening task creation popup for goal:', goal);
@@ -177,8 +225,22 @@ const GoalAlignedDay = () => {
       const isActive = habit.isActive !== false;
       const result = matches && isActive;
       
+      // Debug logging
+      if (result) {
+        console.log(`🔍 Habit "${habit.habit}" matches goal ${goalId}:`, {
+          habitGoalId,
+          goalId,
+          matches,
+          isActive,
+          result
+        });
+      }
+      
       return result;
     });
+    
+    console.log(`🔍 Found ${goalHabits.length} habits for goal ${goalId}:`, goalHabits.map(h => h.habit));
+    
     return goalHabits;
   };
 
@@ -212,7 +274,10 @@ const GoalAlignedDay = () => {
 
   // Check if a habit is completed today (local timezone)
   const isHabitCompletedToday = (habit) => {
-    if (!habit.checkins || !Array.isArray(habit.checkins)) return false;
+    if (!habit.checkins || !Array.isArray(habit.checkins)) {
+      console.log(`🔍 Habit "${habit.habit}" has no checkins`);
+      return false;
+    }
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -220,7 +285,28 @@ const GoalAlignedDay = () => {
     const isCompleted = habit.checkins.some(checkin => {
       const checkinDate = new Date(checkin.date);
       checkinDate.setHours(0, 0, 0, 0);
-      return checkinDate.getTime() === today.getTime() && checkin.completed;
+      const matches = checkinDate.getTime() === today.getTime() && checkin.completed;
+      
+      if (matches) {
+        console.log(`🔍 Habit "${habit.habit}" completed today:`, {
+          checkinDate: checkinDate.toISOString(),
+          today: today.toISOString(),
+          completed: checkin.completed,
+          duration: checkin.duration
+        });
+      }
+      
+      return matches;
+    });
+    
+    console.log(`🔍 Habit "${habit.habit}" completion status:`, {
+      isCompleted,
+      checkinsCount: habit.checkins.length,
+      checkins: habit.checkins.map(c => ({
+        date: c.date,
+        completed: c.completed,
+        duration: c.duration
+      }))
     });
     
     return isCompleted;
@@ -277,10 +363,6 @@ const GoalAlignedDay = () => {
         } catch (error) {
           console.warn('⚠️ Failed to recalculate goal progress on backend:', error);
         }
-        
-        // Force a re-render by updating state
-        setHabits(prev => [...prev]);
-        setGoals(prev => [...prev]);
       } else {
         console.error('❌ Failed to complete habit:', response.status);
       }
@@ -293,6 +375,68 @@ const GoalAlignedDay = () => {
         newSet.delete(habit._id);
         return newSet;
       });
+    }
+  };
+
+  // Handle activity deletion (habits or tasks)
+  const handleDeleteActivity = async (activity) => {
+    const activityType = activity.type === 'habit' ? 'habit' : 'task';
+    const activityName = activity.displayName;
+    
+    if (!window.confirm(`Are you sure you want to delete this ${activityType} "${activityName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      let response;
+      
+      if (activity.type === 'habit') {
+        // Delete habit
+        response = await fetch(buildApiUrl(`/api/habits/${activity._id}`), {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      } else {
+        // Delete task
+        response = await fetch(buildApiUrl(`/api/tasks/${activity._id}`), {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
+
+      if (response.ok) {
+        console.log(`✅ ${activityType} deleted successfully`);
+        
+        // Reload data to reflect the deletion
+        await Promise.all([
+          loadHabits(),
+          loadGoals(),
+          loadTasks()
+        ]);
+        
+        // Trigger backend goal progress recalculation
+        try {
+          await fetch(buildApiUrl('/api/goals/today'), {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          console.log('✅ Goal progress recalculated after deletion');
+        } catch (error) {
+          console.warn('⚠️ Failed to recalculate goal progress after deletion:', error);
+        }
+      } else {
+        const error = await response.json();
+        console.error(`❌ ${activityType} deletion failed:`, error);
+        alert(`Error deleting ${activityType}: ${error.message}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error deleting ${activityType}:`, error);
+      alert(`Error deleting ${activityType}. Please try again.`);
     }
   };
 
@@ -401,7 +545,17 @@ const GoalAlignedDay = () => {
     const goalHabits = getHabitsForGoal(goalId);
     const habitHours = goalHabits.reduce((total, habit) => {
       if (isHabitCompletedToday(habit)) {
-        const duration = habit.valueMin || 0;
+        // Get the actual duration from today's check-in
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const todayCheckin = habit.checkins?.find(checkin => {
+          const checkinDate = new Date(checkin.date);
+          checkinDate.setHours(0, 0, 0, 0);
+          return checkinDate.getTime() === today.getTime() && checkin.completed;
+        });
+        
+        const duration = todayCheckin?.duration || habit.valueMin || 0;
         return total + duration / 60; // Convert minutes to hours
       }
       return total;
@@ -415,14 +569,29 @@ const GoalAlignedDay = () => {
       taskHours,
       habitHours,
       totalHours,
-      goalHabits: goalHabits.map(h => ({
-        habit: h.habit,
-        valueMin: h.valueMin,
-        isCompleted: isHabitCompletedToday(h),
-        checkins: h.checkins
+      goalHabits: goalHabits.map(h => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayCheckin = h.checkins?.find(checkin => {
+          const checkinDate = new Date(checkin.date);
+          checkinDate.setHours(0, 0, 0, 0);
+          return checkinDate.getTime() === today.getTime() && checkin.completed;
+        });
+        return {
+          habit: h.habit,
+          valueMin: h.valueMin,
+          isCompleted: isHabitCompletedToday(h),
+          actualDuration: todayCheckin?.duration || h.valueMin,
+          checkins: h.checkins
+        };
+      }),
+      todayTasks: todayTasks.map(t => ({
+        title: t.title,
+        estimatedDuration: t.estimatedDuration,
+        status: t.status
       }))
     });
-
+    
     return totalHours;
   };
 
@@ -485,7 +654,7 @@ const GoalAlignedDay = () => {
         });
         
         const habitMonthHours = monthCheckins.reduce((sum, checkin) => {
-          const duration = habit.valueMin || 0;
+          const duration = checkin.duration || habit.valueMin || 0;
           return sum + duration / 60; // Convert minutes to hours
         }, 0);
         
@@ -494,7 +663,20 @@ const GoalAlignedDay = () => {
       return total;
     }, 0);
 
-    return taskHours + habitHours;
+    const totalMonthHours = taskHours + habitHours;
+    
+    // Debug logging for monthly calculation
+    console.log(`🔍 Monthly calculation for goal ${goalId}:`, {
+      startOfMonth: startOfMonth.toISOString(),
+      endOfMonth: endOfMonth.toISOString(),
+      monthTasks: monthTasks.length,
+      taskHours,
+      goalHabits: goalHabits.length,
+      habitHours,
+      totalMonthHours
+    });
+    
+    return totalMonthHours;
   };
 
   // Get number of activities completed this month for a goal
@@ -677,6 +859,14 @@ const GoalAlignedDay = () => {
             const monthHours = getMonthHoursForGoal(goal._id);
             const monthActivitiesCount = getMonthActivitiesCountForGoal(goal._id);
             
+            // Debug logging for each goal
+            console.log(`🔍 Goal ${goal.title} (${goal._id}):`, {
+              todayHours,
+              targetHours: goal.targetHours,
+              goalActivities: goalActivities.length,
+              goalTasks: goalTasks.length
+            });
+            
             return (
               <div key={goal._id || index} className="md:col-span-2 lg:col-span-3 xl:col-span-4">
                 <Card className="h-full min-h-[500px] group relative hover:border-[rgba(255,255,255,0.3)] hover:shadow-lg hover:shadow-[#1E49C9]/20 transition-all duration-300">
@@ -687,9 +877,36 @@ const GoalAlignedDay = () => {
                       <h4 className="text-xl font-bold text-[#E8EEF2] truncate">
                         {goal.name}
                       </h4>
-                      <Badge variant={goal.isActive ? "default" : "secondary"} className="text-xs px-3 py-1 flex-shrink-0">
-                        {goal.isActive ? "Active" : "Inactive"}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={goal.isActive ? "default" : "secondary"} className="text-xs px-3 py-1 flex-shrink-0">
+                          {goal.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleEditGoal(goal)}
+                            className="p-1.5 text-[#94A3B8] hover:text-[#1E49C9] hover:bg-[#1E49C9]/10 rounded-md transition-colors"
+                            title="Edit goal"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteGoal(goal)}
+                            disabled={deletingGoal === goal._id}
+                            className="p-1.5 text-[#94A3B8] hover:text-[#FF6B6B] hover:bg-[#FF6B6B]/10 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Delete goal"
+                          >
+                            {deletingGoal === goal._id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b border-[#FF6B6B]"></div>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     <p className="text-sm text-[#94A3B8] leading-relaxed line-clamp-2">
                       {goal.description}
@@ -704,24 +921,34 @@ const GoalAlignedDay = () => {
                       <div className="bg-[#11151A]/50 rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-sm font-medium text-[#E8EEF2]">Today's Progress</span>
-                          <span className="text-lg font-bold text-[#1E49C9]">
-                            {Math.round(todayHours * 10) / 10}h / {goal.targetHours || 0}h
-                          </span>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-[#1E49C9]">
+                              {Math.round(todayHours * 10) / 10}h / {goal.targetHours || 0}h
+                            </div>
+                            <div className="text-xs text-[#94A3B8]">
+                              {Math.round(todayHours * 60)}m / {Math.round((goal.targetHours || 0) * 60)}m
+                            </div>
+                          </div>
                         </div>
                         
                         {/* Progress Bar */}
-                        <div className="w-full bg-[#2A313A] rounded-full h-3 mb-3">
+                        <div className="w-full bg-[#2A313A] rounded-full h-3 mb-3 relative">
                           <div 
                             className="bg-gradient-to-r from-[#1E49C9] to-[#3EA6FF] h-3 rounded-full transition-all duration-500"
                             style={{ 
                               width: `${Math.min((todayHours / (goal.targetHours || 1)) * 100, 100)}%` 
                             }}
                           />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-xs font-medium text-white/80">
+                              {Math.round((todayHours / (goal.targetHours || 1)) * 100)}%
+                            </span>
+                          </div>
                         </div>
                         
                         <div className="flex justify-between text-sm text-[#94A3B8]">
-                          <span>0h</span>
-                          <span>{goal.targetHours || 0}h target</span>
+                          <span>0m</span>
+                          <span>{Math.round((goal.targetHours || 0) * 60)}m target</span>
                         </div>
                       </div>
 
@@ -729,9 +956,14 @@ const GoalAlignedDay = () => {
                       <div className="bg-[#11151A]/50 rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-medium text-[#E8EEF2]">This Month</span>
-                          <span className="text-lg font-bold text-[#1E49C9]">
-                            {Math.round(monthHours * 10) / 10}h
-                          </span>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-[#1E49C9]">
+                              {Math.round(monthHours * 10) / 10}h
+                            </div>
+                            <div className="text-xs text-[#94A3B8]">
+                              {Math.round(monthHours * 60)}m
+                            </div>
+                          </div>
                         </div>
                         <div className="text-xs text-[#94A3B8]">
                           Hours logged this month
@@ -780,7 +1012,7 @@ const GoalAlignedDay = () => {
                               </div>
                               
                               {/* Action Button/Status */}
-                              <div className="ml-3 flex-shrink-0">
+                              <div className="ml-3 flex-shrink-0 flex items-center gap-2">
                                 {activity.type === 'habit' ? (
                                   activity.isCompleted || completedHabits.has(activity._id) ? (
                                     <div className="flex items-center gap-1 text-xs text-[#1E49C9] font-medium">
@@ -809,6 +1041,17 @@ const GoalAlignedDay = () => {
                                     <span>{activity.isCompleted ? 'Done' : 'Pending'}</span>
                                   </div>
                                 )}
+                                
+                                {/* Delete Button */}
+                                <button
+                                  onClick={() => handleDeleteActivity(activity)}
+                                  className="text-xs px-2 py-1 text-[#FF6B6B] hover:bg-[#FF6B6B]/10 rounded-md transition-colors"
+                                  title={`Delete ${activity.type}`}
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
                               </div>
                             </div>
                           ))}
@@ -879,6 +1122,17 @@ const GoalAlignedDay = () => {
         onTaskCreated={handleTaskCreated}
         goalId={selectedGoalForTask?._id}
         goalName={selectedGoalForTask?.name}
+      />
+
+      {/* Edit Goal Popup */}
+      <EditGoalPopup
+        isOpen={showEditGoalPopup}
+        onClose={() => {
+          setShowEditGoalPopup(false);
+          setSelectedGoalForEdit(null);
+        }}
+        onGoalUpdated={handleGoalUpdated}
+        goal={selectedGoalForEdit}
       />
     </div>
   );

@@ -12,7 +12,7 @@ const journalEntrySchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['daily', 'gratitude', 'reflection', 'goal', 'dream', 'memory', 'creative'],
+    enum: ['daily', 'gratitude', 'reflection', 'goal', 'dream', 'memory', 'creative', 'work', 'health', 'relationship'],
     default: 'daily'
   },
   mood: {
@@ -49,11 +49,11 @@ const journalEntrySchema = new mongoose.Schema({
     emotion: {
       primary: {
         type: String,
-        enum: ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'love', 'anxiety', 'excitement', 'contentment', 'frustration', 'gratitude', 'loneliness', 'hope', 'disappointment', 'pride', 'shame', 'relief', 'confusion', 'peace', 'overwhelmed', 'confident', 'vulnerable', 'motivated', 'tired', 'energetic', 'calm', 'stressed', 'curious', 'nostalgic']
+        enum: ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'love', 'anxiety', 'excitement', 'contentment', 'frustration', 'gratitude', 'loneliness', 'hope', 'disappointment', 'pride', 'shame', 'relief', 'confusion', 'peace', 'overwhelmed', 'confident', 'vulnerable', 'motivated', 'tired', 'energetic', 'calm', 'stressed', 'curious', 'nostalgic', 'satisfaction', 'optimism', 'stability', 'despair']
       },
       secondary: {
         type: String,
-        enum: ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'love', 'anxiety', 'excitement', 'contentment', 'frustration', 'gratitude', 'loneliness', 'hope', 'disappointment', 'pride', 'shame', 'relief', 'confusion', 'peace', 'overwhelmed', 'confident', 'vulnerable', 'motivated', 'tired', 'energetic', 'calm', 'stressed', 'curious', 'nostalgic']
+        enum: ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'love', 'anxiety', 'excitement', 'contentment', 'frustration', 'gratitude', 'loneliness', 'hope', 'disappointment', 'pride', 'shame', 'relief', 'confusion', 'peace', 'overwhelmed', 'confident', 'vulnerable', 'motivated', 'tired', 'energetic', 'calm', 'stressed', 'curious', 'nostalgic', 'satisfaction', 'optimism', 'stability', 'despair']
       },
       intensity: {
         type: Number,

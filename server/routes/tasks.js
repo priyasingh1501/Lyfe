@@ -93,9 +93,9 @@ router.get('/:id', auth, async (req, res) => {
 // Create new task
 router.post('/', auth, async (req, res) => {
   try {
-    const { title, description, priority, dueDate, goalIds, estimatedDuration } = req.body;
+    const { title, description, priority, dueDate, goalIds, estimatedDuration, status, completedAt, actualDuration } = req.body;
     
-    console.log('Creating task with data:', { title, description, priority, dueDate, goalIds, estimatedDuration, userId: req.user.userId });
+    console.log('Creating task with data:', { title, description, priority, dueDate, goalIds, estimatedDuration, status, completedAt, actualDuration, userId: req.user.userId });
     
     if (!title) {
       return res.status(400).json({ success: false, message: 'Title is required' });
@@ -126,7 +126,10 @@ router.post('/', auth, async (req, res) => {
       priority: priority || 'medium',
       dueDate: dueDate ? new Date(dueDate) : null,
       goalIds: filteredGoalIds,
-      estimatedDuration: estimatedDuration || 30
+      estimatedDuration: estimatedDuration || 30,
+      status: status || 'pending',
+      completedAt: completedAt ? new Date(completedAt) : null,
+      actualDuration: actualDuration || null
     });
     
     await task.save();
